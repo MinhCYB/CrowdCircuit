@@ -1,13 +1,13 @@
-# Handoff <TASK-ID>
+# Handoff — <TASK-ID> — <Task Title>
 
-**Task:** <TASK-ID — Title>  
-**Status:** DONE | PARTIAL | BLOCKED  
+**Task status:** DONE | PARTIAL | BLOCKED  
 **Date:** YYYY-MM-DD  
-**Commit:** <hash or not committed>
+**Commit:** <hash or not committed>  
+**Task brief:** `docs/tasks/<TASK-ID>.md`
 
-## Objective
+## Summary
 
-What the task was supposed to achieve.
+What this micro-task achieved.
 
 ## Completed
 
@@ -25,19 +25,25 @@ What the task was supposed to achieve.
 ## Commands run
 
 ```bash
+<focused package commands>
 pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+git status
 ```
 
 ## Verification results
 
-- Lint:
-- Typecheck:
-- Unit tests:
-- Integration tests:
-- Build:
+- Focused lint:
+- Focused typecheck:
+- Focused tests:
+- Focused build:
+- Repository lint:
+- Repository typecheck:
+- Repository tests:
+- Repository build:
+- Exact test count:
 - Manual verification:
 
 ## Contract or API changes
@@ -57,6 +63,10 @@ pnpm build
 ```text
 git status summary
 ```
+
+## Recommended commit message
+
+`<type>: <summary>`
 
 ## Next recommended task
 

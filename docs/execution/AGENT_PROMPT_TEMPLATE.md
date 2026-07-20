@@ -1,47 +1,54 @@
-# Coding Agent Prompt Template
+# Coding Agent Prompt Template — Micro-task Mode
 
-You are implementing **`<TASK-ID> — <TASK TITLE>`** for CrowdCircuit.
+You are implementing the current CrowdCircuit micro-task.
 
-## Source of truth
+## Read only
 
-Read these files in order:
+Read in this order:
 
-1. `docs/crowdcircuit-system-design-v0.1.1.md`
-2. `docs/crowdcircuit-studio-ui-ux-spec-v0.1.md` only if the task touches UI
-3. `docs/execution/ROADMAP.md`
-4. `docs/execution/PROJECT_STATUS.md`
-5. `docs/execution/DECISIONS.md`
-6. `docs/execution/KNOWN_ISSUES.md`
-7. `docs/execution/CURRENT_TASK.md`
-8. The latest file in `docs/handoffs/`
+1. `docs/execution/PROJECT_STATUS.md`
+2. `docs/execution/CURRENT_TASK.md`
+3. The task brief referenced by `CURRENT_TASK.md`
+4. `docs/execution/DECISIONS.md`
+5. `docs/execution/KNOWN_ISSUES.md`
+6. The latest relevant handoff
 
-Do not implement outside `CURRENT_TASK.md`.
+Do not read the full System Design or UI/UX Specification unless the task brief references exact sections.
 
 ## Before coding
 
-Verify the actual repository:
+Run:
 
 ```bash
 git status
 git log -1 --oneline
+node --version
+pnpm --version
 pnpm test
 pnpm typecheck
 ```
 
-If documentation and repository conflict, trust repository evidence and update `PROJECT_STATUS.md`.
+Summarize briefly:
 
-## Implementation rules
+- Actual repository state.
+- Current task scope.
+- Expected changed paths.
+- Any real blocker.
 
-- Preserve existing contracts.
-- Do not refactor unrelated modules.
-- Do not introduce new infrastructure without documenting a decision.
-- Add or update tests for every behavior.
-- Do not mark work complete when tests are skipped or failing.
-- Keep changes limited to the task scope.
+Then implement immediately unless blocked.
+
+## Scope discipline
+
+- Perform exactly one micro-task.
+- Do not begin the next task.
+- Do not refactor unrelated code.
+- Do not add unrequested infrastructure.
+- Do not change public contracts silently.
+- Follow allowed paths and exclusions from the task brief.
 
 ## Before finishing
 
-Run:
+Run all verification commands from the task brief, then:
 
 ```bash
 pnpm lint
@@ -51,21 +58,37 @@ pnpm build
 git status
 ```
 
-Then:
+Update:
 
-1. Update `docs/execution/PROJECT_STATUS.md`.
-2. Update task status in `docs/execution/ROADMAP.md`.
-3. Update `docs/execution/KNOWN_ISSUES.md` only for verified unresolved issues.
-4. Update `docs/execution/DECISIONS.md` only for actual new decisions.
-5. Create a new handoff in `docs/handoffs/`.
+- `docs/execution/PROJECT_STATUS.md`
+- `docs/execution/ROADMAP.md`
+- `docs/execution/CURRENT_TASK.md`
+- `docs/execution/KNOWN_ISSUES.md` only when needed
+- `docs/execution/DECISIONS.md` only when needed
 
-## Final report
+Create the required handoff.
 
-Include:
+## Final response
 
-- Task status: DONE, PARTIAL or BLOCKED.
-- Files changed.
-- Commands run and exact results.
-- Tests added.
-- Known limitations.
-- Next recommended task.
+### Status
+DONE / PARTIAL / BLOCKED
+
+### Implemented
+- ...
+
+### Verification
+- lint:
+- typecheck:
+- tests:
+- build:
+
+### Documentation updated
+- ...
+
+### Limitations
+- ...
+
+### Next task
+`<NEXT-TASK-ID> — <TITLE>`
+
+Do not commit unless explicitly requested.

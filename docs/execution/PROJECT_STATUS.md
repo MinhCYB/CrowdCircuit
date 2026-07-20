@@ -2,10 +2,11 @@
 
 **Last updated:** 2026-07-20  
 **Current phase:** Phase A — Foundation  
-**Current task:** FOUND-02 — Shared contracts and schemas  
-**Repository state:** Monorepo scaffold established  
-**Main branch status:** Clean, uncommitted scaffold ready  
-**Current commit:** `019f453 docs: initialize CrowdCircuit project` (scaffold not yet committed)
+**Last completed task:** FOUND-01 — Monorepo Scaffold  
+**Current task:** FOUND-02A — Contracts Package Foundation  
+**Repository state:** Monorepo scaffold established; shared contracts not implemented  
+**Main branch status:** According to FOUND-01 handoff, scaffold changes were not yet committed; next agent must verify  
+**Last known commit:** `019f453 docs: initialize CrowdCircuit project`
 
 ## Current baseline
 
@@ -23,9 +24,9 @@
 - Tests: Vitest 4.1.10
 - Demo game: Phaser (placeholder only)
 
-## Working commands
+## Last verified commands
 
-All commands verified on 2026-07-20:
+FOUND-01 reported the following results on 2026-07-20:
 
 ```bash
 pnpm install     # ✅ 15 workspace projects resolved
@@ -36,41 +37,66 @@ pnpm build       # ✅ All packages + dashboard built
 pnpm dev         # ✅ Server + dashboard start concurrently
 ```
 
+The next agent must rerun the required baseline commands before coding. Do not assume the working tree or commit state is unchanged.
+
 ## Completed
 
 - [x] System Design v0.1.1
 - [x] Studio UI/UX Specification v0.1
 - [x] Execution documentation scaffold
-- [x] Repository scaffold (FOUND-01)
-- [ ] Shared contracts (FOUND-02)
-- [ ] Runtime session and pairing (FOUND-03)
-- [ ] SQLite persistence (FOUND-04)
+- [x] FOUND-01 — Monorepo Scaffold
+- [ ] FOUND-02A — Contracts Package Foundation
+- [ ] FOUND-02B — Common Primitives and LiveEventEnvelope Base
+- [ ] FOUND-02C — LIVE Event Payload Schemas
+- [ ] FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas
+- [ ] FOUND-02E — VoiceIntent and Voice Protocol Schemas
+- [ ] FOUND-02F — Contract Fixtures and Integration Review
+- [ ] FOUND-03 — Runtime Session and Pairing
+- [ ] FOUND-04 — SQLite Persistence
 
 ## Test status
 
+Last known verified state from FOUND-01:
+
 - Unit tests: 2 passing (health endpoint)
+- Test files: 1
 - Integration tests: not started
 - End-to-end tests: not started
 - Lint: configured, passing
 - Typecheck: configured, passing
 - Build: configured, passing
 
+Exact current values must be refreshed when FOUND-02A finishes.
+
+## Current limitations
+
+- Placeholder packages export only constants or identity values.
+- `@crowdcircuit/contracts` does not yet contain production schemas.
+- Dashboard is a minimal React component with no real UI.
+- `voice-output` and `demo-game` are placeholders.
+- SQLite, Socket.IO and authentication remain deferred by design.
+
 ## Current blockers
 
-None.
+None known.
 
 ## Next recommended task
 
-`FOUND-02 — Shared contracts and schemas`
+`FOUND-02A — Contracts Package Foundation`
+
+Task brief:
+
+`docs/tasks/FOUND-02A.md`
 
 ## Update rules
 
-Before closing a task, replace this file with the real repository state:
+Before closing a task, update this file with:
 
-- Current task and phase.
-- Current commit hash.
-- Commands that actually work.
-- Completed tasks.
+- Actual commit and working-tree state.
+- Commands that actually ran.
 - Exact test counts.
-- Current blockers.
+- Completed micro-task.
+- Current blockers and limitations.
 - Next recommended task.
+
+Do not remove or rewrite historical handoff files.
