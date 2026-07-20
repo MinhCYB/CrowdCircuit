@@ -1,0 +1,6 @@
+{
+  "name": "@crowdcircuit/demo-game",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Placeholder demo game app. Actual demo will be implemented in a later phase."
+}

@@ -6,7 +6,7 @@
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| FOUND-01 | Monorepo scaffold | READY | — |
+| FOUND-01 | Monorepo scaffold | DONE | — |
 | FOUND-02 | Shared contracts and schemas | TODO | FOUND-01 |
 | FOUND-03 | Runtime session and client pairing | TODO | FOUND-01, FOUND-02 |
 | FOUND-04 | SQLite persistence and migrations | TODO | FOUND-01, FOUND-02 |

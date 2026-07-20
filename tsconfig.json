@@ -1,0 +1,16 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/shared" },
+    { "path": "packages/contracts" },
+    { "path": "packages/connector-core" },
+    { "path": "packages/connector-mock" },
+    { "path": "packages/event-core" },
+    { "path": "packages/mapping-engine" },
+    { "path": "packages/voice-engine" },
+    { "path": "packages/tts-core" },
+    { "path": "packages/game-sdk-js" },
+    { "path": "apps/server" },
+    { "path": "games/zombie-survival" }
+  ]
+}

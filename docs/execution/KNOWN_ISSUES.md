@@ -4,19 +4,18 @@ Only add verified issues or limitations. Do not use this file as a generic TODO 
 
 ## Open issues
 
-### KI-001 — Repository runtime versions are not verified
-
-**Status:** Open  
-**Severity:** Low  
-**Discovered in:** Documentation scaffold
-
-The target stack assumes Node.js and pnpm, but the actual versions have not yet been verified in the repository.
-
-**Resolution target:** FOUND-01
+None.
 
 ## Closed issues
 
-None.
+### KI-001 — Repository runtime versions are not verified
+
+**Status:** Closed  
+**Severity:** Low  
+**Discovered in:** Documentation scaffold  
+**Closed in:** FOUND-01
+
+Node.js v24.15.0 and pnpm 11.15.1 verified. All workspace commands pass.
 
 ## Issue template
 

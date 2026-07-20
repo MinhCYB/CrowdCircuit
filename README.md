@@ -1,30 +1,88 @@
-# CrowdCircuit Documentation Workspace
+# CrowdCircuit
 
-Bộ tài liệu này dùng để nhiều coding agent làm việc tuần tự trên cùng repository mà không mất ngữ cảnh.
+> **Turn live viewers into players.**
 
-## Source of truth
+CrowdCircuit by MS24 Labs is a local-first platform that connects TikTok LIVE events to interactive games. It receives gifts, comments, follows, and other viewer actions, maps them to game actions through a configurable engine, and provides voice reactions via TTS.
 
-1. `docs/crowdcircuit-system-design-v0.1.1.md`
-2. `docs/crowdcircuit-studio-ui-ux-spec-v0.1.md`
-3. `docs/execution/ROADMAP.md`
-4. `docs/execution/PROJECT_STATUS.md`
-5. `docs/execution/DECISIONS.md`
-6. `docs/execution/KNOWN_ISSUES.md`
-7. `docs/execution/CURRENT_TASK.md`
-8. Handoff gần nhất trong `docs/handoffs/`
+## Architecture
 
-## Quy tắc vận hành
+- **Local-first modular monolith** — single Node.js process, no external message broker
+- **Fastify** backend on port `3100`
+- **React + Vite** dashboard
+- **Socket.IO** for realtime game and voice channels
+- **SQLite** for configuration persistence
+- **Zod** for runtime validation
+- **Pino** for structured logging
 
-- Mỗi agent chỉ xử lý một task ID.
-- Không triển khai ngoài phạm vi `CURRENT_TASK.md`.
-- Trước khi code, agent phải kiểm tra repo thật bằng `git status`, `pnpm test`, `pnpm typecheck`.
-- Trước khi kết thúc, agent phải cập nhật `PROJECT_STATUS.md` và tạo handoff mới.
-- Không đánh dấu `DONE` nếu acceptance criteria hoặc test chưa đạt.
-- Mọi thay đổi contract phải được ghi vào `DECISIONS.md` và cập nhật tài liệu liên quan.
-- `PROJECT_STATUS.md` phải phản ánh trạng thái thật của repo, không phản ánh dự đoán.
+## Getting Started
 
-## Task đầu tiên
+### Prerequisites
 
-`FOUND-01 — Monorepo Scaffold`
+- Node.js >= 20
+- pnpm >= 9
 
-Xem `docs/execution/CURRENT_TASK.md`.
+### Setup
+
+```bash
+pnpm install
+cp .env.example .env
+```
+
+### Development
+
+```bash
+pnpm dev
+```
+
+This starts the backend server and dashboard dev server concurrently.
+
+### Commands
+
+| Command          | Description                          |
+| ---------------- | ------------------------------------ |
+| `pnpm dev`       | Start dev servers                    |
+| `pnpm lint`      | Run ESLint                           |
+| `pnpm typecheck` | Run TypeScript type checking         |
+| `pnpm test`      | Run tests via Vitest                 |
+| `pnpm build`     | Build all packages                   |
+
+### Health Check
+
+```bash
+curl http://127.0.0.1:3100/api/v1/health
+```
+
+## Repository Structure
+
+```
+crowdcircuit/
+├── apps/
+│   ├── server/          # Fastify backend
+│   ├── dashboard/       # React + Vite admin UI
+│   ├── voice-output/    # Browser source for TTS playback
+│   └── demo-game/       # Placeholder demo game
+├── packages/
+│   ├── contracts/       # Shared event/action schemas
+│   ├── connector-core/  # LiveConnector interface
+│   ├── connector-mock/  # Mock connector for testing
+│   ├── event-core/      # Event bus and normalizer
+│   ├── mapping-engine/  # Event-to-action rules engine
+│   ├── voice-engine/    # Voice reaction logic
+│   ├── tts-core/        # TTS provider interface
+│   ├── game-sdk-js/     # JavaScript Game SDK
+│   └── shared/          # Shared utilities
+├── games/
+│   └── zombie-survival/ # Demo Phaser game
+├── data/                # SQLite database (gitignored)
+└── docs/                # Project documentation
+```
+
+## Documentation
+
+- [System Design v0.1.1](docs/crowdcircuit-system-design-v0.1.1.md)
+- [UI/UX Specification v0.1](docs/crowdcircuit-studio-ui-ux-spec-v0.1.md)
+- [Execution Roadmap](docs/execution/ROADMAP.md)
+
+## License
+
+Proprietary — MS24 Labs

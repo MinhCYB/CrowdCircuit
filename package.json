@@ -1,0 +1,26 @@
+{
+  "name": "crowdcircuit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CrowdCircuit by MS24 Labs — Turn live viewers into players.",
+  "scripts": {
+    "dev": "pnpm --filter @crowdcircuit/server --filter @crowdcircuit/dashboard --parallel dev",
+    "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "build": "tsc -b && pnpm -r --filter=!@crowdcircuit/dashboard run build && pnpm --filter @crowdcircuit/dashboard build"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@11.15.1",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.1",
+    "eslint": "^10.7.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.64.0",
+    "vitest": "^4.1.10"
+  }
+}

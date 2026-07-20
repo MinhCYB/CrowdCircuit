@@ -1,0 +1,6 @@
+{
+  "name": "@crowdcircuit/voice-output",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser source for TTS audio playback in OBS/LIVE Studio. Placeholder — implementation in VOICE-04."
+}
