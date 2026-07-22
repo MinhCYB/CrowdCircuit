@@ -49,7 +49,7 @@ Add tests that verify:
 - Canonical fixtures parse.
 - Invalid near-miss fixtures fail.
 - Package-root exports expose all intended schemas and inferred types.
-- A consuming workspace package can import the public API if a compile test is needed.
+- A consuming workspace package (e.g., `@crowdcircuit/server` or a consumer package) explicitly imports `@crowdcircuit/contracts` via package name to prove TypeScript/package exports resolution works across workspace boundaries (relative imports inside `@crowdcircuit/contracts` do not count as proof).
 - No duplicate domain-contract definitions exist outside `@crowdcircuit/contracts`.
 - Package build output is usable.
 
@@ -76,6 +76,7 @@ Review consistency of:
 
 - [ ] Canonical fixtures cover all three contract families.
 - [ ] Public root exports are tested.
+- [ ] Explicit cross-workspace consumer package import test passes via package name resolution.
 - [ ] Invalid near-miss fixtures are tested.
 - [ ] Full repository baseline passes.
 - [ ] No duplicated contract source remains.

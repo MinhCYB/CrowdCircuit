@@ -3,7 +3,7 @@ import {
   SPEC_VERSION,
   SampleContractSchema,
   type SampleContract,
-} from "./index.js";
+} from "../src/index.js";
 
 describe("@crowdcircuit/contracts foundation", () => {
   it("exports the correct SPEC_VERSION constant", () => {
