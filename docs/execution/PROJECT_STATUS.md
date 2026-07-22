@@ -1,12 +1,12 @@
 # Project Status
 
-**Last updated:** 2026-07-20  
+**Last updated:** 2026-07-22  
 **Current phase:** Phase A — Foundation  
-**Last completed task:** FOUND-01 — Monorepo Scaffold  
-**Current task:** FOUND-02A — Contracts Package Foundation  
-**Repository state:** Monorepo scaffold established; shared contracts not implemented  
-**Main branch status:** According to FOUND-01 handoff, scaffold changes were not yet committed; next agent must verify  
-**Last known commit:** `019f453 docs: initialize CrowdCircuit project`
+**Last completed task:** FOUND-02A — Contracts Package Foundation  
+**Current task:** FOUND-02B — Common Primitives and LiveEventEnvelope Base  
+**Repository state:** Contracts package scaffolded with Zod, submodules, and sample contract test; full domain schemas pending  
+**Main branch status:** Uncommitted working tree on `main` branch  
+**Last known commit:** `33d1e8d docs: refactor workflow into micro-tasks`
 
 ## Current baseline
 
@@ -19,22 +19,24 @@
 - Database: SQLite (not yet implemented)
 - Frontend: React 19 + Vite 6
 - Realtime: Socket.IO (not yet implemented)
-- Validation: Zod (not yet added)
+- Validation: Zod 3.24.2
 - Logging: Pino (via Fastify built-in)
 - Tests: Vitest 4.1.10
 - Demo game: Phaser (placeholder only)
 
 ## Last verified commands
 
-FOUND-01 reported the following results on 2026-07-20:
+FOUND-02A reported the following results on 2026-07-22:
 
 ```bash
-pnpm install     # ✅ 15 workspace projects resolved
+pnpm --filter @crowdcircuit/contracts lint       # ✅ Clean
+pnpm --filter @crowdcircuit/contracts typecheck  # ✅ Clean
+pnpm --filter @crowdcircuit/contracts test       # ✅ 3 tests passed (1 file)
+pnpm --filter @crowdcircuit/contracts build      # ✅ Clean
 pnpm lint        # ✅ No errors
 pnpm typecheck   # ✅ No errors
-pnpm test        # ✅ 2 tests passed (1 test file)
+pnpm test        # ✅ 5 tests passed (2 test files)
 pnpm build       # ✅ All packages + dashboard built
-pnpm dev         # ✅ Server + dashboard start concurrently
 ```
 
 The next agent must rerun the required baseline commands before coding. Do not assume the working tree or commit state is unchanged.
@@ -45,7 +47,7 @@ The next agent must rerun the required baseline commands before coding. Do not a
 - [x] Studio UI/UX Specification v0.1
 - [x] Execution documentation scaffold
 - [x] FOUND-01 — Monorepo Scaffold
-- [ ] FOUND-02A — Contracts Package Foundation
+- [x] FOUND-02A — Contracts Package Foundation
 - [ ] FOUND-02B — Common Primitives and LiveEventEnvelope Base
 - [ ] FOUND-02C — LIVE Event Payload Schemas
 - [ ] FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas
@@ -56,22 +58,20 @@ The next agent must rerun the required baseline commands before coding. Do not a
 
 ## Test status
 
-Last known verified state from FOUND-01:
+Verified state from FOUND-02A on 2026-07-22:
 
-- Unit tests: 2 passing (health endpoint)
-- Test files: 1
+- Unit tests: 5 passing (3 sample contract tests, 2 health endpoint tests)
+- Test files: 2 (`packages/contracts/src/index.test.ts`, `apps/server/src/index.test.ts`)
 - Integration tests: not started
 - End-to-end tests: not started
 - Lint: configured, passing
 - Typecheck: configured, passing
 - Build: configured, passing
 
-Exact current values must be refreshed when FOUND-02A finishes.
-
 ## Current limitations
 
+- `@crowdcircuit/contracts` has package foundation and Zod set up, but no production domain schemas yet.
 - Placeholder packages export only constants or identity values.
-- `@crowdcircuit/contracts` does not yet contain production schemas.
 - Dashboard is a minimal React component with no real UI.
 - `voice-output` and `demo-game` are placeholders.
 - SQLite, Socket.IO and authentication remain deferred by design.
@@ -82,11 +82,11 @@ None known.
 
 ## Next recommended task
 
-`FOUND-02A — Contracts Package Foundation`
+`FOUND-02B — Common Primitives and LiveEventEnvelope Base`
 
 Task brief:
 
-`docs/tasks/FOUND-02A.md`
+`docs/tasks/FOUND-02B.md`
 
 ## Update rules
 

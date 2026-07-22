@@ -4,8 +4,9 @@ export default defineConfig({
   test: {
     globals: true,
     include: [
+      "src/**/*.test.ts",
       "packages/*/src/**/*.test.ts",
-      "apps/server/src/**/*.test.ts",
+      "apps/*/src/**/*.test.ts",
     ],
   },
 });

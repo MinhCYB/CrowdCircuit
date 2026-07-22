@@ -18,7 +18,7 @@
 | ID | Task | Status | Depends on |
 |---|---|---|---|
 | FOUND-01 | Monorepo scaffold | DONE | — |
-| FOUND-02A | Contracts package foundation | READY | FOUND-01 |
+| FOUND-02A | Contracts package foundation | DONE | FOUND-01 |
 | FOUND-02B | Common primitives and LiveEventEnvelope base | TODO | FOUND-02A |
 | FOUND-02C | LIVE event payload schemas | TODO | FOUND-02B |
 | FOUND-02D | GameActionEnvelope and action lifecycle schemas | TODO | FOUND-02B |
@@ -201,6 +201,6 @@ Required:
 
 ## Current execution pointer
 
-**Current task:** `FOUND-02A — Contracts Package Foundation`
+**Current task:** `FOUND-02B — Common Primitives and LiveEventEnvelope Base`
 
-**Detailed brief:** `docs/tasks/FOUND-02A.md`
+**Detailed brief:** `docs/tasks/FOUND-02B.md`
