@@ -3,8 +3,13 @@ import { z } from "zod";
 /**
  * Strict empty payload schema for lifecycle and social events where extra payload fields are omitted.
  * Context is carried by envelope room and user fields.
+ * Runtime parsing accepts {} and strictly rejects any own property.
+ * Inferred TypeScript type is Record<string, never> to forbid property assignment at compile-time.
  */
-export const EmptyPayloadSchema = z.object({}).strict();
+export const EmptyPayloadSchema = z
+  .object({})
+  .strict() as unknown as z.ZodType<Record<string, never>, z.ZodTypeDef, unknown>;
+
 export type EmptyPayload = z.infer<typeof EmptyPayloadSchema>;
 
 /**

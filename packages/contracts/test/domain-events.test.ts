@@ -3,6 +3,7 @@ import {
   ChatCommentEventSchema,
   ChatCommentPayloadSchema,
   EngagementLikeEventSchema,
+  EmptyPayloadSchema,
   GiftSentEventSchema,
   GiftSentPayloadSchema,
   LikePayloadSchema,
@@ -42,6 +43,20 @@ describe("FOUND-02C LIVE Event Contracts", () => {
       isReplay: false,
       rawStored: false,
     },
+  };
+
+  const validGiftPayload = {
+    gift: {
+      id: "rose",
+      name: "Rose",
+      imageUrl: "https://example.com/rose.png",
+      diamondValue: 1,
+      streakable: true,
+    },
+    quantity: 1,
+    totalQuantity: 5,
+    streak: { id: "str_101", status: "update" as const },
+    estimatedDiamondTotal: 5,
   };
 
   describe("LiveEventTypeSchema", () => {
@@ -120,19 +135,7 @@ describe("FOUND-02C LIVE Event Contracts", () => {
           data: {
             ...baseEnvelopeFields,
             eventType: "gift.sent" as const,
-            payload: {
-              gift: {
-                id: "rose",
-                name: "Rose",
-                imageUrl: "https://example.com/rose.png",
-                diamondValue: 1,
-                streakable: true,
-              },
-              quantity: 1,
-              totalQuantity: 5,
-              streak: { id: "str_101", status: "update" as const },
-              estimatedDiamondTotal: 5,
-            },
+            payload: validGiftPayload,
           },
         },
         {
@@ -142,11 +145,9 @@ describe("FOUND-02C LIVE Event Contracts", () => {
       ];
 
       for (const { schema, data } of sampleEvents) {
-        // Specialized schema parse
         const parsedSpecialized = schema.parse(data);
         expect(parsedSpecialized.eventType).toBe(data.eventType);
 
-        // Union parse
         const parsedUnion = LiveEventEnvelopeSchema.parse(data);
         expect(parsedUnion.eventType).toBe(data.eventType);
       }
@@ -181,17 +182,8 @@ describe("FOUND-02C LIVE Event Contracts", () => {
       const statuses = ["single", "start", "update", "end"] as const;
       for (const status of statuses) {
         const payload = {
-          gift: {
-            id: "rose",
-            name: "Rose",
-            imageUrl: "https://example.com/rose.png",
-            diamondValue: 1,
-            streakable: true,
-          },
-          quantity: 2,
-          totalQuantity: 10,
+          ...validGiftPayload,
           streak: { id: "str_1", status },
-          estimatedDiamondTotal: 10,
         };
         const parsed = GiftSentPayloadSchema.parse(payload);
         expect(parsed.streak.status).toBe(status);
@@ -226,83 +218,218 @@ describe("FOUND-02C LIVE Event Contracts", () => {
       const mismatchedEvent = {
         ...baseEnvelopeFields,
         eventType: "chat.comment",
-        payload: {
-          gift: {
-            id: "rose",
-            name: "Rose",
-            imageUrl: "https://example.com/rose.png",
-            diamondValue: 1,
-            streakable: true,
-          },
-          quantity: 1,
-          totalQuantity: 1,
-          streak: { id: null, status: "single" },
-          estimatedDiamondTotal: 1,
-        },
+        payload: validGiftPayload,
       };
 
       expect(() => ChatCommentEventSchema.parse(mismatchedEvent)).toThrow();
       expect(() => LiveEventEnvelopeSchema.parse(mismatchedEvent)).toThrow();
     });
 
-    it("rejects extra connector-specific fields in strict payloads", () => {
-      const giftWithExtra = {
-        gift: {
-          id: "rose",
-          name: "Rose",
-          imageUrl: "https://example.com/rose.png",
-          diamondValue: 1,
-          streakable: true,
-          rawTikTokGiftObject: { id: 999 }, // extra field
-        },
-        quantity: 1,
-        totalQuantity: 1,
-        streak: { id: null, status: "single" },
-        estimatedDiamondTotal: 1,
-      };
-      expect(() => GiftSentPayloadSchema.parse(giftWithExtra)).toThrow();
+    describe("Gift totalQuantity validation", () => {
+      const invalidTotalQuantities = [
+        { val: 0, label: "zero totalQuantity" },
+        { val: -1, label: "negative integer totalQuantity" },
+        { val: 1.5, label: "positive fractional totalQuantity" },
+        { val: NaN, label: "NaN totalQuantity" },
+        { val: Infinity, label: "Infinity totalQuantity" },
+        { val: -Infinity, label: "-Infinity totalQuantity" },
+      ];
 
-      const commentWithExtra = {
-        text: "hi",
-        textNormalized: "hi",
-        mentions: [],
-        rawMessageId: "msg_999", // extra field
-      };
-      expect(() => ChatCommentPayloadSchema.parse(commentWithExtra)).toThrow();
+      for (const { val, label } of invalidTotalQuantities) {
+        it(`rejects ${label}`, () => {
+          const payload = { ...validGiftPayload, totalQuantity: val };
+          expect(() => GiftSentPayloadSchema.parse(payload)).toThrow();
+        });
+      }
+    });
 
-      const emptyWithExtra = {
-        rawServerToken: "secret", // extra field in empty payload
-      };
-      expect(() => LiveConnectedEventSchema.parse({ ...baseEnvelopeFields, eventType: "live.connected", payload: emptyWithExtra })).toThrow();
+    describe("Strict unknown-key rejection", () => {
+      it("rejects extra top-level property on GiftSentPayload", () => {
+        const giftWithExtra = {
+          ...validGiftPayload,
+          extraTopLevelField: "unauthorized",
+        };
+        expect(() => GiftSentPayloadSchema.parse(giftWithExtra)).toThrow();
+      });
+
+      it("rejects extra property inside gift object", () => {
+        const giftWithNestedExtra = {
+          ...validGiftPayload,
+          gift: {
+            ...validGiftPayload.gift,
+            rawTikTokGiftObject: { id: 999 },
+          },
+        };
+        expect(() => GiftSentPayloadSchema.parse(giftWithNestedExtra)).toThrow();
+      });
+
+      it("rejects extra property inside streak object", () => {
+        const giftWithStreakExtra = {
+          ...validGiftPayload,
+          streak: {
+            ...validGiftPayload.streak,
+            extraStreakMeta: "invalid",
+          },
+        };
+        expect(() => GiftSentPayloadSchema.parse(giftWithStreakExtra)).toThrow();
+      });
+
+      it("rejects extra property on LikePayload", () => {
+        const likeWithExtra = {
+          delta: 10,
+          total: 100,
+          milestone: null,
+          extraLikeKey: "invalid",
+        };
+        expect(() => LikePayloadSchema.parse(likeWithExtra)).toThrow();
+      });
+
+      it("rejects extra property on EmptyPayload directly", () => {
+        expect(() => EmptyPayloadSchema.parse({ inventedField: "bad" })).toThrow();
+      });
+
+      it("rejects extra payload property through specialized empty event schema", () => {
+        const event = {
+          ...baseEnvelopeFields,
+          eventType: "live.connected" as const,
+          payload: { extraToken: "forbidden" },
+        };
+        expect(() => LiveConnectedEventSchema.parse(event)).toThrow();
+      });
+
+      it("rejects extra payload property through discriminated union for empty event", () => {
+        const event = {
+          ...baseEnvelopeFields,
+          eventType: "social.follow" as const,
+          payload: { extraFollowData: 123 },
+        };
+        expect(() => LiveEventEnvelopeSchema.parse(event)).toThrow();
+      });
+    });
+
+    describe("Required nullable properties validation (omission & undefined failure)", () => {
+      it("rejects omitted or undefined gift.imageUrl", () => {
+        const omitted = {
+          ...validGiftPayload,
+          gift: { id: "rose", name: "Rose", diamondValue: 1, streakable: true },
+        };
+        expect(() => GiftSentPayloadSchema.parse(omitted)).toThrow();
+
+        const withUndefined = {
+          ...validGiftPayload,
+          gift: { ...validGiftPayload.gift, imageUrl: undefined },
+        };
+        expect(() => GiftSentPayloadSchema.parse(withUndefined)).toThrow();
+      });
+
+      it("rejects omitted or undefined gift.diamondValue", () => {
+        const omitted = {
+          ...validGiftPayload,
+          gift: { id: "rose", name: "Rose", imageUrl: null, streakable: true },
+        };
+        expect(() => GiftSentPayloadSchema.parse(omitted)).toThrow();
+
+        const withUndefined = {
+          ...validGiftPayload,
+          gift: { ...validGiftPayload.gift, diamondValue: undefined },
+        };
+        expect(() => GiftSentPayloadSchema.parse(withUndefined)).toThrow();
+      });
+
+      it("rejects omitted or undefined streak.id", () => {
+        const omitted = {
+          ...validGiftPayload,
+          streak: { status: "single" as const },
+        };
+        expect(() => GiftSentPayloadSchema.parse(omitted)).toThrow();
+
+        const withUndefined = {
+          ...validGiftPayload,
+          streak: { id: undefined, status: "single" as const },
+        };
+        expect(() => GiftSentPayloadSchema.parse(withUndefined)).toThrow();
+      });
+
+      it("rejects omitted or undefined estimatedDiamondTotal", () => {
+        const { estimatedDiamondTotal: _, ...omitted } = validGiftPayload;
+        expect(() => GiftSentPayloadSchema.parse(omitted)).toThrow();
+
+        const withUndefined = { ...validGiftPayload, estimatedDiamondTotal: undefined };
+        expect(() => GiftSentPayloadSchema.parse(withUndefined)).toThrow();
+      });
+
+      it("rejects omitted or undefined LikePayload.total", () => {
+        const omitted = { delta: 10, milestone: null };
+        expect(() => LikePayloadSchema.parse(omitted)).toThrow();
+
+        const withUndefined = { delta: 10, total: undefined, milestone: null };
+        expect(() => LikePayloadSchema.parse(withUndefined)).toThrow();
+      });
+
+      it("rejects omitted or undefined LikePayload.milestone", () => {
+        const omitted = { delta: 10, total: 100 };
+        expect(() => LikePayloadSchema.parse(omitted)).toThrow();
+
+        const withUndefined = { delta: 10, total: 100, milestone: undefined };
+        expect(() => LikePayloadSchema.parse(withUndefined)).toThrow();
+      });
+    });
+
+    describe("Comment mentions array element validation", () => {
+      it("rejects number element in mentions array", () => {
+        const payload = { text: "hi", textNormalized: "hi", mentions: [123] };
+        expect(() => ChatCommentPayloadSchema.parse(payload)).toThrow();
+      });
+
+      it("rejects object element in mentions array", () => {
+        const payload = { text: "hi", textNormalized: "hi", mentions: [{ name: "user" }] };
+        expect(() => ChatCommentPayloadSchema.parse(payload)).toThrow();
+      });
+
+      it("rejects null or boolean elements in mentions array", () => {
+        expect(() => ChatCommentPayloadSchema.parse({ text: "hi", textNormalized: "hi", mentions: [null] })).toThrow();
+        expect(() => ChatCommentPayloadSchema.parse({ text: "hi", textNormalized: "hi", mentions: [true] })).toThrow();
+      });
+    });
+
+    describe("Like numeric safety (NaN, Infinity, -Infinity)", () => {
+      it("rejects NaN, Infinity, and -Infinity for delta", () => {
+        expect(() => LikePayloadSchema.parse({ delta: NaN, total: null, milestone: null })).toThrow();
+        expect(() => LikePayloadSchema.parse({ delta: Infinity, total: null, milestone: null })).toThrow();
+        expect(() => LikePayloadSchema.parse({ delta: -Infinity, total: null, milestone: null })).toThrow();
+      });
+
+      it("rejects NaN, Infinity, and -Infinity for non-null total", () => {
+        expect(() => LikePayloadSchema.parse({ delta: 1, total: NaN, milestone: null })).toThrow();
+        expect(() => LikePayloadSchema.parse({ delta: 1, total: Infinity, milestone: null })).toThrow();
+        expect(() => LikePayloadSchema.parse({ delta: 1, total: -Infinity, milestone: null })).toThrow();
+      });
+
+      it("rejects NaN, Infinity, and -Infinity for non-null milestone", () => {
+        expect(() => LikePayloadSchema.parse({ delta: 1, total: null, milestone: NaN })).toThrow();
+        expect(() => LikePayloadSchema.parse({ delta: 1, total: null, milestone: Infinity })).toThrow();
+        expect(() => LikePayloadSchema.parse({ delta: 1, total: null, milestone: -Infinity })).toThrow();
+      });
     });
 
     it("rejects gift with empty ID or empty name", () => {
       const invalidGiftId = {
-        gift: { id: "", name: "Rose", imageUrl: null, diamondValue: 1, streakable: true },
-        quantity: 1,
-        totalQuantity: 1,
-        streak: { id: null, status: "single" },
-        estimatedDiamondTotal: 1,
+        ...validGiftPayload,
+        gift: { ...validGiftPayload.gift, id: "" },
       };
       expect(() => GiftSentPayloadSchema.parse(invalidGiftId)).toThrow();
 
       const invalidGiftName = {
-        gift: { id: "rose", name: "", imageUrl: null, diamondValue: 1, streakable: true },
-        quantity: 1,
-        totalQuantity: 1,
-        streak: { id: null, status: "single" },
-        estimatedDiamondTotal: 1,
+        ...validGiftPayload,
+        gift: { ...validGiftPayload.gift, name: "" },
       };
       expect(() => GiftSentPayloadSchema.parse(invalidGiftName)).toThrow();
     });
 
     it("rejects gift with invalid non-null image URL", () => {
       const invalidUrl = {
-        gift: { id: "rose", name: "Rose", imageUrl: "not-a-url", diamondValue: 1, streakable: true },
-        quantity: 1,
-        totalQuantity: 1,
-        streak: { id: null, status: "single" },
-        estimatedDiamondTotal: 1,
+        ...validGiftPayload,
+        gift: { ...validGiftPayload.gift, imageUrl: "not-a-url" },
       };
       expect(() => GiftSentPayloadSchema.parse(invalidUrl)).toThrow();
     });
@@ -310,24 +437,15 @@ describe("FOUND-02C LIVE Event Contracts", () => {
     it("rejects non-positive, fractional, NaN, or infinite gift quantities", () => {
       const invalidQuantities = [0, -1, 1.5, NaN, Infinity];
       for (const qty of invalidQuantities) {
-        const payload = {
-          gift: { id: "rose", name: "Rose", imageUrl: null, diamondValue: 1, streakable: true },
-          quantity: qty,
-          totalQuantity: 1,
-          streak: { id: null, status: "single" },
-          estimatedDiamondTotal: 1,
-        };
+        const payload = { ...validGiftPayload, quantity: qty };
         expect(() => GiftSentPayloadSchema.parse(payload)).toThrow();
       }
     });
 
     it("rejects invalid streak status", () => {
       const payload = {
-        gift: { id: "rose", name: "Rose", imageUrl: null, diamondValue: 1, streakable: true },
-        quantity: 1,
-        totalQuantity: 1,
+        ...validGiftPayload,
         streak: { id: null, status: "invalid_status" },
-        estimatedDiamondTotal: 1,
       };
       expect(() => GiftSentPayloadSchema.parse(payload)).toThrow();
     });
@@ -335,14 +453,6 @@ describe("FOUND-02C LIVE Event Contracts", () => {
     it("rejects empty comment text or textNormalized", () => {
       expect(() => ChatCommentPayloadSchema.parse({ text: "", textNormalized: "hi", mentions: [] })).toThrow();
       expect(() => ChatCommentPayloadSchema.parse({ text: "hi", textNormalized: "", mentions: [] })).toThrow();
-    });
-
-    it("rejects non-positive, fractional, NaN, or negative like numbers", () => {
-      expect(() => LikePayloadSchema.parse({ delta: 0, total: null, milestone: null })).toThrow();
-      expect(() => LikePayloadSchema.parse({ delta: -5, total: null, milestone: null })).toThrow();
-      expect(() => LikePayloadSchema.parse({ delta: 1.5, total: null, milestone: null })).toThrow();
-      expect(() => LikePayloadSchema.parse({ delta: 10, total: -1, milestone: null })).toThrow();
-      expect(() => LikePayloadSchema.parse({ delta: 10, total: null, milestone: 1.5 })).toThrow();
     });
   });
 });
