@@ -80,6 +80,49 @@ Use recursive `JsonValueSchema` as the base payload schema with a required-param
 
 - `packages/contracts`
 
+### ADR-010 — Public Voice Output callback wire literals
+
+**Date:** 2026-07-23
+**Status:** Accepted
+**Task:** FOUND-02E
+
+### Context
+
+The System Design uses two similar naming families:
+
+- Section 11.14 describes callbacks sent by the external Voice Output client as `playback.started` and `playback.finished`.
+- Internal application event/handler examples use names such as `voice.playback.started` and `voice.playback.finished`.
+
+FOUND-02E must define the public Voice Output wire protocol without conflating it with potential internal application events.
+
+### Decision
+
+The public Voice Output callback wire literals are:
+
+- `playback.started`
+- `playback.finished`
+- `playback.interrupted`
+- `playback.failed`
+
+The interrupted and failed variants extend the same external callback family consistently.
+
+The `voice.playback.*` family is reserved for potential internal application events or handler names and must not be used as the public Voice Output callback protocol.
+
+### Alternatives considered
+
+- Use `voice.playback.*` for both public callbacks and internal events: Rejected because it conflates the external Voice Output protocol with internal application event naming.
+- Support both literal families publicly: Rejected because aliases would create an ambiguous wire contract and unnecessary compatibility surface.
+
+### Consequences
+
+- Public Voice Output messages follow the external playback terminology in System Design section 11.14.
+- Internal event naming remains independently evolvable.
+- Runtime schemas, public types, declaration tests, and handoff documentation must expose only the `playback.*` callback family.
+
+### Affected packages
+
+- `packages/contracts`
+
 ## New decision template
 
 

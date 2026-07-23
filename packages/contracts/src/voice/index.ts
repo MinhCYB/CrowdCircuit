@@ -1,5 +1,8 @@
 /**
- * Voice intent contracts foundation module.
- * Domain schemas will be introduced in FOUND-02E.
+ * Voice intent contracts module.
+ * Versioned schemas and inferred types for VoiceIntent, VoiceInterruptPolicy,
+ * voice.play message, and playback callback messages.
  */
-export {};
+
+export * from "./intent.js";
+export * from "./protocol.js";

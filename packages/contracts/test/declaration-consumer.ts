@@ -30,6 +30,17 @@ import {
   GameActionResultMessageSchema,
   GameActionResultSchema,
   GameActionErrorSchema,
+  VoiceIntentSchema,
+  VoiceIntentKindSchema,
+  VoiceInterruptPolicySchema,
+  VoicePlayMessageSchema,
+  VoicePlaybackStartedMessageSchema,
+  VoicePlaybackFinishedMessageSchema,
+  VoicePlaybackInterruptedMessageSchema,
+  VoicePlaybackFailedMessageSchema,
+  VoicePlaybackCallbackMessageSchema,
+  VoicePlaybackMessageSchema,
+  VoicePlaybackErrorSchema,
   type BaseLiveEventEnvelope,
   type LiveEventEnvelope,
   type LiveEvent,
@@ -58,6 +69,18 @@ import {
   type GameActionResultMessage,
   type GameActionResult,
   type GameActionError,
+  type VoiceIntent,
+  type VoiceIntentKind,
+  type VoiceIntentVariables,
+  type VoiceInterruptPolicy,
+  type VoicePlayMessage,
+  type VoicePlaybackStartedMessage,
+  type VoicePlaybackFinishedMessage,
+  type VoicePlaybackInterruptedMessage,
+  type VoicePlaybackFailedMessage,
+  type VoicePlaybackCallbackMessage,
+  type VoicePlaybackMessage,
+  type VoicePlaybackError,
 } from "@crowdcircuit/contracts";
 import { z } from "zod";
 
@@ -639,19 +662,14 @@ const baseActionEnvSample: BaseGameActionEnvelope = validActionEnvelope;
 // TASK A: Public generic constraints reject non-JSON types at compile time
 // @ts-expect-error - Date does not satisfy JsonValue constraint
 export type _InvalidDateEnvelope = GameActionEnvelope<Date>;
-
 // @ts-expect-error - Function does not satisfy JsonValue constraint
 export type _InvalidFunctionEnvelope = GameActionEnvelope<() => void>;
-
 // @ts-expect-error - Map does not satisfy JsonValue constraint
 export type _InvalidMapEnvelope = GameActionEnvelope<Map<string, unknown>>;
-
 // @ts-expect-error - Set does not satisfy JsonValue constraint
 export type _InvalidSetEnvelope = GameActionEnvelope<Set<string>>;
-
 // @ts-expect-error - bigint does not satisfy JsonValue constraint
 export type _InvalidBigIntEnvelope = GameActionEnvelope<bigint>;
-
 // @ts-expect-error - symbol does not satisfy JsonValue constraint
 export type _InvalidSymbolEnvelope = GameActionEnvelope<symbol>;
 
@@ -659,10 +677,8 @@ class CustomClassArg {}
 // @ts-expect-error - Class instance does not satisfy JsonValue constraint
 export type _InvalidClassEnvelope = GameActionEnvelope<CustomClassArg>;
 
-// Delivery message generic constraints reject non-JSON types
 // @ts-expect-error - Date does not satisfy JsonValue constraint
 export type _InvalidDateDelivery = GameActionDeliveryMessage<Date>;
-
 // @ts-expect-error - Function does not satisfy JsonValue constraint
 export type _InvalidFunctionDelivery = GameActionDeliveryMessage<() => void>;
 
@@ -999,12 +1015,237 @@ const validResInput: ResultUnionInput = {
 
 const validResOutput: ResultUnionOutput = validResInput;
 
-// Verify public alias type usages
 type _ActorAlias = GameActionActor;
 type _TriggerAlias = GameActionTrigger;
 type _ActionMsgAlias = GameActionMessage;
 type _ResultAlias = GameActionResult;
 type _ErrorAlias = GameActionError;
+
+// ============================================================================
+// FOUND-02E Voice Contracts Declaration Verification
+// ============================================================================
+
+// 24. VoiceIntent kinds and interrupt policies exact literals
+const validVoiceKinds: VoiceIntentKind[] = [
+  "thank_gift",
+  "welcome_follow",
+  "game_commentary",
+  "system",
+];
+
+// @ts-expect-error - Invalid voice intent kind rejected at compile time
+const invalidVoiceKind: VoiceIntentKind = "random_chat";
+
+const validInterruptPolicies: VoiceInterruptPolicy[] = [
+  "never_interrupt",
+  "interrupt_lower_priority",
+  "interrupt_any",
+];
+
+// @ts-expect-error - Invalid interrupt policy rejected at compile time
+const invalidInterruptPolicy: VoiceInterruptPolicy = "always";
+
+// 25. VoiceIntent type checks and required nullables
+const validVoiceIntent: VoiceIntent = {
+  specVersion: "0.1",
+  intentId: "intent_1",
+  eventId: "evt_1",
+  kind: "thank_gift",
+  priority: 80,
+  templateGroup: "gift.default",
+  variables: { name: "Player 1", count: 5 },
+  voiceProfileId: "profile_1",
+  dedupeKey: "dedupe_1",
+  expiresAt: "2026-07-23T05:00:00.000Z",
+};
+
+const validNullablesVoiceIntent: VoiceIntent = {
+  specVersion: "0.1",
+  intentId: "intent_2",
+  eventId: null,
+  kind: "system",
+  priority: 100,
+  templateGroup: "system.alert",
+  variables: {},
+  voiceProfileId: "profile_1",
+  dedupeKey: null,
+  expiresAt: "2026-07-23T05:00:00.000Z",
+};
+
+// @ts-expect-error - Required nullable eventId cannot be omitted
+const voiceOmittedEventId: VoiceIntent = {
+  specVersion: "0.1",
+  intentId: "intent_1",
+  kind: "thank_gift",
+  priority: 80,
+  templateGroup: "gift.default",
+  variables: {},
+  voiceProfileId: "p1",
+  dedupeKey: null,
+  expiresAt: "2026-07-23T05:00:00.000Z",
+};
+
+const voiceUndefinedEventId: VoiceIntent = {
+  specVersion: "0.1",
+  intentId: "intent_1",
+  // @ts-expect-error - undefined is not assignable to string | null
+  eventId: undefined,
+  kind: "thank_gift",
+  priority: 80,
+  templateGroup: "gift.default",
+  variables: {},
+  voiceProfileId: "p1",
+  dedupeKey: null,
+  expiresAt: "2026-07-23T05:00:00.000Z",
+};
+
+// @ts-expect-error - Required nullable dedupeKey cannot be omitted
+const voiceOmittedDedupeKey: VoiceIntent = {
+  specVersion: "0.1",
+  intentId: "intent_1",
+  eventId: null,
+  kind: "thank_gift",
+  priority: 80,
+  templateGroup: "gift.default",
+  variables: {},
+  voiceProfileId: "p1",
+  expiresAt: "2026-07-23T05:00:00.000Z",
+};
+
+const voiceUndefinedDedupeKey: VoiceIntent = {
+  specVersion: "0.1",
+  intentId: "intent_1",
+  eventId: null,
+  kind: "thank_gift",
+  priority: 80,
+  templateGroup: "gift.default",
+  variables: {},
+  voiceProfileId: "p1",
+  // @ts-expect-error - undefined is not assignable to string | null
+  dedupeKey: undefined,
+  expiresAt: "2026-07-23T05:00:00.000Z",
+};
+
+// 26. VoiceIntent variables type checks (string | number values only)
+const validVariables: VoiceIntentVariables = {
+  name: "Player 1",
+  count: 10,
+  ratio: 1.5,
+};
+
+const invalidVariablesBoolean: VoiceIntentVariables = {
+  name: "Player 1",
+  // @ts-expect-error - boolean is not assignable to string | number
+  active: true,
+};
+
+const invalidVariablesNested: VoiceIntentVariables = {
+  name: "Player 1",
+  // @ts-expect-error - object is not assignable to string | number
+  details: { level: 5 },
+};
+
+// 27. VoicePlayMessage declaration checks
+const validVoicePlay: VoicePlayMessage = {
+  type: "voice.play",
+  jobId: "job_1",
+  audioUrl: "/media/tts/voice_1.mp3",
+  subtitle: "Cảm ơn Minh!",
+  volume: 0.8,
+};
+
+const invalidVoicePlayType: VoicePlayMessage = {
+  // @ts-expect-error - Wrong type discriminator rejected
+  type: "playback.started",
+  jobId: "job_1",
+  audioUrl: "/media/tts/voice_1.mp3",
+  subtitle: "Cảm ơn Minh!",
+  volume: 0.8,
+};
+
+// 28. VoicePlaybackCallbackMessage discriminated union type narrowing (ADR-010 playback.* literals)
+const playbackStarted: VoicePlaybackStartedMessage = {
+  type: "playback.started",
+  jobId: "job_1",
+};
+
+const invalidLegacyPlaybackStarted: VoicePlaybackStartedMessage = {
+  // @ts-expect-error - Legacy voice.playback.* literal rejected by public callback contract
+  type: "voice.playback.started",
+  jobId: "job_1",
+};
+
+const playbackFinished: VoicePlaybackFinishedMessage = {
+  type: "playback.finished",
+  jobId: "job_1",
+};
+
+const playbackInterrupted: VoicePlaybackInterruptedMessage = {
+  type: "playback.interrupted",
+  jobId: "job_1",
+};
+
+const playbackFailed: VoicePlaybackFailedMessage = {
+  type: "playback.failed",
+  jobId: "job_1",
+  error: {
+    code: "PLAYBACK_ERROR",
+    message: "Failed to play audio",
+  },
+};
+
+function processPlaybackCallback(msg: VoicePlaybackCallbackMessage): string {
+  if (msg.type === "playback.started") {
+    return `Started ${msg.jobId}`;
+  } else if (msg.type === "playback.finished") {
+    return `Finished ${msg.jobId}`;
+  } else if (msg.type === "playback.interrupted") {
+    return `Interrupted ${msg.jobId}`;
+  } else {
+    const errCode: string = msg.error.code;
+    return `Failed ${msg.jobId} with ${errCode}`;
+  }
+}
+
+// Started callback rejects failed-only fields
+const invalidStartedWithError: VoicePlaybackStartedMessage = {
+  type: "playback.started",
+  jobId: "job_1",
+  // @ts-expect-error - Started callback rejects error field
+  error: { code: "ERR", message: "fail" },
+};
+
+// 29. z.input and z.output alignment for VoiceIntentSchema and VoicePlaybackCallbackMessageSchema
+type VoiceIntentInput = z.input<typeof VoiceIntentSchema>;
+type VoiceIntentOutput = z.output<typeof VoiceIntentSchema>;
+
+type CallbackUnionInput = z.input<typeof VoicePlaybackCallbackMessageSchema>;
+type CallbackUnionOutput = z.output<typeof VoicePlaybackCallbackMessageSchema>;
+
+const validIntentInput: VoiceIntentInput = {
+  specVersion: "0.1",
+  intentId: "intent_inp",
+  eventId: null,
+  kind: "welcome_follow",
+  priority: 50,
+  templateGroup: "follow.default",
+  variables: { user: "Alice" },
+  voiceProfileId: "profile_1",
+  dedupeKey: null,
+  expiresAt: "2026-07-23T05:00:00.000Z",
+};
+
+const validIntentOutput: VoiceIntentOutput = validIntentInput;
+
+const validCallbackInput: CallbackUnionInput = {
+  type: "playback.started",
+  jobId: "job_inp",
+};
+
+const validCallbackOutput: CallbackUnionOutput = validCallbackInput;
+
+type _VoicePlaybackMsgAlias = VoicePlaybackMessage;
+type _VoicePlaybackErrAlias = VoicePlaybackError;
 
 console.log(
   "Declaration consumer type checks passed.",
@@ -1089,6 +1330,32 @@ console.log(
   validEnvOutput,
   validResInput,
   validResOutput,
+  validVoiceKinds,
+  invalidVoiceKind,
+  validInterruptPolicies,
+  invalidInterruptPolicy,
+  validVoiceIntent,
+  validNullablesVoiceIntent,
+  voiceOmittedEventId,
+  voiceUndefinedEventId,
+  voiceOmittedDedupeKey,
+  voiceUndefinedDedupeKey,
+  validVariables,
+  invalidVariablesBoolean,
+  invalidVariablesNested,
+  validVoicePlay,
+  invalidVoicePlayType,
+  playbackStarted,
+  invalidLegacyPlaybackStarted,
+  playbackFinished,
+  playbackInterrupted,
+  playbackFailed,
+  processPlaybackCallback,
+  invalidStartedWithError,
+  validIntentInput,
+  validIntentOutput,
+  validCallbackInput,
+  validCallbackOutput,
   LiveEventEnvelopeSchema,
   GiftSentEventSchema,
   ChatCommentEventSchema,
@@ -1117,5 +1384,16 @@ console.log(
   GameActionFailedResultSchema,
   GameActionResultMessageSchema,
   GameActionResultSchema,
-  GameActionErrorSchema
+  GameActionErrorSchema,
+  VoiceIntentSchema,
+  VoiceIntentKindSchema,
+  VoiceInterruptPolicySchema,
+  VoicePlayMessageSchema,
+  VoicePlaybackStartedMessageSchema,
+  VoicePlaybackFinishedMessageSchema,
+  VoicePlaybackInterruptedMessageSchema,
+  VoicePlaybackFailedMessageSchema,
+  VoicePlaybackCallbackMessageSchema,
+  VoicePlaybackMessageSchema,
+  VoicePlaybackErrorSchema
 );
