@@ -1,4 +1,5 @@
 export * from "./primitives.js";
+export * from "./json.js";
 export * from "./room.js";
 export * from "./user.js";
 export * from "./metadata.js";

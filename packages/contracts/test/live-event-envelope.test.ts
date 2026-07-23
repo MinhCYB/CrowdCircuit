@@ -3,6 +3,8 @@ import { z } from "zod";
 import {
   BaseLiveEventEnvelopeSchema,
   createLiveEventEnvelopeSchema,
+  JsonValueSchema,
+  type BaseLiveEventEnvelope,
   type LiveEventEnvelope,
 } from "../src/index.js";
 
@@ -37,7 +39,7 @@ describe("LiveEventEnvelope base", () => {
   };
 
   it("parses a valid base LiveEventEnvelope", () => {
-    const parsed = BaseLiveEventEnvelopeSchema.parse(validEnvelopeData);
+    const parsed: BaseLiveEventEnvelope = BaseLiveEventEnvelopeSchema.parse(validEnvelopeData);
     expect(parsed).toEqual(validEnvelopeData);
     expect(parsed.specVersion).toBe("0.1");
     expect(parsed.source).toBe("tiktok");
@@ -70,6 +72,67 @@ describe("LiveEventEnvelope base", () => {
   it("rejects envelope missing required fields", () => {
     const { eventId: _, ...missingEventId } = validEnvelopeData;
     expect(() => BaseLiveEventEnvelopeSchema.parse(missingEventId)).toThrow();
+  });
+
+  describe("Required payload validation", () => {
+    it("rejects envelope missing payload property", () => {
+      const { payload: _, ...missingPayload } = validEnvelopeData;
+      expect(() => BaseLiveEventEnvelopeSchema.parse(missingPayload)).toThrow();
+    });
+
+    it("rejects envelope with payload: undefined", () => {
+      const invalidData = {
+        ...validEnvelopeData,
+        payload: undefined,
+      };
+      expect(() => BaseLiveEventEnvelopeSchema.parse(invalidData)).toThrow();
+    });
+
+    it("accepts valid JSON scalar payloads (null, false, 0, empty string)", () => {
+      const scalars = [null, false, 0, ""];
+      for (const scalar of scalars) {
+        const data = { ...validEnvelopeData, payload: scalar };
+        const parsed = BaseLiveEventEnvelopeSchema.parse(data);
+        expect(parsed.payload).toBe(scalar);
+      }
+    });
+  });
+
+  describe("JSON-safe payload validation", () => {
+    it("accepts nested plain objects and arrays", () => {
+      const validPayloads = [
+        { nested: { number: 123, array: ["a", true, null] } },
+        ["item1", 42, { flag: false }],
+      ];
+      for (const payload of validPayloads) {
+        expect(() => JsonValueSchema.parse(payload)).not.toThrow();
+        const data = { ...validEnvelopeData, payload };
+        expect(() => BaseLiveEventEnvelopeSchema.parse(data)).not.toThrow();
+      }
+    });
+
+    it("rejects non-JSON JavaScript values", () => {
+      class CustomClass {}
+
+      const invalidPayloads = [
+        () => {}, // function
+        BigInt(100), // bigint
+        Symbol("id"), // symbol
+        NaN, // NaN
+        Infinity, // Infinity
+        -Infinity, // -Infinity
+        new Date(), // Date object
+        new Map(), // Map object
+        new Set(), // Set object
+        new CustomClass(), // Class instance
+      ];
+
+      for (const payload of invalidPayloads) {
+        expect(() => JsonValueSchema.parse(payload)).toThrow();
+        const data = { ...validEnvelopeData, payload };
+        expect(() => BaseLiveEventEnvelopeSchema.parse(data)).toThrow();
+      }
+    });
   });
 
   describe("createLiveEventEnvelopeSchema factory", () => {

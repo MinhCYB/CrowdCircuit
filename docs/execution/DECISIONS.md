@@ -46,35 +46,42 @@ The first vertical slice uses Phaser and the JavaScript Game SDK.
 
 CrowdCircuit sends actions but does not become the source of truth for gameplay state.
 
-### ADR-008 — Generic LiveEventEnvelope Schema Factory and Payload Strategy
+### ADR-009 — Generic LiveEventEnvelope Schema Factory and JSON-Safe Payload Strategy
 
 **Date:** 2026-07-23  
 **Status:** Accepted  
-**Task:** FOUND-02B
+**Task:** FOUND-02B (Renumbered in PATCH-FOUND-02B-01)
 
 ### Context
 
-FOUND-02B requires establishing a generic `LiveEventEnvelope` base and runtime Zod schemas before specific event payloads (e.g. `gift.sent`, `chat.comment`) are defined in FOUND-02C. We must avoid `any` while ensuring FOUND-02C can build a discriminated union without breaking the base envelope contract.
+FOUND-02B requires establishing a generic `LiveEventEnvelope` base and runtime Zod schemas before specific event payloads (e.g. `gift.sent`, `chat.comment`) are defined in FOUND-02C. We must avoid `any` and `z.unknown()` while ensuring base envelopes require a JSON-safe payload and FOUND-02C can build a discriminated union without breaking the base envelope contract.
+
+Note: System Design section 10 previously defined ADR-008 (Ephemeral local credentials). The FOUND-02B decision has been renumbered to ADR-009 in PATCH-FOUND-02B-01 to avoid ID conflict.
 
 ### Decision
 
-Use `unknown` as the base payload type with a generic schema factory `createLiveEventEnvelopeSchema(payloadSchema, eventTypeSchema)` in `@crowdcircuit/contracts`.
+Use recursive `JsonValueSchema` as the base payload schema with a required-parameter generic schema factory `createLiveEventEnvelopeSchema(payloadSchema, eventTypeSchema)` in `@crowdcircuit/contracts`.
 
 ### Alternatives considered
 
 - Using `z.any()` for payload: Rejected because it bypasses TypeScript type safety and allows non-JSON types.
-- Hardcoding `z.unknown()` without factory function: Rejected because downstream payload specialization in FOUND-02C would require duplicating envelope schema structure.
+- Using `z.unknown()` for base payload: Rejected in PATCH-FOUND-02B-01 because `z.unknown()` allows non-JSON types (functions, BigInts, Date, Map/Set, NaN/Infinity) and permits missing payload properties.
+- Hardcoding `JsonValueSchema` without factory function: Rejected because downstream payload specialization in FOUND-02C would require duplicating envelope schema structure.
 
 ### Consequences
 
 - Positive: Safe runtime validation, zero use of `any`, clean forward compatibility for FOUND-02C discriminated union.
-- Negative: None identified.
+- Base payload is JSON-safe.
+- Specialized schemas remain responsible for domain-level constraints.
+- Recursive JSON validation has runtime cost.
+- Unknown arbitrary JavaScript values are intentionally rejected.
 
 ### Affected packages
 
 - `packages/contracts`
 
 ## New decision template
+
 
 
 ```md
