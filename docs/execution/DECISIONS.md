@@ -46,7 +46,36 @@ The first vertical slice uses Phaser and the JavaScript Game SDK.
 
 CrowdCircuit sends actions but does not become the source of truth for gameplay state.
 
+### ADR-008 — Generic LiveEventEnvelope Schema Factory and Payload Strategy
+
+**Date:** 2026-07-23  
+**Status:** Accepted  
+**Task:** FOUND-02B
+
+### Context
+
+FOUND-02B requires establishing a generic `LiveEventEnvelope` base and runtime Zod schemas before specific event payloads (e.g. `gift.sent`, `chat.comment`) are defined in FOUND-02C. We must avoid `any` while ensuring FOUND-02C can build a discriminated union without breaking the base envelope contract.
+
+### Decision
+
+Use `unknown` as the base payload type with a generic schema factory `createLiveEventEnvelopeSchema(payloadSchema, eventTypeSchema)` in `@crowdcircuit/contracts`.
+
+### Alternatives considered
+
+- Using `z.any()` for payload: Rejected because it bypasses TypeScript type safety and allows non-JSON types.
+- Hardcoding `z.unknown()` without factory function: Rejected because downstream payload specialization in FOUND-02C would require duplicating envelope schema structure.
+
+### Consequences
+
+- Positive: Safe runtime validation, zero use of `any`, clean forward compatibility for FOUND-02C discriminated union.
+- Negative: None identified.
+
+### Affected packages
+
+- `packages/contracts`
+
 ## New decision template
+
 
 ```md
 ## ADR-XXX — Title

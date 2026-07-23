@@ -2,11 +2,11 @@
 
 **Last updated:** 2026-07-23  
 **Current phase:** Phase A — Foundation  
-**Last completed task:** FOUND-02A — Contracts Package Foundation (including PATCH-FOUND-02A-01 & PATCH-FOUND-02A-02)  
-**Current task:** FOUND-02B — Common Primitives and LiveEventEnvelope Base  
-**Repository state:** Root Vitest discovery pattern verified (`packages/*/test/**/*.test.ts`); contract test path confirmed at `packages/contracts/test/index.test.ts`  
-**Main branch status:** Uncommitted working tree on `main` branch (PATCH-FOUND-02A-02 applied, pending user commit)  
-**Base commit:** `f8edd30`
+**Last completed task:** FOUND-02B — Common Primitives and LiveEventEnvelope Base  
+**Current task:** FOUND-02C — LIVE Event Payload Schemas  
+**Repository state:** Shared contract primitives and generic LiveEventEnvelope base implemented with Zod schemas and inferred TS types; ready for concrete payload schemas  
+**Main branch status:** Uncommitted working tree on `main` branch (FOUND-02B applied, pending user commit)  
+**Base commit:** `7bb182d`
 
 ## Current baseline
 
@@ -26,17 +26,17 @@
 
 ## Last verified commands
 
-PATCH-FOUND-02A-02 reported the following results on 2026-07-23:
+FOUND-02B reported the following results on 2026-07-23:
 
 ```bash
-pnpm --filter @crowdcircuit/contracts lint       # ✅ Clean
-pnpm --filter @crowdcircuit/contracts typecheck  # ✅ Clean
-pnpm --filter @crowdcircuit/contracts test       # ✅ 3 tests passed (packages/contracts/test/index.test.ts)
+pnpm --filter @crowdcircuit/contracts lint       # ✅ Clean (0 errors)
+pnpm --filter @crowdcircuit/contracts typecheck  # ✅ Clean (tsc -b)
+pnpm --filter @crowdcircuit/contracts test       # ✅ 28 tests passed (3 test files)
 pnpm --filter @crowdcircuit/contracts build      # ✅ Clean (dist/ contains no test artifacts)
-pnpm lint        # ✅ No errors
+pnpm lint        # ✅ No errors across 15 workspace projects
 pnpm typecheck   # ✅ No errors
-pnpm test        # ✅ 5 tests passed (2 test files: packages/contracts/test/index.test.ts, apps/server/src/index.test.ts)
-pnpm build       # ✅ All packages + dashboard built
+pnpm test        # ✅ 30 tests passed (4 test files across monorepo)
+pnpm build       # ✅ All 13 buildable workspace projects compiled cleanly
 ```
 
 The next agent must rerun the required baseline commands before coding. Do not assume the working tree or commit state is unchanged.
@@ -48,7 +48,7 @@ The next agent must rerun the required baseline commands before coding. Do not a
 - [x] Execution documentation scaffold
 - [x] FOUND-01 — Monorepo Scaffold
 - [x] FOUND-02A — Contracts Package Foundation (with PATCH-FOUND-02A-01 & PATCH-FOUND-02A-02)
-- [ ] FOUND-02B — Common Primitives and LiveEventEnvelope Base
+- [x] FOUND-02B — Common Primitives and LiveEventEnvelope Base
 - [ ] FOUND-02C — LIVE Event Payload Schemas
 - [ ] FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas
 - [ ] FOUND-02E — VoiceIntent and Voice Protocol Schemas
@@ -58,10 +58,10 @@ The next agent must rerun the required baseline commands before coding. Do not a
 
 ## Test status
 
-Verified state from PATCH-FOUND-02A-02 on 2026-07-23:
+Verified state from FOUND-02B on 2026-07-23:
 
-- Unit tests: 5 passing (3 sample contract tests in `packages/contracts/test/index.test.ts`, 2 health endpoint tests in `apps/server/src/index.test.ts`)
-- Test files: 2 (`packages/contracts/test/index.test.ts`, `apps/server/src/index.test.ts`)
+- Unit tests: 30 passing (28 contract tests in `packages/contracts/test/`, 2 health endpoint tests in `apps/server/src/index.test.ts`)
+- Test files: 4 (`packages/contracts/test/index.test.ts`, `packages/contracts/test/common-primitives.test.ts`, `packages/contracts/test/live-event-envelope.test.ts`, `apps/server/src/index.test.ts`)
 - Integration tests: not started
 - End-to-end tests: not started
 - Lint: configured, passing

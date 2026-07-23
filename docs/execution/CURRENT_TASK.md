@@ -1,7 +1,7 @@
 # Current Task
 
-**Task ID:** FOUND-02B  
-**Title:** Common Primitives and LiveEventEnvelope Base  
+**Task ID:** FOUND-02C  
+**Title:** LIVE Event Payload Schemas  
 **Status:** READY  
 **Priority:** P0
 
@@ -9,7 +9,7 @@
 
 Read and follow:
 
-`docs/tasks/FOUND-02B.md`
+`docs/tasks/FOUND-02C.md`
 
 ## Required context
 
@@ -17,10 +17,10 @@ Read only:
 
 1. `docs/execution/PROJECT_STATUS.md`
 2. This file
-3. `docs/tasks/FOUND-02B.md`
+3. `docs/tasks/FOUND-02C.md`
 4. `docs/execution/DECISIONS.md`
 5. `docs/execution/KNOWN_ISSUES.md`
-6. `docs/handoffs/HANDOFF-FOUND-02A.md`
+6. `docs/handoffs/HANDOFF-FOUND-02B.md`
 
 Do not read the full System Design unless the task brief references exact sections.
 
@@ -28,15 +28,16 @@ The UI/UX Specification is not required for this backend task.
 
 ## Previous completed task
 
-`FOUND-02A — Contracts Package Foundation`
+`FOUND-02B — Common Primitives and LiveEventEnvelope Base`
 
 Previous handoff:
 
-`docs/handoffs/HANDOFF-FOUND-02A.md`
+`docs/handoffs/HANDOFF-FOUND-02B.md`
 
 ## Expected next task
 
-`FOUND-02C — LIVE Event Payload Schemas`
+`FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas`
 
 Do not begin the next task in the same agent session.
+
 
