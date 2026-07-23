@@ -9,12 +9,28 @@ import {
   UserRefSchema,
   type JsonValue,
 } from "../common/index.js";
+import {
+  ChatCommentPayloadSchema,
+  EmptyPayloadSchema,
+  GiftSentPayloadSchema,
+  LikePayloadSchema,
+} from "./payloads.js";
 
 /**
- * Extensible event type primitive schema.
- * Represents a non-empty string identifier for normalized event types.
+ * Finite enum schema for all supported v0.1 LIVE event types.
  */
-export const LiveEventTypeSchema = z.string().min(1);
+export const LiveEventTypeSchema = z.enum([
+  "live.connected",
+  "live.disconnected",
+  "live.ended",
+  "viewer.joined",
+  "chat.comment",
+  "social.follow",
+  "social.share",
+  "engagement.like",
+  "gift.sent",
+  "subscription.created",
+]);
 export type LiveEventType = z.infer<typeof LiveEventTypeSchema>;
 
 /**
@@ -64,3 +80,87 @@ export type LiveEventEnvelope<
   eventType: TEventType;
   payload: TPayload;
 };
+
+/* Specialized Event Envelope Schemas */
+
+export const LiveConnectedEventSchema = createLiveEventEnvelopeSchema(
+  EmptyPayloadSchema,
+  z.literal("live.connected")
+);
+export type LiveConnectedEvent = z.infer<typeof LiveConnectedEventSchema>;
+
+export const LiveDisconnectedEventSchema = createLiveEventEnvelopeSchema(
+  EmptyPayloadSchema,
+  z.literal("live.disconnected")
+);
+export type LiveDisconnectedEvent = z.infer<typeof LiveDisconnectedEventSchema>;
+
+export const LiveEndedEventSchema = createLiveEventEnvelopeSchema(
+  EmptyPayloadSchema,
+  z.literal("live.ended")
+);
+export type LiveEndedEvent = z.infer<typeof LiveEndedEventSchema>;
+
+export const ViewerJoinedEventSchema = createLiveEventEnvelopeSchema(
+  EmptyPayloadSchema,
+  z.literal("viewer.joined")
+);
+export type ViewerJoinedEvent = z.infer<typeof ViewerJoinedEventSchema>;
+
+export const ChatCommentEventSchema = createLiveEventEnvelopeSchema(
+  ChatCommentPayloadSchema,
+  z.literal("chat.comment")
+);
+export type ChatCommentEvent = z.infer<typeof ChatCommentEventSchema>;
+
+export const SocialFollowEventSchema = createLiveEventEnvelopeSchema(
+  EmptyPayloadSchema,
+  z.literal("social.follow")
+);
+export type SocialFollowEvent = z.infer<typeof SocialFollowEventSchema>;
+
+export const SocialShareEventSchema = createLiveEventEnvelopeSchema(
+  EmptyPayloadSchema,
+  z.literal("social.share")
+);
+export type SocialShareEvent = z.infer<typeof SocialShareEventSchema>;
+
+export const EngagementLikeEventSchema = createLiveEventEnvelopeSchema(
+  LikePayloadSchema,
+  z.literal("engagement.like")
+);
+export type EngagementLikeEvent = z.infer<typeof EngagementLikeEventSchema>;
+
+export const GiftSentEventSchema = createLiveEventEnvelopeSchema(
+  GiftSentPayloadSchema,
+  z.literal("gift.sent")
+);
+export type GiftSentEvent = z.infer<typeof GiftSentEventSchema>;
+
+export const SubscriptionCreatedEventSchema = createLiveEventEnvelopeSchema(
+  EmptyPayloadSchema,
+  z.literal("subscription.created")
+);
+export type SubscriptionCreatedEvent = z.infer<typeof SubscriptionCreatedEventSchema>;
+
+/**
+ * Discriminated union schema for all normalized v0.1 LIVE event envelopes.
+ * Discriminates on the `eventType` property.
+ */
+export const LiveEventEnvelopeSchema = z.discriminatedUnion("eventType", [
+  LiveConnectedEventSchema,
+  LiveDisconnectedEventSchema,
+  LiveEndedEventSchema,
+  ViewerJoinedEventSchema,
+  ChatCommentEventSchema,
+  SocialFollowEventSchema,
+  SocialShareEventSchema,
+  EngagementLikeEventSchema,
+  GiftSentEventSchema,
+  SubscriptionCreatedEventSchema,
+]);
+
+/**
+ * Inferred union type for all normalized v0.1 LIVE event envelopes.
+ */
+export type LiveEvent = z.infer<typeof LiveEventEnvelopeSchema>;
