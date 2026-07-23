@@ -1,12 +1,12 @@
 # Project Status
 
-**Last updated:** 2026-07-22  
+**Last updated:** 2026-07-23  
 **Current phase:** Phase A — Foundation  
-**Last completed task:** FOUND-02A — Contracts Package Foundation (including PATCH-FOUND-02A-01)  
+**Last completed task:** FOUND-02A — Contracts Package Foundation (including PATCH-FOUND-02A-01 & PATCH-FOUND-02A-02)  
 **Current task:** FOUND-02B — Common Primitives and LiveEventEnvelope Base  
-**Repository state:** Contracts package scaffolded; test layout moved to `test/` and excluded from `dist/`; full domain schemas pending  
-**Main branch status:** Uncommitted working tree on `main` branch (PATCH-FOUND-02A-01 applied, awaiting user commit)  
-**Base commit:** `88098ed muhehe`
+**Repository state:** Root Vitest discovery pattern verified (`packages/*/test/**/*.test.ts`); contract test path confirmed at `packages/contracts/test/index.test.ts`  
+**Main branch status:** Uncommitted working tree on `main` branch (PATCH-FOUND-02A-02 applied, pending user commit)  
+**Base commit:** `f8edd30`
 
 ## Current baseline
 
@@ -26,7 +26,7 @@
 
 ## Last verified commands
 
-PATCH-FOUND-02A-01 reported the following results on 2026-07-22:
+PATCH-FOUND-02A-02 reported the following results on 2026-07-23:
 
 ```bash
 pnpm --filter @crowdcircuit/contracts lint       # ✅ Clean
@@ -35,7 +35,7 @@ pnpm --filter @crowdcircuit/contracts test       # ✅ 3 tests passed (packages/
 pnpm --filter @crowdcircuit/contracts build      # ✅ Clean (dist/ contains no test artifacts)
 pnpm lint        # ✅ No errors
 pnpm typecheck   # ✅ No errors
-pnpm test        # ✅ 5 tests passed (2 test files)
+pnpm test        # ✅ 5 tests passed (2 test files: packages/contracts/test/index.test.ts, apps/server/src/index.test.ts)
 pnpm build       # ✅ All packages + dashboard built
 ```
 
@@ -47,7 +47,7 @@ The next agent must rerun the required baseline commands before coding. Do not a
 - [x] Studio UI/UX Specification v0.1
 - [x] Execution documentation scaffold
 - [x] FOUND-01 — Monorepo Scaffold
-- [x] FOUND-02A — Contracts Package Foundation (with PATCH-FOUND-02A-01)
+- [x] FOUND-02A — Contracts Package Foundation (with PATCH-FOUND-02A-01 & PATCH-FOUND-02A-02)
 - [ ] FOUND-02B — Common Primitives and LiveEventEnvelope Base
 - [ ] FOUND-02C — LIVE Event Payload Schemas
 - [ ] FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas
@@ -58,9 +58,9 @@ The next agent must rerun the required baseline commands before coding. Do not a
 
 ## Test status
 
-Verified state from PATCH-FOUND-02A-01 on 2026-07-22:
+Verified state from PATCH-FOUND-02A-02 on 2026-07-23:
 
-- Unit tests: 5 passing (3 sample contract tests, 2 health endpoint tests)
+- Unit tests: 5 passing (3 sample contract tests in `packages/contracts/test/index.test.ts`, 2 health endpoint tests in `apps/server/src/index.test.ts`)
 - Test files: 2 (`packages/contracts/test/index.test.ts`, `apps/server/src/index.test.ts`)
 - Integration tests: not started
 - End-to-end tests: not started
