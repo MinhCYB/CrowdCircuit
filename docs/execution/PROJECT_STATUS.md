@@ -1,12 +1,13 @@
 # Project Status
 
 **Last updated:** 2026-07-23
-**Current phase:** Phase A — Foundation
-**Last completed task:** FOUND-02E — VoiceIntent and Voice Protocol Schemas (final Codex approval in the working tree)
-**Current task:** FOUND-02F — Contract Fixtures and Integration Review (READY)
-**Repository state:** FOUND-02E is complete and independently approved after REWORK-02 and the decoded-leading-slash mechanical fix. The complete task remains uncommitted pending the user-controlled commit and push.
-**Main branch status:** Uncommitted working tree on `main`; use fresh Git output as the source of truth.
-**Base commit:** `76d7013` (`feat: complete FOUND-02D action lifecycle contracts`)
+**Current phase:** Phase B — Event Pipeline (planned; implementation not started)
+**Last completed phase:** Phase A — Contract Foundation
+**Last completed task:** FOUND-02F — Contract Fixtures and Integration Review
+**Current orchestration unit:** Phase B — Event Pipeline
+**Current milestone:** Milestone 1 — Mock-to-normalized playable input slice (READY)
+**Repository state:** FOUND-02F is approved and complete in the accumulated uncommitted working tree on base commit `85a7d3b`; user commit and push remain pending.
+**Branch:** `main`
 
 ## Current baseline
 
@@ -14,33 +15,45 @@
 - Organization: MS24 Labs
 - Runtime: Node.js v24.15.0 + TypeScript 5.9.3
 - Package manager: pnpm 11.9.0
-- Architecture: Local-first modular monolith
+- Architecture: local-first modular monolith
 - Backend: Fastify 5.3.x on port 3100
-- Database: SQLite (not yet implemented)
 - Frontend: React 19 + Vite 6
-- Realtime: Socket.IO (not yet implemented)
 - Validation: Zod 3.24.2
-- Logging: Pino (via Fastify built-in)
 - Tests: Vitest 4.1.10
-- Demo game: Phaser (placeholder only)
+- SQLite, Socket.IO, authentication, real connector, and runtime voice remain unimplemented.
 
-## Last verified commands
+## Final FOUND-02F verification
 
-Codex final FOUND-02E verification produced the following results on 2026-07-23:
+Fresh Codex verification on 2026-07-23:
 
-```bash
-pnpm --filter @crowdcircuit/contracts lint               # ✅ Clean (0 errors, 0 warnings)
-pnpm --filter @crowdcircuit/contracts typecheck          # ✅ Clean (tsc -b)
-pnpm --filter @crowdcircuit/contracts test               # ✅ 143 tests passed (6 test files)
-pnpm --filter @crowdcircuit/contracts build --force      # ✅ Clean forced build (tsc -b "--force")
-pnpm --filter @crowdcircuit/contracts test:declarations  # ✅ Passed (tsc -p test/tsconfig.declarations.json against dist/index.d.ts)
-pnpm lint        # ✅ No errors across 15 workspace projects
-pnpm typecheck   # ✅ No errors
-pnpm test        # ✅ 145 tests passed (7 test files across monorepo)
-pnpm build       # ✅ All 13 buildable workspace projects compiled cleanly
+```text
+git diff --check HEAD --                              passed
+contracts lint                                       passed
+contracts typecheck                                  passed
+contracts tests                                      175 passed (7 files)
+contracts forced build                               passed
+contracts declaration tests                          passed
+game-sdk-js build                                    passed
+repository lint                                      passed
+repository typecheck                                 passed
+repository tests                                     177 passed (8 files)
+repository build                                     passed
 ```
 
-The next agent must rerun the required baseline commands before coding. Do not assume the working tree or commit state is unchanged.
+Final artifact inspection confirmed:
+
+- 14 canonical fixtures remain deeply immutable at runtime.
+- Exact literal and recursively readonly declarations are preserved, including
+  shared room, user, roles, and metadata descendants.
+- The internal freezer is cycle-safe, traverses children below shallow-frozen
+  parents, and contains no unsafe assertion.
+- `deepFreeze` and its internal readonly helper are absent from both public
+  contracts entry points.
+- The SDK resolution check is type-only; emitted JavaScript and declarations
+  contain only `export {};`.
+- The SDK root exports only `GAME_SDK_VERSION`.
+- `@crowdcircuit/contracts` is an SDK development dependency, not a runtime
+  dependency.
 
 ## Completed
 
@@ -48,58 +61,45 @@ The next agent must rerun the required baseline commands before coding. Do not a
 - [x] Studio UI/UX Specification v0.1
 - [x] Execution documentation scaffold
 - [x] FOUND-01 — Monorepo Scaffold
-- [x] FOUND-02A — Contracts Package Foundation (with PATCH-FOUND-02A-01 & PATCH-FOUND-02A-02)
-- [x] FOUND-02B — Common Primitives and LiveEventEnvelope Base (with PATCH-FOUND-02B-01)
-- [x] FOUND-02C — LIVE Event Payload Schemas (approved at `34ad050`)
-- [x] FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas (approved at `76d7013`)
-- [x] FOUND-02E — VoiceIntent and Voice Protocol Schemas (final Codex approval in the working tree)
-- [ ] FOUND-02F — Contract Fixtures and Integration Review (READY)
-- [ ] FOUND-03 — Runtime Session and Pairing
-- [ ] FOUND-04 — SQLite Persistence
-
-## Test status
-
-Verified state from final FOUND-02E approval on 2026-07-23:
-
-- Unit tests: 145 passing (143 contract tests in `packages/contracts/test/`, 2 health endpoint tests in `apps/server/src/index.test.ts`)
-- Declaration tests: 1 passing (`packages/contracts/test/declaration-consumer.ts` against `dist/index.d.ts`)
-- Test files: 7 (`packages/contracts/test/index.test.ts`, `packages/contracts/test/common-primitives.test.ts`, `packages/contracts/test/live-event-envelope.test.ts`, `packages/contracts/test/domain-events.test.ts`, `packages/contracts/test/domain-actions.test.ts`, `packages/contracts/test/domain-voice.test.ts`, `apps/server/src/index.test.ts`)
-- Integration tests: not started
-- End-to-end tests: not started
-- Lint: configured, passing
-- Typecheck: configured, passing
-- Build: configured, passing
+- [x] FOUND-02A — Contracts Package Foundation
+- [x] FOUND-02B — Common Primitives and LiveEventEnvelope Base
+- [x] FOUND-02C — LIVE Event Payload Schemas
+- [x] FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas
+- [x] FOUND-02E — VoiceIntent and Voice Protocol Schemas
+- [x] FOUND-02F — Contract Fixtures and Integration Review
+- [x] Phase A — Contract Foundation
 
 ## Current limitations
 
-- `@crowdcircuit/contracts` has approved LIVE event payloads, Game Action envelopes, and Voice schemas.
-- Double-encoded local audio paths (`/a/%252e%252e/b.mp3`) pass one-pass decoding validation because no second-decoding boundary exists in the repository.
-- Placeholder packages export only constants or identity values.
-- Dashboard is a minimal React component with no real UI.
-- `voice-output` and `demo-game` are placeholders.
-- SQLite, Socket.IO and authentication remain deferred by design.
+- Phase B runtime event-pipeline work has not started.
+- The TikTok connector choice remains prototype-oriented and must remain behind
+  the connector interface.
+- Runtime authentication/pairing and SQLite foundations remain deferred roadmap
+  work and must be scheduled before dependent phases require them.
+- Placeholder packages still expose only scaffold behavior outside the
+  completed contracts surface.
 
 ## Current blockers
 
-None for FOUND-02F after FOUND-02E approval. Commit and push remain user-controlled.
+None for Phase B Milestone 1.
 
-## Next recommended task
+## Next execution unit
 
-`FOUND-02F — Contract Fixtures and Integration Review`
+Use:
 
-Task brief:
+- Plan: `docs/orchestration/plans/NEXT-PHASE-MILESTONE-PLAN.md`
+- First implementation prompt:
+  `docs/orchestration/prompts/PHASE-B-MILESTONE-01-GEMINI.md`
 
-`docs/tasks/FOUND-02F.md`
+Do not select FOUND-03A as a standalone micro-task. Implement one approved
+Phase B milestone at a time in the same working tree, with focused reviews
+between milestones and one full acceptance review at phase completion.
 
 ## Update rules
 
-Before closing a task, update this file with:
-
-- Actual commit and working-tree state.
-- Commands that actually ran.
-- Exact test counts.
-- Completed micro-task.
-- Current blockers and limitations.
-- Next recommended task.
-
-Do not remove or rewrite historical handoff files.
+- Repository state and fresh command output outrank handoff summaries.
+- Record only commands that actually ran and exact observed test counts.
+- Do not mark a milestone complete before its focused independent review.
+- Prefer one final phase commit; use an intermediate commit only for a
+  substantial independently rollbackable milestone.
+- The user remains commit and push owner.

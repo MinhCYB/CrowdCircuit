@@ -8,3 +8,4 @@ export * from "./common/index.js";
 export * from "./events/index.js";
 export * from "./actions/index.js";
 export * from "./voice/index.js";
+export * from "./fixtures/index.js";

@@ -48,6 +48,7 @@ import {
   type GiftSentEvent,
   type ChatCommentEvent,
   type EngagementLikeEvent,
+  type SocialFollowEvent,
   type LiveConnectedEvent,
   type SubscriptionCreatedEvent,
   type GiftSentPayload,
@@ -81,6 +82,20 @@ import {
   type VoicePlaybackCallbackMessage,
   type VoicePlaybackMessage,
   type VoicePlaybackError,
+  CANONICAL_GIFT_SENT_EVENT,
+  CANONICAL_CHAT_COMMENT_EVENT,
+  CANONICAL_ENGAGEMENT_LIKE_EVENT,
+  CANONICAL_SOCIAL_FOLLOW_EVENT,
+  CANONICAL_GAME_ACTION_ENVELOPE,
+  CANONICAL_GAME_ACTION_RECEIVED_MESSAGE,
+  CANONICAL_GAME_ACTION_COMPLETED_RESULT_MESSAGE,
+  CANONICAL_GAME_ACTION_FAILED_RESULT_MESSAGE,
+  CANONICAL_VOICE_INTENT,
+  CANONICAL_VOICE_PLAY_MESSAGE,
+  CANONICAL_VOICE_PLAYBACK_STARTED_MESSAGE,
+  CANONICAL_VOICE_PLAYBACK_FINISHED_MESSAGE,
+  CANONICAL_VOICE_PLAYBACK_INTERRUPTED_MESSAGE,
+  CANONICAL_VOICE_PLAYBACK_FAILED_MESSAGE,
 } from "@crowdcircuit/contracts";
 import { z } from "zod";
 
@@ -1244,6 +1259,99 @@ const validCallbackInput: CallbackUnionInput = {
 
 const validCallbackOutput: CallbackUnionOutput = validCallbackInput;
 
+// 30. Canonical Fixtures declaration verification via package-name imports
+import {
+  CANONICAL_GIFT_SENT_EVENT as SUBPATH_GIFT,
+  CANONICAL_GAME_ACTION_COMPLETED_RESULT_MESSAGE as SUBPATH_COMPLETED,
+  CANONICAL_VOICE_PLAYBACK_STARTED_MESSAGE as SUBPATH_STARTED,
+} from "@crowdcircuit/contracts/fixtures";
+
+type FixtureReadonly<T> = T extends readonly (infer U)[]
+  ? readonly FixtureReadonly<U>[]
+  : T extends object
+    ? { readonly [K in keyof T]: FixtureReadonly<T[K]> }
+    : T;
+
+const fixtureGift: FixtureReadonly<GiftSentEvent> = CANONICAL_GIFT_SENT_EVENT;
+const fixtureGiftSubpath: FixtureReadonly<GiftSentEvent> = SUBPATH_GIFT;
+const fixtureComment: FixtureReadonly<ChatCommentEvent> =
+  CANONICAL_CHAT_COMMENT_EVENT;
+const fixtureLike: FixtureReadonly<EngagementLikeEvent> =
+  CANONICAL_ENGAGEMENT_LIKE_EVENT;
+const fixtureFollow: FixtureReadonly<SocialFollowEvent> =
+  CANONICAL_SOCIAL_FOLLOW_EVENT;
+const fixtureLiveUnion: FixtureReadonly<LiveEvent> =
+  CANONICAL_GIFT_SENT_EVENT;
+const fixtureAction: GameActionEnvelope<{ spawnCount: number }> =
+  CANONICAL_GAME_ACTION_ENVELOPE;
+const fixtureReceipt: GameActionReceivedMessage =
+  CANONICAL_GAME_ACTION_RECEIVED_MESSAGE;
+const fixtureResultComp: GameActionResultMessage =
+  CANONICAL_GAME_ACTION_COMPLETED_RESULT_MESSAGE;
+const fixtureResultCompSubpath: GameActionResultMessage = SUBPATH_COMPLETED;
+const fixtureResultFail: GameActionResultMessage =
+  CANONICAL_GAME_ACTION_FAILED_RESULT_MESSAGE;
+const fixtureVoiceIntent: VoiceIntent = CANONICAL_VOICE_INTENT;
+const fixtureVoicePlay: VoicePlayMessage = CANONICAL_VOICE_PLAY_MESSAGE;
+const fixtureStarted: VoicePlaybackStartedMessage =
+  CANONICAL_VOICE_PLAYBACK_STARTED_MESSAGE;
+const fixtureStartedSubpath: VoicePlaybackCallbackMessage = SUBPATH_STARTED;
+const fixtureFinished: VoicePlaybackFinishedMessage =
+  CANONICAL_VOICE_PLAYBACK_FINISHED_MESSAGE;
+const fixtureInterrupted: VoicePlaybackInterruptedMessage =
+  CANONICAL_VOICE_PLAYBACK_INTERRUPTED_MESSAGE;
+const fixtureFailed: VoicePlaybackFailedMessage =
+  CANONICAL_VOICE_PLAYBACK_FAILED_MESSAGE;
+
+// Union assignability for all four callback fixtures
+const cb1: VoicePlaybackCallbackMessage = CANONICAL_VOICE_PLAYBACK_STARTED_MESSAGE;
+const cb2: VoicePlaybackCallbackMessage = CANONICAL_VOICE_PLAYBACK_FINISHED_MESSAGE;
+const cb3: VoicePlaybackCallbackMessage = CANONICAL_VOICE_PLAYBACK_INTERRUPTED_MESSAGE;
+const cb4: VoicePlaybackCallbackMessage = CANONICAL_VOICE_PLAYBACK_FAILED_MESSAGE;
+
+// Exact narrow literal narrowing proofs
+const exactCompletedStatus: "completed" =
+  CANONICAL_GAME_ACTION_COMPLETED_RESULT_MESSAGE.status;
+const exactFailedStatus: "failed" =
+  CANONICAL_GAME_ACTION_FAILED_RESULT_MESSAGE.status;
+const exactActionType: "SPAWN_ZOMBIE" =
+  CANONICAL_GAME_ACTION_ENVELOPE.actionType;
+const exactVoiceKind: "thank_gift" = CANONICAL_VOICE_INTENT.kind;
+const exactPlayType: "voice.play" = CANONICAL_VOICE_PLAY_MESSAGE.type;
+const exactCbStartedType: "playback.started" =
+  CANONICAL_VOICE_PLAYBACK_STARTED_MESSAGE.type;
+const exactCbFinishedType: "playback.finished" =
+  CANONICAL_VOICE_PLAYBACK_FINISHED_MESSAGE.type;
+const exactCbInterruptedType: "playback.interrupted" =
+  CANONICAL_VOICE_PLAYBACK_INTERRUPTED_MESSAGE.type;
+const exactCbFailedType: "playback.failed" =
+  CANONICAL_VOICE_PLAYBACK_FAILED_MESSAGE.type;
+
+// Compile-time readonly mutation prevention
+// @ts-expect-error - Cannot assign to readonly property specVersion
+CANONICAL_GIFT_SENT_EVENT.specVersion = "0.2";
+
+// @ts-expect-error - Cannot assign to readonly property gift
+CANONICAL_GIFT_SENT_EVENT.payload.gift.name = "mod";
+
+// @ts-expect-error - Cannot assign to readonly property spawnCount
+CANONICAL_GAME_ACTION_ENVELOPE.params.spawnCount = 99;
+
+// @ts-expect-error - Shared canonical room fields remain readonly
+CANONICAL_GIFT_SENT_EVENT.room.roomId = "room_modified";
+
+// @ts-expect-error - Shared canonical user fields remain readonly
+CANONICAL_GIFT_SENT_EVENT.user.displayName = "Modified Viewer";
+
+// @ts-expect-error - Shared canonical roles elements remain readonly
+CANONICAL_GIFT_SENT_EVENT.user.roles[0] = "admin";
+
+// @ts-expect-error - Shared canonical roles array remains readonly
+CANONICAL_GIFT_SENT_EVENT.user.roles.push("admin");
+
+// @ts-expect-error - Shared canonical metadata fields remain readonly
+CANONICAL_GIFT_SENT_EVENT.metadata.connectorId = "connector_modified";
+
 type _VoicePlaybackMsgAlias = VoicePlaybackMessage;
 type _VoicePlaybackErrAlias = VoicePlaybackError;
 
@@ -1356,6 +1464,37 @@ console.log(
   validIntentOutput,
   validCallbackInput,
   validCallbackOutput,
+  fixtureGift,
+  fixtureGiftSubpath,
+  fixtureComment,
+  fixtureLike,
+  fixtureFollow,
+  fixtureLiveUnion,
+  fixtureAction,
+  fixtureReceipt,
+  fixtureResultComp,
+  fixtureResultCompSubpath,
+  fixtureResultFail,
+  fixtureVoiceIntent,
+  fixtureVoicePlay,
+  fixtureStarted,
+  fixtureStartedSubpath,
+  fixtureFinished,
+  fixtureInterrupted,
+  fixtureFailed,
+  cb1,
+  cb2,
+  cb3,
+  cb4,
+  exactCompletedStatus,
+  exactFailedStatus,
+  exactActionType,
+  exactVoiceKind,
+  exactPlayType,
+  exactCbStartedType,
+  exactCbFinishedType,
+  exactCbInterruptedType,
+  exactCbFailedType,
   LiveEventEnvelopeSchema,
   GiftSentEventSchema,
   ChatCommentEventSchema,

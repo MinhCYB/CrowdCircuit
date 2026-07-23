@@ -1,47 +1,36 @@
 # Current Task
 
-**Task ID:** FOUND-02F
-**Title:** Contract Fixtures and Integration Review
-**Status:** READY
+**Orchestration unit:** Phase B — Event Pipeline
+**Milestone:** Phase B Milestone 1 — Mock-to-normalized playable input slice
+**Status:** READY FOR IMPLEMENTATION
 **Priority:** P0
 
-## Task brief
+## Phase plan
 
 Read and follow:
 
-`docs/tasks/FOUND-02F.md`
+`docs/orchestration/plans/NEXT-PHASE-MILESTONE-PLAN.md`
 
-Implementation prompt:
+## Implementation prompt
 
-`docs/orchestration/prompts/FOUND-02F-GEMINI.md`
+Use only:
 
-## Required context
+`docs/orchestration/prompts/PHASE-B-MILESTONE-01-GEMINI.md`
 
-Read only:
+## Previous completed phase
 
-1. `docs/execution/PROJECT_STATUS.md`
-2. This file
-3. `docs/tasks/FOUND-02F.md`
-4. `docs/orchestration/reviews/FOUND-02E-CODEX-REVIEW-FINAL.md`
-5. `docs/execution/DECISIONS.md`
-6. `docs/execution/KNOWN_ISSUES.md`
-7. `docs/handoffs/HANDOFF-FOUND-02E-REWORK-02.md`
-8. System Design sections `12`, `14`, and `19`
+`Phase A — Contract Foundation` is DONE. Its final task,
+`FOUND-02F — Contract Fixtures and Integration Review`, received final Codex
+approval in the accumulated working tree on base commit `85a7d3b`. The user
+remains responsible for the final phase commit and push.
 
-Do not read the full System Design unless the task brief references exact sections.
+## Execution policy
 
-The UI/UX Specification is not required for this backend task.
-
-## Previous completed task
-
-`FOUND-02E — VoiceIntent and Voice Protocol Schemas`
-
-Previous handoff:
-
-`docs/handoffs/HANDOFF-FOUND-02E-REWORK-02.md`
-
-## Expected next task
-
-`FOUND-03A — Runtime Secret and Admin Session Foundation`
-
-FOUND-02F is unblocked by the final FOUND-02E approval. Do not begin FOUND-03A until FOUND-02F receives independent approval.
+- Implement one Phase B milestone at a time in the same working tree.
+- Run a focused independent review after each milestone.
+- Do not request separate commits for milestone prompts, handoffs, reviews, or
+  status updates.
+- Prefer one final Phase B commit. An intermediate commit is justified only for
+  a substantial independently rollbackable milestone.
+- Do not begin Milestone 2 until Milestone 1 is independently approved.
+- Do not select FOUND-03A as a standalone micro-task.

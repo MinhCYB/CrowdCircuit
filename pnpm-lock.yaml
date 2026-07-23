@@ -80,7 +80,11 @@ importers:
 
   packages/event-core: {}
 
-  packages/game-sdk-js: {}
+  packages/game-sdk-js:
+    devDependencies:
+      '@crowdcircuit/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
   packages/mapping-engine: {}
 
