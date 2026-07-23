@@ -1,5 +1,7 @@
 /**
- * Action contracts foundation module.
- * Domain schemas will be introduced in FOUND-02D.
+ * Action contracts foundation module for CrowdCircuit.
+ * Contains versioned schemas and public types for GameActionEnvelope,
+ * game lifecycle, action delivery, receipt, and result protocols.
  */
-export {};
+export * from "./envelope.js";
+export * from "./lifecycle.js";

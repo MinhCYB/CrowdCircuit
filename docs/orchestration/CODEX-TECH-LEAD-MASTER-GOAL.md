@@ -24,10 +24,11 @@ CURRENT BASELINE
 - FOUND-02A and maintenance patches: done.
 - FOUND-02B and PATCH-FOUND-02B-01: done.
 - FOUND-02C and REWORK-02: done; implementation commit `34ad050` received final `APPROVE`.
-- Current task: FOUND-02D.
-- Expected next task: FOUND-02E.
+- FOUND-02D and REWORK-01: done; final verdict `APPROVE` after mechanical documentation correction.
+- Current task: FOUND-02E.
+- Expected next task: FOUND-02F.
 
-Treat FOUND-02C and earlier tasks as closed unless repository verification reveals an actual regression.
+Treat FOUND-02D and earlier tasks as closed unless repository verification reveals an actual regression.
 
 COMMIT POLICY FROM FOUND-02D
 

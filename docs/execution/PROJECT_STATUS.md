@@ -1,12 +1,12 @@
 # Project Status
 
-**Last updated:** 2026-07-23  
-**Current phase:** Phase A — Foundation  
-**Last completed task:** FOUND-02C — LIVE Event Payload Schemas
-**Current task:** FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas (READY)
-**Repository state:** FOUND-02C is complete and approved at immutable implementation commit `34ad050`; FOUND-02D is unblocked and selected for planning/implementation.
-**Approved implementation:** `34ad050` (`5239df8` is its exact parent).
-**Git state rule:** Use current `git status` and `git log` as source of truth.
+**Last updated:** 2026-07-23
+**Current phase:** Phase A — Foundation
+**Last completed task:** FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas
+**Current task:** FOUND-02E — VoiceIntent and Voice Protocol Schemas (READY)
+**Repository state:** FOUND-02D is complete and approved in the current working tree after REWORK-01 and the mechanical pnpm-version correction. Its implementation remains uncommitted pending user-controlled commit/push.
+**Main branch status:** Uncommitted working tree on `main`; use current Git output as the source of truth.
+**Base commit:** `c4c3dae` (`docs: close FOUND-02C and prepare FOUND-02D`)
 
 ## Current baseline
 
@@ -26,28 +26,19 @@
 
 ## Last verified commands
 
-FOUND-02C-REWORK-02 reported the following results on 2026-07-23:
+FOUND-02D-REWORK-01 reported the following results on 2026-07-23:
 
 ```bash
 pnpm --filter @crowdcircuit/contracts lint               # ✅ Clean (0 errors, 0 warnings)
 pnpm --filter @crowdcircuit/contracts typecheck          # ✅ Clean (tsc -b)
-pnpm --filter @crowdcircuit/contracts test               # ✅ 74 tests passed (4 test files)
+pnpm --filter @crowdcircuit/contracts test               # ✅ 114 tests passed (5 test files)
 pnpm --filter @crowdcircuit/contracts build --force      # ✅ Clean forced build (tsc -b "--force")
 pnpm --filter @crowdcircuit/contracts test:declarations  # ✅ Passed (tsc -p test/tsconfig.declarations.json against dist/index.d.ts)
-pnpm --filter @crowdcircuit/contracts build              # ✅ Clean (dist/ contains no test or declaration fixture artifacts)
 pnpm lint        # ✅ No errors across 15 workspace projects
 pnpm typecheck   # ✅ No errors
-pnpm test        # ✅ 76 tests passed (5 test files across monorepo)
+pnpm test        # ✅ 116 tests passed (6 test files across monorepo)
 pnpm build       # ✅ All 13 buildable workspace projects compiled cleanly
 ```
-
-Historical command discrepancy:
-
-```bash
-pnpm --filter @crowdcircuit/contracts exec tsc -b --force # ❌ Failed under pnpm 11.9.0: `tsc` not recognized
-```
-
-The successful replacement uses the existing contracts package `build` script, which resolves the root TypeScript dev dependency through the workspace script environment.
 
 The next agent must rerun the required baseline commands before coding. Do not assume the working tree or commit state is unchanged.
 
@@ -60,19 +51,19 @@ The next agent must rerun the required baseline commands before coding. Do not a
 - [x] FOUND-02A — Contracts Package Foundation (with PATCH-FOUND-02A-01 & PATCH-FOUND-02A-02)
 - [x] FOUND-02B — Common Primitives and LiveEventEnvelope Base (with PATCH-FOUND-02B-01)
 - [x] FOUND-02C — LIVE Event Payload Schemas (approved at `34ad050`)
-- [ ] FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas (READY)
-- [ ] FOUND-02E — VoiceIntent and Voice Protocol Schemas
+- [x] FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas (APPROVED)
+- [ ] FOUND-02E — VoiceIntent and Voice Protocol Schemas (READY)
 - [ ] FOUND-02F — Contract Fixtures and Integration Review
 - [ ] FOUND-03 — Runtime Session and Pairing
 - [ ] FOUND-04 — SQLite Persistence
 
 ## Test status
 
-Verified state from FOUND-02C-REWORK-02 on 2026-07-23:
+Verified state from FOUND-02D-REWORK-01 on 2026-07-23:
 
-- Unit tests: 76 passing (74 contract tests in `packages/contracts/test/`, 2 health endpoint tests in `apps/server/src/index.test.ts`)
+- Unit tests: 116 passing (114 contract tests in `packages/contracts/test/`, 2 health endpoint tests in `apps/server/src/index.test.ts`)
 - Declaration tests: 1 passing (`packages/contracts/test/declaration-consumer.ts` against `dist/index.d.ts`)
-- Test files: 5 (`packages/contracts/test/index.test.ts`, `packages/contracts/test/common-primitives.test.ts`, `packages/contracts/test/live-event-envelope.test.ts`, `packages/contracts/test/domain-events.test.ts`, `apps/server/src/index.test.ts`)
+- Test files: 6 (`packages/contracts/test/index.test.ts`, `packages/contracts/test/common-primitives.test.ts`, `packages/contracts/test/live-event-envelope.test.ts`, `packages/contracts/test/domain-events.test.ts`, `packages/contracts/test/domain-actions.test.ts`, `apps/server/src/index.test.ts`)
 - Integration tests: not started
 - End-to-end tests: not started
 - Lint: configured, passing
@@ -81,7 +72,7 @@ Verified state from FOUND-02C-REWORK-02 on 2026-07-23:
 
 ## Current limitations
 
-- `@crowdcircuit/contracts` has approved LIVE event payload schemas. Game action and voice schemas remain pending.
+- `@crowdcircuit/contracts` has approved LIVE event payload and Game Action contracts. Voice schemas remain pending.
 - Placeholder packages export only constants or identity values.
 - Dashboard is a minimal React component with no real UI.
 - `voice-output` and `demo-game` are placeholders.
@@ -89,15 +80,15 @@ Verified state from FOUND-02C-REWORK-02 on 2026-07-23:
 
 ## Current blockers
 
-None for FOUND-02D.
+None for FOUND-02E.
 
 ## Next recommended task
 
-`FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas`
+`FOUND-02E — VoiceIntent and Voice Protocol Schemas`
 
 Task brief:
 
-`docs/tasks/FOUND-02D.md`
+`docs/tasks/FOUND-02E.md`
 
 ## Update rules
 

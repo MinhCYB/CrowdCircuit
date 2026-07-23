@@ -24,8 +24,8 @@
 | FOUND-02A | Contracts package foundation | DONE | FOUND-01 |
 | FOUND-02B | Common primitives and LiveEventEnvelope base | DONE | FOUND-02A |
 | FOUND-02C | LIVE event payload schemas | DONE | FOUND-02B |
-| FOUND-02D | GameActionEnvelope and action lifecycle schemas | READY | FOUND-02B |
-| FOUND-02E | VoiceIntent and voice protocol schemas | TODO | FOUND-02B |
+| FOUND-02D | GameActionEnvelope and action lifecycle schemas | DONE | FOUND-02B |
+| FOUND-02E | VoiceIntent and voice protocol schemas | READY | FOUND-02B |
 | FOUND-02F | Contract fixtures and integration review | TODO | FOUND-02C, FOUND-02D, FOUND-02E |
 | FOUND-03A | Runtime secret and admin session foundation | TODO | FOUND-02F |
 | FOUND-03B | Pairing code lifecycle | TODO | FOUND-03A |
@@ -204,6 +204,6 @@ Required:
 
 ## Current execution pointer
 
-**Current task:** `FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas`
+**Current task:** `FOUND-02E — VoiceIntent and Voice Protocol Schemas`
 
-**Detailed brief:** `docs/tasks/FOUND-02D.md`
+**Detailed brief:** `docs/tasks/FOUND-02E.md`
