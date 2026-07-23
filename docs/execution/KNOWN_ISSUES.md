@@ -15,7 +15,7 @@ None.
 **Discovered in:** Documentation scaffold  
 **Closed in:** FOUND-01
 
-Node.js v24.15.0 and pnpm 11.15.1 verified. All workspace commands pass.
+Node.js v24.15.0 and pnpm 11.9.0 verified. All workspace commands pass.
 
 ## Issue template
 
