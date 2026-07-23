@@ -392,7 +392,21 @@ describe("FOUND-02C LIVE Event Contracts", () => {
       });
     });
 
-    describe("Like numeric safety (NaN, Infinity, -Infinity)", () => {
+    describe("Like numeric safety and boundary validation", () => {
+      it("rejects zero, negative, and fractional delta", () => {
+        expect(() => LikePayloadSchema.parse({ delta: 0, total: null, milestone: null })).toThrow();
+        expect(() => LikePayloadSchema.parse({ delta: -5, total: null, milestone: null })).toThrow();
+        expect(() => LikePayloadSchema.parse({ delta: 1.5, total: null, milestone: null })).toThrow();
+      });
+
+      it("rejects negative non-null total", () => {
+        expect(() => LikePayloadSchema.parse({ delta: 10, total: -1, milestone: null })).toThrow();
+      });
+
+      it("rejects fractional non-null milestone", () => {
+        expect(() => LikePayloadSchema.parse({ delta: 10, total: null, milestone: 1.5 })).toThrow();
+      });
+
       it("rejects NaN, Infinity, and -Infinity for delta", () => {
         expect(() => LikePayloadSchema.parse({ delta: NaN, total: null, milestone: null })).toThrow();
         expect(() => LikePayloadSchema.parse({ delta: Infinity, total: null, milestone: null })).toThrow();

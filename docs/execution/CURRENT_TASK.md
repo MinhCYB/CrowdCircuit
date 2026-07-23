@@ -2,7 +2,7 @@
 
 **Task ID:** FOUND-02C  
 **Title:** LIVE Event Payload Schemas  
-**Status:** IN_PROGRESS (REWORK-01 — AWAITING INDEPENDENT RE-REVIEW)  
+**Status:** PARTIAL (REWORK-02 — AWAITING IMMUTABLE COMMIT REVIEW)
 **Priority:** P0
 
 ## Task brief
@@ -13,7 +13,7 @@ Read and follow:
 
 And review findings:
 
-`docs/orchestration/reviews/FOUND-02C-CODEX-REVIEW.md`
+`docs/orchestration/reviews/FOUND-02C-CODEX-REVIEW-02.md`
 
 ## Required context
 
@@ -22,10 +22,10 @@ Read only:
 1. `docs/execution/PROJECT_STATUS.md`
 2. This file
 3. `docs/tasks/FOUND-02C.md`
-4. `docs/orchestration/reviews/FOUND-02C-CODEX-REVIEW.md`
+4. `docs/orchestration/reviews/FOUND-02C-CODEX-REVIEW-02.md`
 5. `docs/execution/DECISIONS.md`
 6. `docs/execution/KNOWN_ISSUES.md`
-7. `docs/handoffs/HANDOFF-FOUND-02C-REWORK-01.md`
+7. `docs/handoffs/HANDOFF-FOUND-02C-REWORK-02.md`
 
 Do not read the full System Design unless the task brief references exact sections.
 
@@ -43,4 +43,4 @@ Previous handoff:
 
 `FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas`
 
-**BLOCKED:** FOUND-02D must NOT start until task FOUND-02C receives independent re-review approval from Codex.
+**BLOCKED:** FOUND-02D must NOT start until the immutable FOUND-02C REWORK-02 commit receives independent approval from Codex.

@@ -70,35 +70,194 @@ function processEvent(event: LiveEvent): string | number | EmptyPayload {
   }
 }
 
-// 3. Strict EmptyPayload compile-time checks
-const validEmptyPayload: EmptyPayload = {};
+// 3. Strict EmptyPayload compile-time input & output checks
+type EmptyInput = z.input<typeof EmptyPayloadSchema>;
+type EmptyOutput = z.output<typeof EmptyPayloadSchema>;
 
-// @ts-expect-error - Invented property rejected on EmptyPayload
-const invalidEmptyPayload: EmptyPayload = { inventedField: "bad" };
+const validEmptyInput: EmptyInput = {};
+const validEmptyOutput: EmptyOutput = {};
 
-// 4. Empty-payload specialized event schemas reject invented fields
-// @ts-expect-error - Invented field rejected on LiveConnectedEvent payload
-const invalidConnectedEventPayload: LiveConnectedEvent["payload"] = { extraToken: "bad" };
+// @ts-expect-error - Invented property rejected on EmptyPayload input
+const invalidEmptyInput: EmptyInput = { foo: 1 };
 
-// @ts-expect-error - Invented field rejected on SubscriptionCreatedEvent payload
-const invalidSubEventPayload: SubscriptionCreatedEvent["payload"] = { rawToken: "bad" };
+// @ts-expect-error - Invented property rejected on EmptyPayload output
+const invalidEmptyOutput: EmptyOutput = { foo: 1 };
 
-// 5. Discriminated union empty-payload branch rejects invented fields
-const invalidConnectedUnionEvent: LiveEvent = {
+// 4. Empty-payload specialized envelope input checks
+type LiveConnectedInput = z.input<typeof LiveConnectedEventSchema>;
+type SubscriptionCreatedInput = z.input<typeof SubscriptionCreatedEventSchema>;
+
+const validConnectedInput: LiveConnectedInput = {
   specVersion: "0.1",
   eventId: "evt_conn_1",
   eventType: "live.connected",
   source: "mock",
   room: { roomId: null, streamerUniqueId: "streamer" },
   user: null,
-  // @ts-expect-error - Invented property rejected on empty payload union branch
+  payload: {},
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+// @ts-expect-error - Omission of required payload on LiveConnectedEventSchema input fails
+const missingConnectedInputPayload: LiveConnectedInput = {
+  specVersion: "0.1",
+  eventId: "evt_conn_1",
+  eventType: "live.connected",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+const invalidConnectedInputPayloadKey: LiveConnectedInput = {
+  specVersion: "0.1",
+  eventId: "evt_conn_1",
+  eventType: "live.connected",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  // @ts-expect-error - Invented property on LiveConnectedEventSchema input payload fails
+  payload: { extraToken: "bad" },
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+const validSubInput: SubscriptionCreatedInput = {
+  specVersion: "0.1",
+  eventId: "evt_sub_1",
+  eventType: "subscription.created",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  payload: {},
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+// @ts-expect-error - Omission of required payload on SubscriptionCreatedEventSchema input fails
+const missingSubInputPayload: SubscriptionCreatedInput = {
+  specVersion: "0.1",
+  eventId: "evt_sub_1",
+  eventType: "subscription.created",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+const invalidSubInputPayloadKey: SubscriptionCreatedInput = {
+  specVersion: "0.1",
+  eventId: "evt_sub_1",
+  eventType: "subscription.created",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  // @ts-expect-error - Invented property on SubscriptionCreatedEventSchema input payload fails
+  payload: { rawToken: "bad" },
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+// 5. Empty-payload specialized envelope output checks
+type LiveConnectedOutput = z.output<typeof LiveConnectedEventSchema>;
+type SubscriptionCreatedOutput = z.output<typeof SubscriptionCreatedEventSchema>;
+
+const validConnectedOutput: LiveConnectedOutput = {
+  specVersion: "0.1",
+  eventId: "evt_conn_1",
+  eventType: "live.connected",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  payload: {},
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+const invalidConnectedOutputPayloadKey: LiveConnectedOutput = {
+  specVersion: "0.1",
+  eventId: "evt_conn_1",
+  eventType: "live.connected",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  // @ts-expect-error - Invented property on LiveConnectedEventSchema output payload fails
+  payload: { extraToken: "bad" },
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+const validSubOutput: SubscriptionCreatedOutput = {
+  specVersion: "0.1",
+  eventId: "evt_sub_1",
+  eventType: "subscription.created",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  payload: {},
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+const invalidSubOutputPayloadKey: SubscriptionCreatedOutput = {
+  specVersion: "0.1",
+  eventId: "evt_sub_1",
+  eventType: "subscription.created",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  // @ts-expect-error - Invented property on SubscriptionCreatedEventSchema output payload fails
+  payload: { rawToken: "bad" },
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+// 6. Union input and output check
+type LiveEventInput = z.input<typeof LiveEventEnvelopeSchema>;
+type LiveEventOutput = z.output<typeof LiveEventEnvelopeSchema>;
+
+const invalidUnionConnectedInput: LiveEventInput = {
+  specVersion: "0.1",
+  eventId: "evt_conn_1",
+  eventType: "live.connected",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  // @ts-expect-error - Invented property on LiveEventEnvelopeSchema input union branch fails
   payload: { extraConnectorToken: "bad" },
   occurredAt: "2026-07-20T03:00:00.000Z",
   receivedAt: "2026-07-20T03:00:00.000Z",
   metadata: { connectorId: "mock", isReplay: false, rawStored: false },
 };
 
-// 6. Invalid gift field types fail compile-time checks
+const invalidUnionConnectedOutput: LiveEventOutput = {
+  specVersion: "0.1",
+  eventId: "evt_conn_1",
+  eventType: "live.connected",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  // @ts-expect-error - Invented property on LiveEventEnvelopeSchema output union branch fails
+  payload: { extraConnectorToken: "bad" },
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+// 7. Invalid gift field types fail compile-time checks
 const invalidGiftPayloadTypes: GiftSentPayload = {
   gift: {
     id: "rose",
@@ -116,7 +275,7 @@ const invalidGiftPayloadTypes: GiftSentPayload = {
   estimatedDiamondTotal: null,
 };
 
-// 7. Required nullable gift properties cannot be omitted or assigned undefined
+// 8. Required nullable gift properties cannot be omitted or assigned undefined
 const giftOmittedImageUrl: GiftSentPayload = {
   // @ts-expect-error - Omission of required nullable gift.imageUrl fails
   gift: { id: "rose", name: "Rose", diamondValue: 1, streakable: true },
@@ -141,6 +300,39 @@ const giftUndefinedImageUrl: GiftSentPayload = {
   estimatedDiamondTotal: 1,
 };
 
+const giftOmittedDiamondValue: GiftSentPayload = {
+  // @ts-expect-error - Omission of required nullable gift.diamondValue fails
+  gift: { id: "rose", name: "Rose", imageUrl: null, streakable: true },
+  quantity: 1,
+  totalQuantity: 1,
+  streak: { id: null, status: "single" },
+  estimatedDiamondTotal: 1,
+};
+
+const giftUndefinedDiamondValue: GiftSentPayload = {
+  gift: {
+    id: "rose",
+    name: "Rose",
+    imageUrl: null,
+    // @ts-expect-error - undefined is not assignable to number | null
+    diamondValue: undefined,
+    streakable: true,
+  },
+  quantity: 1,
+  totalQuantity: 1,
+  streak: { id: null, status: "single" },
+  estimatedDiamondTotal: 1,
+};
+
+const giftOmittedStreakId: GiftSentPayload = {
+  gift: { id: "rose", name: "Rose", imageUrl: null, diamondValue: 1, streakable: true },
+  quantity: 1,
+  totalQuantity: 1,
+  // @ts-expect-error - Omission of required nullable streak.id fails
+  streak: { status: "single" },
+  estimatedDiamondTotal: 1,
+};
+
 const giftUndefinedStreakId: GiftSentPayload = {
   gift: { id: "rose", name: "Rose", imageUrl: null, diamondValue: 1, streakable: true },
   quantity: 1,
@@ -148,6 +340,14 @@ const giftUndefinedStreakId: GiftSentPayload = {
   // @ts-expect-error - undefined is not assignable to string | null
   streak: { id: undefined, status: "single" },
   estimatedDiamondTotal: 1,
+};
+
+// @ts-expect-error - Omission of required nullable estimatedDiamondTotal fails
+const giftOmittedEstimatedTotal: GiftSentPayload = {
+  gift: { id: "rose", name: "Rose", imageUrl: null, diamondValue: 1, streakable: true },
+  quantity: 1,
+  totalQuantity: 1,
+  streak: { id: null, status: "single" },
 };
 
 const giftUndefinedEstimatedTotal: GiftSentPayload = {
@@ -159,7 +359,7 @@ const giftUndefinedEstimatedTotal: GiftSentPayload = {
   estimatedDiamondTotal: undefined,
 };
 
-// 8. Valid null assignments for required nullable gift properties compile cleanly
+// 9. Valid null assignments for required nullable gift properties compile cleanly
 const validNullGiftPayload: GiftSentPayload = {
   gift: { id: "rose", name: "Rose", imageUrl: null, diamondValue: null, streakable: false },
   quantity: 1,
@@ -168,7 +368,7 @@ const validNullGiftPayload: GiftSentPayload = {
   estimatedDiamondTotal: null,
 };
 
-// 9. Invalid comment field types fail compile-time checks
+// 10. Invalid comment field types fail compile-time checks
 const invalidCommentText: ChatCommentPayload = {
   // @ts-expect-error - text must be string, not number
   text: 123,
@@ -183,7 +383,7 @@ const invalidCommentMention: ChatCommentPayload = {
   mentions: [123],
 };
 
-// 10. Invalid like field types fail compile-time checks
+// 11. Invalid like field types fail compile-time checks
 const invalidLikeDelta: LikePayload = {
   // @ts-expect-error - delta must be number, not string
   delta: "ten",
@@ -205,7 +405,7 @@ const invalidLikeMilestone: LikePayload = {
   milestone: true,
 };
 
-// 11. Required nullable like properties cannot be omitted or assigned undefined
+// 12. Required nullable like properties cannot be omitted or assigned undefined
 // @ts-expect-error - Omission of required nullable total fails
 const likeOmittedTotal: LikePayload = {
   delta: 10,
@@ -219,7 +419,47 @@ const likeUndefinedTotal: LikePayload = {
   milestone: null,
 };
 
-// 12. Payload mismatch is rejected by TypeScript compiler
+// @ts-expect-error - Omission of required nullable milestone fails
+const likeOmittedMilestone: LikePayload = {
+  delta: 10,
+  total: 100,
+};
+
+const likeUndefinedMilestone: LikePayload = {
+  delta: 10,
+  total: 100,
+  // @ts-expect-error - undefined is not assignable to number | null
+  milestone: undefined,
+};
+
+// 13. Specialized envelope interface type usages
+const connEventSample: LiveConnectedEvent = {
+  specVersion: "0.1",
+  eventId: "evt_conn_sample",
+  eventType: "live.connected",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  payload: {},
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+const subEventSample: SubscriptionCreatedEvent = {
+  specVersion: "0.1",
+  eventId: "evt_sub_sample",
+  eventType: "subscription.created",
+  source: "mock",
+  room: { roomId: null, streamerUniqueId: "streamer" },
+  user: null,
+  payload: {},
+  occurredAt: "2026-07-20T03:00:00.000Z",
+  receivedAt: "2026-07-20T03:00:00.000Z",
+  metadata: { connectorId: "mock", isReplay: false, rawStored: false },
+};
+
+// 14. Payload mismatch is rejected by TypeScript compiler
 const invalidCommentPayload: ChatCommentEvent["payload"] = {
   // @ts-expect-error - Gift payload cannot be assigned to ChatCommentEvent payload
   gift: { id: "rose", name: "Rose", imageUrl: null, diamondValue: 1, streakable: true },
@@ -228,7 +468,7 @@ const invalidCommentPayload: ChatCommentEvent["payload"] = {
   mentions: [],
 };
 
-// 13. Mismatched specialized envelope eventType is rejected
+// 15. Mismatched specialized envelope eventType is rejected
 const invalidGiftEvent: GiftSentEvent = {
   specVersion: "0.1",
   eventId: "evt_1",
@@ -249,7 +489,7 @@ const invalidGiftEvent: GiftSentEvent = {
   metadata: { connectorId: "mock", isReplay: false, rawStored: false },
 };
 
-// 14. EngagementLikeEvent type verification
+// 16. EngagementLikeEvent type verification
 const likeEvent: EngagementLikeEvent = {
   specVersion: "0.1",
   eventId: "evt_like_1",
@@ -263,7 +503,7 @@ const likeEvent: EngagementLikeEvent = {
   metadata: { connectorId: "mock", isReplay: false, rawStored: false },
 };
 
-// 15. Base factory and envelope checks still pass
+// 17. Base factory and envelope checks still pass
 const SamplePayloadSchema = z.object({
   giftName: z.string(),
   amount: z.number(),
@@ -338,15 +578,30 @@ console.log(
   validLiterals,
   invalidLiteral,
   processEvent,
-  validEmptyPayload,
-  invalidEmptyPayload,
-  invalidConnectedEventPayload,
-  invalidSubEventPayload,
-  invalidConnectedUnionEvent,
+  validEmptyInput,
+  validEmptyOutput,
+  invalidEmptyInput,
+  invalidEmptyOutput,
+  validConnectedInput,
+  missingConnectedInputPayload,
+  invalidConnectedInputPayloadKey,
+  validSubInput,
+  missingSubInputPayload,
+  invalidSubInputPayloadKey,
+  validConnectedOutput,
+  invalidConnectedOutputPayloadKey,
+  validSubOutput,
+  invalidSubOutputPayloadKey,
+  invalidUnionConnectedInput,
+  invalidUnionConnectedOutput,
   invalidGiftPayloadTypes,
   giftOmittedImageUrl,
   giftUndefinedImageUrl,
+  giftOmittedDiamondValue,
+  giftUndefinedDiamondValue,
+  giftOmittedStreakId,
   giftUndefinedStreakId,
+  giftOmittedEstimatedTotal,
   giftUndefinedEstimatedTotal,
   validNullGiftPayload,
   invalidCommentText,
@@ -356,6 +611,10 @@ console.log(
   invalidLikeMilestone,
   likeOmittedTotal,
   likeUndefinedTotal,
+  likeOmittedMilestone,
+  likeUndefinedMilestone,
+  connEventSample,
+  subEventSample,
   invalidCommentPayload,
   invalidGiftEvent,
   likeEvent,
