@@ -3,9 +3,10 @@
 ## Purpose
 
 Treat Phase B as one orchestration unit and deliver a tested event pipeline in
-substantial sequential milestones. Gemini implements one milestone at a time
-in the same working tree. Codex performs a focused review between milestones
-and a full acceptance review after the final milestone.
+substantial sequential milestones. Milestones 1–4 were implemented in one
+accumulated working tree. After the implementation-worker loop was retired,
+Codex completed the remaining milestones directly and performed a full
+self-review. Final remediation was independently reviewed and approved.
 
 Phase A — Contract Foundation is complete. Runtime authentication/pairing and
 SQLite remain separate deferred foundations; they are not silently included in
@@ -23,7 +24,7 @@ Phase B and must be scheduled before a dependent phase needs them.
 
 ## Milestone sequence
 
-### Milestone 1 — Mock-to-normalized playable input slice
+### Milestone 1 — Mock-to-normalized playable input slice — DONE
 
 Roadmap coverage: `BE-01A` through `BE-01C`, and `BE-02A` through `BE-02D`.
 
@@ -39,7 +40,7 @@ or UI.
 Gate: focused Codex review of runtime behavior, normalized contract output,
 error handling, tests, package boundaries, declarations, and dist artifacts.
 
-### Milestone 2 — Event integrity and burst-state pipeline
+### Milestone 2 — Event integrity and burst-state pipeline — DONE
 
 Roadmap coverage: `BE-03A` through `BE-03D`.
 
@@ -51,7 +52,7 @@ finite bounded state, deterministic clocks, and integration with Milestone 1.
 Gate: focused Codex review of algorithms, clocks, memory bounds, state
 transitions, concurrency assumptions, and regression coverage.
 
-### Milestone 3 — TikTok adapter behind the connector boundary
+### Milestone 3 — TikTok adapter behind the connector boundary — DONE
 
 Roadmap coverage: `BE-04A` through `BE-04D`.
 
@@ -64,7 +65,7 @@ verification and may produce `BLOCKED_DECISION`.
 Gate: focused Codex review of dependency evidence, isolation, reconnection,
 secret handling, provider-object containment, and tests.
 
-### Milestone 4 — Phase B acceptance and headless event gateway
+### Milestone 4 — Phase B acceptance and headless event gateway — DONE
 
 Roadmap coverage: Phase B integration acceptance.
 
@@ -74,8 +75,22 @@ disconnect, replay-risk, ordering, and burst cases. Inspect all package exports
 and dist artifacts, reconcile documentation, and confirm no Phase C mapping or
 game-delivery implementation entered scope.
 
-Gate: full Phase B acceptance review. Only this gate marks Phase B DONE and
-authorizes the preferred single phase commit.
+Gate: independent full Phase B acceptance review. This gate returned APPROVE
+after Final Remediation 01. Phase B is DONE and ready for the preferred single
+phase commit.
+
+## Current execution state
+
+- Milestone 1: DONE.
+- Milestone 2: DONE.
+- Milestone 3: DONE.
+- Milestone 4: DONE.
+- Initial independent final review: REQUEST CHANGES (historical evidence).
+- Final remediation 01: complete.
+- Remediation self-review: complete.
+- Independent Phase B re-review: APPROVE.
+- Phase B: DONE.
+- Phase C: BLOCKED / NOT_STARTED pending a separate phase-level plan.
 
 ## Working-tree and review protocol
 

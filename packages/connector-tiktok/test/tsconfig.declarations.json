@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "baseUrl": "../../..",
+    "paths": {
+      "@crowdcircuit/connector-core": ["packages/connector-core/dist/index.d.ts"],
+      "@crowdcircuit/contracts": ["packages/contracts/dist/index.d.ts"],
+      "@crowdcircuit/connector-tiktok": ["packages/connector-tiktok/dist/index.d.ts"]
+    }
+  },
+  "include": ["declaration-consumer.ts"]
+}

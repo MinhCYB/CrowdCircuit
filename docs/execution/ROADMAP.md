@@ -30,7 +30,7 @@
 
 ---
 
-## Phase B — Event Pipeline
+## Phase B — Event Pipeline — DONE
 
 Phase B is executed as one orchestration unit using the milestones in
 `docs/orchestration/plans/NEXT-PHASE-MILESTONE-PLAN.md`. The micro-task rows
@@ -40,21 +40,21 @@ closes the phase.
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| BE-01A | Mock connector package foundation | TODO | FOUND-02F |
-| BE-01B | Mock gift and comment events | TODO | BE-01A |
-| BE-01C | Mock social, like and scenario events | TODO | BE-01B |
-| BE-02A | Event normalizer foundation | TODO | FOUND-02F, BE-01B |
-| BE-02B | User, room and timestamp normalization | TODO | BE-02A |
-| BE-02C | Gift, comment and social normalization | TODO | BE-02B |
-| BE-02D | Invalid-event handling and contract tests | TODO | BE-02C |
-| BE-03A | Event-specific deduplication | TODO | BE-02D |
-| BE-03B | Gift streak state and inactivity timeout | TODO | BE-03A |
-| BE-03C | Like aggregation and disconnect flush | TODO | BE-03B |
-| BE-03D | Deduplication and aggregation integration tests | TODO | BE-03C |
-| BE-04A | TikTok connector package foundation | TODO | BE-02D |
-| BE-04B | TikTok connection and status adapter | TODO | BE-04A |
-| BE-04C | TikTok raw-event mapping | TODO | BE-04B |
-| BE-04D | Reconnect and connector contract tests | TODO | BE-04C |
+| BE-01A | Mock connector package foundation | DONE | FOUND-02F |
+| BE-01B | Mock gift and comment events | DONE | BE-01A |
+| BE-01C | Mock social, like and scenario events | DONE | BE-01B |
+| BE-02A | Event normalizer foundation | DONE | FOUND-02F, BE-01B |
+| BE-02B | User, room and timestamp normalization | DONE | BE-02A |
+| BE-02C | Gift, comment and social normalization | DONE | BE-02B |
+| BE-02D | Invalid-event handling and contract tests | DONE | BE-02C |
+| BE-03A | Event-specific deduplication | DONE | BE-02D |
+| BE-03B | Gift streak state and inactivity timeout | DONE | BE-03A |
+| BE-03C | Like aggregation and disconnect flush | DONE | BE-03B |
+| BE-03D | Deduplication and aggregation integration tests | DONE | BE-03C |
+| BE-04A | TikTok connector package foundation | DONE | BE-02D |
+| BE-04B | TikTok connection and status adapter | DONE | BE-04A |
+| BE-04C | TikTok raw-event mapping | DONE | BE-04B |
+| BE-04D | Reconnect and connector contract tests | DONE | BE-04C |
 
 ---
 
@@ -219,10 +219,10 @@ Required:
 
 ## Current execution pointer
 
-**Current orchestration unit:** `Phase B — Event Pipeline`
+**Current orchestration unit:** `Phase C — Game Vertical Slice planning`
 
-**Current milestone:** `Phase B Milestone 1 — Mock-to-normalized playable input slice`
+**Current milestone:** `Not started — blocked pending phase implementation plan`
 
-**Plan:** `docs/orchestration/plans/NEXT-PHASE-MILESTONE-PLAN.md`
+**Plan:** `Not yet created`
 
-**Implementation prompt:** `docs/orchestration/prompts/PHASE-B-MILESTONE-01-GEMINI.md`
+**Previous phase approval:** `docs/orchestration/reviews/PHASE-B-INDEPENDENT-FINAL-REVIEW-APPROVED.md`

@@ -4,5 +4,9 @@
     "outDir": "dist",
     "rootDir": "src"
   },
+  "references": [
+    { "path": "../connector-core" },
+    { "path": "../contracts" }
+  ],
   "include": ["src"]
 }

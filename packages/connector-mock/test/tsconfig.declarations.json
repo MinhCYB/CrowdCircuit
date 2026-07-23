@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@crowdcircuit/connector-core": ["../../connector-core/dist/index.d.ts"],
+      "@crowdcircuit/connector-mock": ["../dist/index.d.ts"]
+    }
+  },
+  "include": ["declaration-consumer.ts"]
+}

@@ -12,7 +12,18 @@
     }
   },
   "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:declarations": "tsc -p test/tsconfig.declarations.json",
     "build": "tsc -b"
+  },
+  "dependencies": {
+    "@crowdcircuit/connector-core": "workspace:*",
+    "@crowdcircuit/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@crowdcircuit/connector-mock": "workspace:*"
   },
   "files": ["dist"]
 }

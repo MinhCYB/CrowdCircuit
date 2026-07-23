@@ -1,105 +1,65 @@
 # Project Status
 
-**Last updated:** 2026-07-23
-**Current phase:** Phase B — Event Pipeline (planned; implementation not started)
-**Last completed phase:** Phase A — Contract Foundation
-**Last completed task:** FOUND-02F — Contract Fixtures and Integration Review
-**Current orchestration unit:** Phase B — Event Pipeline
-**Current milestone:** Milestone 1 — Mock-to-normalized playable input slice (READY)
-**Repository state:** FOUND-02F is approved and complete in the accumulated uncommitted working tree on base commit `85a7d3b`; user commit and push remain pending.
-**Branch:** `main`
+**Last updated:** 2026-07-24
+**Last completed phase:** Phase B — Event Pipeline
+**Phase B status:** DONE — independent final remediation review APPROVE
+**Next planned phase:** Phase C — Game Vertical Slice
+**Phase C status:** BLOCKED / NOT_STARTED pending implementation plan
+**Base commit:** `8c3f2e4` (`feat: complete Phase A contract foundation`)
+**Working tree:** Accumulated, uncommitted approved Phase B implementation
 
-## Current baseline
+## Runtime baseline
 
-- Product: CrowdCircuit
-- Organization: MS24 Labs
-- Runtime: Node.js v24.15.0 + TypeScript 5.9.3
-- Package manager: pnpm 11.9.0
-- Architecture: local-first modular monolith
-- Backend: Fastify 5.3.x on port 3100
-- Frontend: React 19 + Vite 6
-- Validation: Zod 3.24.2
-- Tests: Vitest 4.1.10
-- SQLite, Socket.IO, authentication, real connector, and runtime voice remain unimplemented.
+- Node.js v24.15.0
+- pnpm 11.9.0
+- TypeScript 5.9.3
+- Zod 3.24.2
+- Vitest 4.1.10
 
-## Final FOUND-02F verification
+## Completed Phase B
 
-Fresh Codex verification on 2026-07-23:
+- Milestone 1 — Mock connector and strict normalizer: DONE
+- Milestone 2 — Event integrity and burst-state pipeline: DONE
+- Milestone 3 — TikTok adapter boundary: DONE
+- Milestone 4 — Headless gateway and phase acceptance: DONE
+- Final remediation 01: DONE
+- Independent final remediation review: APPROVE
 
-```text
-git diff --check HEAD --                              passed
-contracts lint                                       passed
-contracts typecheck                                  passed
-contracts tests                                      175 passed (7 files)
-contracts forced build                               passed
-contracts declaration tests                          passed
-game-sdk-js build                                    passed
-repository lint                                      passed
-repository typecheck                                 passed
-repository tests                                     177 passed (8 files)
-repository build                                     passed
-```
+Approved behavior:
 
-Final artifact inspection confirmed:
+- Raw replay deduplication prioritizes connector event identity, then sequence,
+  then conservative event-specific fingerprints.
+- Inputs without a safe dedupe key are accepted to avoid dropping legitimate
+  events.
+- Likes bypass general deduplication and remain aggregation-driven.
+- Gift streak progression requires explicit provider-independent identity and
+  lifecycle evidence.
+- Neutral, ordinary, and userless gifts remain singles without evidence.
+- Explicit gift connector END finalizes the matching streak with
+  `connector_end`.
+- Caches remain TTL- and capacity-bounded and clear deterministically.
 
-- 14 canonical fixtures remain deeply immutable at runtime.
-- Exact literal and recursively readonly declarations are preserved, including
-  shared room, user, roles, and metadata descendants.
-- The internal freezer is cycle-safe, traverses children below shallow-frozen
-  parents, and contains no unsafe assertion.
-- `deepFreeze` and its internal readonly helper are absent from both public
-  contracts entry points.
-- The SDK resolution check is type-only; emitted JavaScript and declarations
-  contain only `export {};`.
-- The SDK root exports only `GAME_SDK_VERSION`.
-- `@crowdcircuit/contracts` is an SDK development dependency, not a runtime
-  dependency.
+## Final verification
 
-## Completed
+Executed with Node.js v24.15.0 and pnpm 11.9.0:
 
-- [x] System Design v0.1.1
-- [x] Studio UI/UX Specification v0.1
-- [x] Execution documentation scaffold
-- [x] FOUND-01 — Monorepo Scaffold
-- [x] FOUND-02A — Contracts Package Foundation
-- [x] FOUND-02B — Common Primitives and LiveEventEnvelope Base
-- [x] FOUND-02C — LIVE Event Payload Schemas
-- [x] FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas
-- [x] FOUND-02E — VoiceIntent and Voice Protocol Schemas
-- [x] FOUND-02F — Contract Fixtures and Integration Review
-- [x] Phase A — Contract Foundation
+- connector-core: 2 tests; lint, typecheck, build, declarations pass.
+- connector-mock: 11 tests; lint, typecheck, build, declarations pass.
+- event-core: 38 tests; lint, typecheck, build, declarations pass.
+- connector-tiktok: 9 tests; lint, typecheck, build, declarations pass.
+- contracts: 175 tests; forced build and declarations pass.
+- Repository: 237 tests across 14 files.
+- Repository lint, typecheck, test, and build pass.
+- `git diff --check HEAD --`: pass.
 
 ## Current limitations
 
-- Phase B runtime event-pipeline work has not started.
-- The TikTok connector choice remains prototype-oriented and must remain behind
-  the connector interface.
-- Runtime authentication/pairing and SQLite foundations remain deferred roadmap
-  work and must be scheduled before dependent phases require them.
-- Placeholder packages still expose only scaffold behavior outside the
-  completed contracts surface.
+- Concrete TikTok provider selection, license review, and real-network smoke
+  testing remain release integration work.
+- Authentication, persistence, mapping/game action delivery, UI, and Phase C
+  behavior remain unimplemented.
 
-## Current blockers
+## Next gate
 
-None for Phase B Milestone 1.
-
-## Next execution unit
-
-Use:
-
-- Plan: `docs/orchestration/plans/NEXT-PHASE-MILESTONE-PLAN.md`
-- First implementation prompt:
-  `docs/orchestration/prompts/PHASE-B-MILESTONE-01-GEMINI.md`
-
-Do not select FOUND-03A as a standalone micro-task. Implement one approved
-Phase B milestone at a time in the same working tree, with focused reviews
-between milestones and one full acceptance review at phase completion.
-
-## Update rules
-
-- Repository state and fresh command output outrank handoff summaries.
-- Record only commands that actually ran and exact observed test counts.
-- Do not mark a milestone complete before its focused independent review.
-- Prefer one final phase commit; use an intermediate commit only for a
-  substantial independently rollbackable milestone.
-- The user remains commit and push owner.
+Create and approve a phase-level Phase C implementation plan. Phase C remains
+blocked and no Phase C production work has started.

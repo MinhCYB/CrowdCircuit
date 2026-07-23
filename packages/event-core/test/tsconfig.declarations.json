@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@crowdcircuit/connector-core": ["../../connector-core/dist/index.d.ts"],
+      "@crowdcircuit/contracts": ["../../contracts/dist/index.d.ts"],
+      "@crowdcircuit/event-core": ["../dist/index.d.ts"]
+    }
+  },
+  "include": ["declaration-consumer.ts"]
+}

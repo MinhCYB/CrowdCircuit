@@ -1,5 +1,5 @@
 {
-  "name": "@crowdcircuit/connector-mock",
+  "name": "@crowdcircuit/connector-tiktok",
   "version": "0.1.0",
   "private": true,
   "type": "module",

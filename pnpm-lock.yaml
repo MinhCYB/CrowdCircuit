@@ -70,7 +70,23 @@ importers:
 
   packages/connector-core: {}
 
-  packages/connector-mock: {}
+  packages/connector-mock:
+    dependencies:
+      '@crowdcircuit/connector-core':
+        specifier: workspace:*
+        version: link:../connector-core
+      '@crowdcircuit/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
+  packages/connector-tiktok:
+    dependencies:
+      '@crowdcircuit/connector-core':
+        specifier: workspace:*
+        version: link:../connector-core
+      '@crowdcircuit/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
   packages/contracts:
     dependencies:
@@ -78,7 +94,18 @@ importers:
         specifier: ^3.24.2
         version: 3.25.76
 
-  packages/event-core: {}
+  packages/event-core:
+    dependencies:
+      '@crowdcircuit/connector-core':
+        specifier: workspace:*
+        version: link:../connector-core
+      '@crowdcircuit/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+    devDependencies:
+      '@crowdcircuit/connector-mock':
+        specifier: workspace:*
+        version: link:../connector-mock
 
   packages/game-sdk-js:
     devDependencies:

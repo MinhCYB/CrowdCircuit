@@ -5,6 +5,7 @@
     { "path": "packages/contracts" },
     { "path": "packages/connector-core" },
     { "path": "packages/connector-mock" },
+    { "path": "packages/connector-tiktok" },
     { "path": "packages/event-core" },
     { "path": "packages/mapping-engine" },
     { "path": "packages/voice-engine" },

@@ -12,6 +12,10 @@
     }
   },
   "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:declarations": "tsc -p test/tsconfig.declarations.json",
     "build": "tsc -b"
   },
   "files": ["dist"]

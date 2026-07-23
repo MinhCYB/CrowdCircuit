@@ -1,36 +1,25 @@
 # Current Task
 
-**Orchestration unit:** Phase B — Event Pipeline
-**Milestone:** Phase B Milestone 1 — Mock-to-normalized playable input slice
-**Status:** READY FOR IMPLEMENTATION
+**Task ID:** PHASE-C-PLANNING
+**Parent Task:** Phase C — Game Vertical Slice
+**Status:** BLOCKED / NOT_STARTED
 **Priority:** P0
-
-## Phase plan
-
-Read and follow:
-
-`docs/orchestration/plans/NEXT-PHASE-MILESTONE-PLAN.md`
-
-## Implementation prompt
-
-Use only:
-
-`docs/orchestration/prompts/PHASE-B-MILESTONE-01-GEMINI.md`
 
 ## Previous completed phase
 
-`Phase A — Contract Foundation` is DONE. Its final task,
-`FOUND-02F — Contract Fixtures and Integration Review`, received final Codex
-approval in the accumulated working tree on base commit `85a7d3b`. The user
-remains responsible for the final phase commit and push.
+Phase B — Event Pipeline is DONE. Its independent final remediation review
+returned APPROVE on 2026-07-24.
 
-## Execution policy
+Approved evidence:
 
-- Implement one Phase B milestone at a time in the same working tree.
-- Run a focused independent review after each milestone.
-- Do not request separate commits for milestone prompts, handoffs, reviews, or
-  status updates.
-- Prefer one final Phase B commit. An intermediate commit is justified only for
-  a substantial independently rollbackable milestone.
-- Do not begin Milestone 2 until Milestone 1 is independently approved.
-- Do not select FOUND-03A as a standalone micro-task.
+- `docs/orchestration/reviews/PHASE-B-INDEPENDENT-FINAL-REVIEW-APPROVED.md`
+- `docs/orchestration/reviews/PHASE-B-FINAL-REMEDIATION-01-SELF-REVIEW.md`
+- `docs/handoffs/HANDOFF-PHASE-B-FINAL-REMEDIATION-01.md`
+
+## Next planned phase
+
+Phase C is the next roadmap phase, but it remains NOT_STARTED and BLOCKED until
+a phase-level implementation plan is reviewed and accepted.
+
+Do not implement Phase C production code or select a standalone Phase C
+micro-task before that planning gate.

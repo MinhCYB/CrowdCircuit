@@ -123,6 +123,39 @@ The `voice.playback.*` family is reserved for potential internal application eve
 
 - `packages/contracts`
 
+### ADR-011 — Injectable TikTok provider boundary
+
+**Date:** 2026-07-23
+**Status:** Accepted
+**Task:** Phase B Milestone 3
+
+### Context
+
+The available `tiktok-live-connector` package is unofficial,
+reverse-engineered, described as not production-ready, and AGPL licensed.
+Phase B requires a replaceable TikTok adapter but does not require adopting
+that provider as a runtime dependency.
+
+### Decision
+
+`@crowdcircuit/connector-tiktok` owns a narrow injectable provider port.
+Provider-specific clients are composed outside the connector package. Provider
+objects, credentials, and dependency types do not cross CrowdCircuit's public
+connector boundary.
+
+### Consequences
+
+- Connector lifecycle, mapping, cleanup, and reconnect policy are deterministic
+  and testable without network access.
+- No unofficial TikTok provider package is bundled.
+- Concrete provider composition and real-network smoke testing remain separate
+  integration and release work.
+
+### Affected packages
+
+- `packages/connector-tiktok`
+- `packages/connector-core`
+
 ## New decision template
 
 
