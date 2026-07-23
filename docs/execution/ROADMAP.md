@@ -10,6 +10,9 @@
 - Chỉ đánh dấu `DONE` khi acceptance criteria và verification đều pass.
 - Khi task lớn hơn khả năng xử lý trong một lượt, phải chia nhỏ trong roadmap trước khi giao agent.
 - Handoff là bản tóm tắt; repository và test mới là source of truth cuối cùng.
+- From FOUND-02D onward, prefer one commit per completed task.
+- Mid-task commits are allowed only for substantial, independently reviewable milestones.
+- Do not request separate commits solely for prompts, handoffs, reviews, or status updates.
 
 ---
 
@@ -20,8 +23,8 @@
 | FOUND-01 | Monorepo scaffold | DONE | — |
 | FOUND-02A | Contracts package foundation | DONE | FOUND-01 |
 | FOUND-02B | Common primitives and LiveEventEnvelope base | DONE | FOUND-02A |
-| FOUND-02C | LIVE event payload schemas | PARTIAL | FOUND-02B |
-| FOUND-02D | GameActionEnvelope and action lifecycle schemas | TODO | FOUND-02B |
+| FOUND-02C | LIVE event payload schemas | DONE | FOUND-02B |
+| FOUND-02D | GameActionEnvelope and action lifecycle schemas | READY | FOUND-02B |
 | FOUND-02E | VoiceIntent and voice protocol schemas | TODO | FOUND-02B |
 | FOUND-02F | Contract fixtures and integration review | TODO | FOUND-02C, FOUND-02D, FOUND-02E |
 | FOUND-03A | Runtime secret and admin session foundation | TODO | FOUND-02F |
@@ -201,6 +204,6 @@ Required:
 
 ## Current execution pointer
 
-**Current task:** `FOUND-02C — LIVE Event Payload Schemas`
+**Current task:** `FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas`
 
-**Detailed brief:** `docs/tasks/FOUND-02C.md`
+**Detailed brief:** `docs/tasks/FOUND-02D.md`

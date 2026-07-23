@@ -23,11 +23,18 @@ CURRENT BASELINE
 - FOUND-01: done.
 - FOUND-02A and maintenance patches: done.
 - FOUND-02B and PATCH-FOUND-02B-01: done.
-- Latest pushed commit at handoff time: 6ecd211.
-- Current task: FOUND-02C.
-- Expected next task: FOUND-02D.
+- FOUND-02C and REWORK-02: done; implementation commit `34ad050` received final `APPROVE`.
+- Current task: FOUND-02D.
+- Expected next task: FOUND-02E.
 
-Treat FOUND-02B as closed unless repository verification reveals an actual regression.
+Treat FOUND-02C and earlier tasks as closed unless repository verification reveals an actual regression.
+
+COMMIT POLICY FROM FOUND-02D
+
+- Prefer one commit per completed task.
+- Mid-task commits are allowed only for substantial, independently reviewable milestones.
+- Do not request separate commits solely for prompts, handoffs, reviews, or status updates.
+- The user remains the commit and push owner unless explicitly stated otherwise.
 
 START OF EVERY CYCLE
 
@@ -122,18 +129,17 @@ Report findings by severity with:
 - Minimal fix.
 - Whether it blocks the next task.
 
-DEFAULT FIRST RESPONSE FROM FOUND-02C
+DEFAULT TASK PLANNING FROM FOUND-02D
 
-Do not implement FOUND-02C yourself.
+Do not implement the selected task yourself during planning.
 
 First:
 
-1. Verify repository state.
-2. Confirm actual HEAD.
-3. Reconcile stale FOUND-02B status fields.
-4. Read FOUND-02C brief and relevant contract API.
-5. Decide whether FOUND-02C should remain one task or be split.
-6. Produce a complete Gemini Flash High implementation prompt.
-7. State any BLOCKED_DECISION requiring user input.
+1. Verify repository state and actual HEAD.
+2. Confirm the previous task's immutable approval and execution-document state.
+3. Read the selected task brief and only its relevant contract/design sections.
+4. Decide whether the selected task should remain one task or be split.
+5. Produce a complete Gemini Flash High implementation prompt.
+6. State any BLOCKED_DECISION requiring user input.
 
 Do not commit or push.

@@ -1,19 +1,15 @@
 # Current Task
 
-**Task ID:** FOUND-02C  
-**Title:** LIVE Event Payload Schemas  
-**Status:** PARTIAL (REWORK-02 — AWAITING IMMUTABLE COMMIT REVIEW)
+**Task ID:** FOUND-02D
+**Title:** GameActionEnvelope and Action Lifecycle Schemas
+**Status:** READY
 **Priority:** P0
 
 ## Task brief
 
 Read and follow:
 
-`docs/tasks/FOUND-02C.md`
-
-And review findings:
-
-`docs/orchestration/reviews/FOUND-02C-CODEX-REVIEW-02.md`
+`docs/tasks/FOUND-02D.md`
 
 ## Required context
 
@@ -21,11 +17,12 @@ Read only:
 
 1. `docs/execution/PROJECT_STATUS.md`
 2. This file
-3. `docs/tasks/FOUND-02C.md`
-4. `docs/orchestration/reviews/FOUND-02C-CODEX-REVIEW-02.md`
-5. `docs/execution/DECISIONS.md`
-6. `docs/execution/KNOWN_ISSUES.md`
+3. `docs/tasks/FOUND-02D.md`
+4. `docs/execution/DECISIONS.md`
+5. `docs/execution/KNOWN_ISSUES.md`
+6. `docs/orchestration/reviews/FOUND-02C-CODEX-REVIEW-FINAL.md`
 7. `docs/handoffs/HANDOFF-FOUND-02C-REWORK-02.md`
+8. System Design sections `11.8`, `11.9`, `12.2`, and the game-related parts of `14`
 
 Do not read the full System Design unless the task brief references exact sections.
 
@@ -33,14 +30,14 @@ The UI/UX Specification is not required for this backend task.
 
 ## Previous completed task
 
-`FOUND-02B — Common Primitives and LiveEventEnvelope Base` (including `PATCH-FOUND-02B-01`)
+`FOUND-02C — LIVE Event Payload Schemas`
 
 Previous handoff:
 
-`docs/handoffs/HANDOFF-FOUND-02B-PATCH-01.md`
+`docs/handoffs/HANDOFF-FOUND-02C-REWORK-02.md`
 
 ## Expected next task
 
-`FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas`
+`FOUND-02E — VoiceIntent and Voice Protocol Schemas`
 
-**BLOCKED:** FOUND-02D must NOT start until the immutable FOUND-02C REWORK-02 commit receives independent approval from Codex.
+FOUND-02D is unblocked by the final FOUND-02C approval. Do not begin FOUND-02E until FOUND-02D receives independent approval.

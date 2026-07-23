@@ -2,11 +2,11 @@
 
 **Last updated:** 2026-07-23  
 **Current phase:** Phase A — Foundation  
-**Last completed task:** FOUND-02B — Common Primitives and LiveEventEnvelope Base (including PATCH-FOUND-02B-01)  
-**Current task:** FOUND-02C — LIVE Event Payload Schemas (PARTIAL — REWORK-02 awaiting immutable commit review)
-**Repository state:** FOUND-02C REWORK-02 prepared (4 payload schemas using native `z.record(z.never())` for strict empty payloads without assertions, 10 specialized envelope schemas, 41 domain contract unit tests, and 1 declaration fixture); closure requires review of the eventual immutable commit.
-**Review baseline:** `5239df8` is the committed HEAD before REWORK-02 (`5b9793c` is its parent planning commit; `948f5ab` is the original FOUND-02C implementation).
-**Git state rule:** Use current `git status` and `git log` as source of truth; this document does not predict the user-controlled commit hash.
+**Last completed task:** FOUND-02C — LIVE Event Payload Schemas
+**Current task:** FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas (READY)
+**Repository state:** FOUND-02C is complete and approved at immutable implementation commit `34ad050`; FOUND-02D is unblocked and selected for planning/implementation.
+**Approved implementation:** `34ad050` (`5239df8` is its exact parent).
+**Git state rule:** Use current `git status` and `git log` as source of truth.
 
 ## Current baseline
 
@@ -59,8 +59,8 @@ The next agent must rerun the required baseline commands before coding. Do not a
 - [x] FOUND-01 — Monorepo Scaffold
 - [x] FOUND-02A — Contracts Package Foundation (with PATCH-FOUND-02A-01 & PATCH-FOUND-02A-02)
 - [x] FOUND-02B — Common Primitives and LiveEventEnvelope Base (with PATCH-FOUND-02B-01)
-- [ ] FOUND-02C — LIVE Event Payload Schemas (PARTIAL — REWORK-02 awaiting immutable commit review)
-- [ ] FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas (BLOCKED: awaiting FOUND-02C approval)
+- [x] FOUND-02C — LIVE Event Payload Schemas (approved at `34ad050`)
+- [ ] FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas (READY)
 - [ ] FOUND-02E — VoiceIntent and Voice Protocol Schemas
 - [ ] FOUND-02F — Contract Fixtures and Integration Review
 - [ ] FOUND-03 — Runtime Session and Pairing
@@ -81,7 +81,7 @@ Verified state from FOUND-02C-REWORK-02 on 2026-07-23:
 
 ## Current limitations
 
-- `@crowdcircuit/contracts` has LIVE event payload schemas implemented, awaiting independent re-review before closure. Game action and voice schemas remain pending.
+- `@crowdcircuit/contracts` has approved LIVE event payload schemas. Game action and voice schemas remain pending.
 - Placeholder packages export only constants or identity values.
 - Dashboard is a minimal React component with no real UI.
 - `voice-output` and `demo-game` are placeholders.
@@ -89,16 +89,15 @@ Verified state from FOUND-02C-REWORK-02 on 2026-07-23:
 
 ## Current blockers
 
-- FOUND-02C requires independent review of the eventual immutable REWORK-02 commit before closure.
-- FOUND-02D must not start until FOUND-02C is approved.
+None for FOUND-02D.
 
 ## Next recommended task
 
-`FOUND-02C — LIVE Event Payload Schemas`
+`FOUND-02D — GameActionEnvelope and Action Lifecycle Schemas`
 
 Task brief:
 
-`docs/tasks/FOUND-02C.md`
+`docs/tasks/FOUND-02D.md`
 
 ## Update rules
 
