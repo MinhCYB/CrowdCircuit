@@ -58,26 +58,34 @@ closes the phase.
 
 ---
 
-## Deferred cross-cutting runtime foundations
+## Completed cross-cutting runtime foundations
 
-These items remain planned and incomplete. They are no longer the immediate
-post-contract execution pointer and must be scheduled before a dependent phase
-needs authentication or persistence.
+These prerequisites were completed and accepted as Phase C Milestone 1.
+They remain the authentication and durable-persistence foundation for dependent
+Phase C work.
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| FOUND-03A | Runtime secret and admin session foundation | TODO | FOUND-02F |
-| FOUND-03B | Pairing code lifecycle | TODO | FOUND-03A |
-| FOUND-03C | Role tokens and client authorization | TODO | FOUND-03B |
-| FOUND-03D | Authentication contract and integration tests | TODO | FOUND-03C |
-| FOUND-04A | SQLite and Drizzle foundation | TODO | FOUND-02F |
-| FOUND-04B | Core configuration tables and migrations | TODO | FOUND-04A |
-| FOUND-04C | Runtime logs and reconciliation storage | TODO | FOUND-04B |
-| FOUND-04D | Persistence integration tests | TODO | FOUND-04C |
+| FOUND-03A | Runtime secret and admin session foundation | DONE | FOUND-02F |
+| FOUND-03B | Pairing code lifecycle | DONE | FOUND-03A |
+| FOUND-03C | Role tokens and client authorization | DONE | FOUND-03B |
+| FOUND-03D | Authentication contract and integration tests | DONE | FOUND-03C |
+| FOUND-04A | SQLite and Drizzle foundation | DONE | FOUND-02F |
+| FOUND-04B | Core configuration tables and migrations | DONE | FOUND-04A |
+| FOUND-04C | Runtime logs and reconciliation storage | DONE | FOUND-04B |
+| FOUND-04D | Persistence integration tests | DONE | FOUND-04C |
 
 ---
 
-## Phase C — Game Vertical Slice
+## Phase C — Game Vertical Slice — IN_PROGRESS
+
+| Milestone | Capability | Status |
+|---|---|---|
+| PHASE-C-MILESTONE-01 | Authentication and durable persistence prerequisites | DONE |
+| PHASE-C-MILESTONE-02 | Mapping and action-budget capability | READY_TO_START |
+| PHASE-C-MILESTONE-03 | Durable Action Gateway lifecycle | BLOCKED_BY_PREVIOUS_MILESTONE |
+| PHASE-C-MILESTONE-04 | Authenticated game-session delivery and SDK vertical slice | BLOCKED_BY_PREVIOUS_MILESTONE |
+| PHASE-C-MILESTONE-05 | Demo game, recovery, and Phase C acceptance | BLOCKED_BY_PREVIOUS_MILESTONE |
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
@@ -88,11 +96,11 @@ needs authentication or persistence.
 | BE-05E | Mapping dry-run and integration tests | TODO | BE-05D |
 | BE-06A | Per-game global action budget | TODO | BE-05E |
 | BE-06B | Overflow and priority policies | TODO | BE-06A |
-| BE-07A | Game Socket.IO namespace and registration | TODO | FOUND-03D, BE-05E |
-| BE-07B | Action delivery and received ACK | TODO | BE-07A |
-| BE-07C | Completion result, retry and TTL | TODO | BE-07B |
-| BE-07D | Action Gateway integration tests | TODO | BE-07C |
-| BE-08A | JavaScript SDK connection and registration | TODO | BE-07D |
+| BE-07A | Game Socket.IO namespace and registration | TODO | FOUND-03D, FOUND-04D, BE-05E |
+| BE-07B | Action delivery and received ACK | TODO | BE-07A, FOUND-04D |
+| BE-07C | Completion result, retry and TTL | TODO | BE-07B, FOUND-04D |
+| BE-07D | Action Gateway integration tests | TODO | BE-07C, FOUND-03D, FOUND-04D |
+| BE-08A | JavaScript SDK connection and registration | TODO | BE-07D, FOUND-03D |
 | BE-08B | Action handlers and automatic receipt ACK | TODO | BE-08A |
 | BE-08C | Result reporting, heartbeat and idempotency | TODO | BE-08B |
 | BE-09A | Phaser demo game shell | TODO | BE-08C |
@@ -219,10 +227,10 @@ Required:
 
 ## Current execution pointer
 
-**Current orchestration unit:** `Phase C — Game Vertical Slice planning`
+**Current orchestration unit:** `Phase C — Game Vertical Slice`
 
-**Current milestone:** `Not started — blocked pending phase implementation plan`
+**Current milestone:** `PHASE-C-MILESTONE-02 — READY_TO_START (implementation blocked pending recorded semantic decisions)`
 
-**Plan:** `Not yet created`
+**Plan:** `docs/orchestration/plans/PHASE-C-MILESTONE-PLAN.md`
 
 **Previous phase approval:** `docs/orchestration/reviews/PHASE-B-INDEPENDENT-FINAL-REVIEW-APPROVED.md`

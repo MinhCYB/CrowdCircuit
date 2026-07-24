@@ -1,0 +1,22 @@
+{
+  "name": "@crowdcircuit/auth-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "lint": "eslint src test",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -b --force",
+    "test:declarations": "tsc -p test/tsconfig.declarations.json --noEmit"
+  }
+}

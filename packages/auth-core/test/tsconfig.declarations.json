@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "baseUrl": "../../..",
+    "paths": {
+      "@crowdcircuit/auth-core": ["packages/auth-core"]
+    }
+  },
+  "include": ["declaration-consumer.ts"]
+}

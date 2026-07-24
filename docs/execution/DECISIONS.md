@@ -156,6 +156,55 @@ connector boundary.
 - `packages/connector-tiktok`
 - `packages/connector-core`
 
+### ADR-012 — Durable action record before first transport send
+
+**Date:** 2026-07-24
+**Status:** Accepted
+**Task:** Phase C planning
+
+### Context
+
+System Design §11.9 requires an action log to be persisted before an action is
+sent. The original roadmap allowed the Action Gateway transport to begin after
+authentication and mapping work without explicitly depending on the durable
+persistence foundation. That ordering could permit an in-memory implementation
+whose restart and reconciliation semantics differ from the required system.
+
+### Decision
+
+- Persist-before-send is a hard Phase C correctness invariant.
+- Every action must be committed to durable SQLite storage before its first
+  transport send.
+- Retry, receipt, completion, failure, expiry, and startup reconciliation use
+  the durable action record as their source of truth.
+- A process restart must not silently lose a persisted non-terminal action.
+  Startup reconciliation applies the approved terminal diagnostic outcome
+  rather than replaying gameplay from a previous runtime.
+- `FOUND-03A`–`FOUND-03D` and `FOUND-04A`–`FOUND-04D` are incorporated into
+  Phase C Milestone 1 and must complete before Action Gateway transport work.
+- No temporary in-memory mainline implementation with different public
+  semantics is allowed.
+- Deterministic in-memory fakes are permitted only in tests behind the same
+  frozen repository interfaces.
+
+### Consequences
+
+- `BE-07A` depends on `FOUND-03D`, `FOUND-04D`, and `BE-05E`.
+- Later delivery, retry, result, SDK, and integration work inherits the
+  authentication and durable-state gates.
+- Persistence failures prevent the first send and produce an observable,
+  testable failure; they do not fall back to volatile state.
+- Phase C cannot claim a playable delivery slice until restart reconciliation
+  and recovery evidence pass.
+
+### Affected packages
+
+- `apps/server`
+- `packages/auth-core` (to be created from the approved repository design)
+- `packages/mapping-engine`
+- `packages/game-sdk-js`
+- `games/zombie-survival`
+
 ## New decision template
 
 

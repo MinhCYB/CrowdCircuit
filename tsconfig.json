@@ -3,6 +3,7 @@
   "references": [
     { "path": "packages/shared" },
     { "path": "packages/contracts" },
+    { "path": "packages/auth-core" },
     { "path": "packages/connector-core" },
     { "path": "packages/connector-mock" },
     { "path": "packages/connector-tiktok" },

@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "baseUrl": "../../..",
+    "paths": {
+      "@crowdcircuit/server": ["apps/server"],
+      "@crowdcircuit/contracts": ["packages/contracts"]
+    }
+  },
+  "include": ["declaration-consumer.ts"]
+}
