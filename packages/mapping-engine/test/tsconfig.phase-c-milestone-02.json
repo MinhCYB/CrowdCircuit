@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "baseUrl": "../../..",
+    "paths": {
+      "@crowdcircuit/mapping-engine": ["packages/mapping-engine"],
+      "@crowdcircuit/contracts": ["packages/contracts"]
+    }
+  },
+  "include": ["phase-c-milestone-02.declaration-consumer.ts"]
+}
