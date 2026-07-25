@@ -2,7 +2,7 @@
 
 **Milestone:** PHASE-C-MILESTONE-02  
 **Roadmap:** `BE-05A`–`BE-05E`, `BE-06A`–`BE-06B`  
-**Status:** READY_TO_START — BLOCKED_DECISION before implementation  
+**Status:** READY_TO_IMPLEMENT
 **Primary implementation owner:** CODEX
 
 ## Authoritative scope
@@ -34,82 +34,59 @@ demo-game behavior, voice, UI, or Phase D.
 | Output safety | Candidate parameters and diagnostics are JSON safe, manifest validated, deterministic, and secret safe. |
 | Persistence boundary | A budget-rejected candidate does not become a durable action. Milestone 2 never sends. The future gateway durably records an accepted action before first send. |
 
-## BLOCKED_DECISION register
+## Resolved decision register
 
-Implementation must not begin until the product owner selects and records each
-decision below in `docs/execution/DECISIONS.md`.
+M2-D1 through M2-D6 are `RESOLVED` and recorded as ADR-013 through ADR-018 in
+`docs/execution/DECISIONS.md`.
 
-### M2-D1 — Candidate identity and idempotency input
+### M2-D1 — RESOLVED: candidate identity (ADR-013)
 
-- Option A: mapping emits no final `actionId`; it emits a deterministic
-  idempotency seed from `(gameProfileId, eventId, ruleId, candidateOrdinal)`.
-  Milestone 3 allocates the final durable `actionId`.
-- Option B: mapping allocates the final `actionId` using an injected ID source
-  and passes it unchanged to Milestone 3.
-- Option C: mapping derives the final `actionId` deterministically from the
-  event/rule tuple.
+Mapping emits no final `actionId`. It emits a deterministic, explicitly
+versioned seed derived from `gameProfileId`, `ruleId`, normalized `eventId`,
+candidate ordinal, action type, and canonical JSON-safe params. Timestamp,
+randomness, UUID, and configuration version do not participate. Different
+rules remain distinct. Milestone 3 allocates and persists the final action ID.
 
-**Recommendation:** Option A. It keeps durable identity allocation with the
-Action Gateway while providing stable replay/idempotency input and avoiding
-public dependence on a hash format.
+### M2-D2 — RESOLVED: anonymous-user budget identity (ADR-014)
 
-### M2-D2 — Anonymous-user budget identity
+Identity precedence is nonempty `user.id`, then nonempty `user.uniqueId`, then
+a shared anonymous identity scoped by game profile and rule. Anonymous traffic
+is subject to user, rule, and game scopes. No unstable provider/display facts
+are identity inputs.
 
-- Option A: all events without a stable viewer ID share a bounded anonymous
-  bucket scoped to game profile and rule.
-- Option B: anonymous events bypass per-user limits but remain subject to rule
-  and game limits.
-- Option C: derive a synthetic user key from event/provider metadata.
+### M2-D3 — RESOLVED: windows and atomic admission (ADR-015)
 
-**Recommendation:** Option A. It prevents anonymous traffic from bypassing
-limits and does not invent identity from unstable provider facts.
+User/anonymous and rule minute limits use exact sliding windows; cooldown uses
+the last accepted timestamp; the game limit remains a token bucket. After
+validation, matching, deterministic sorting, match-mode resolution, and
+candidate resolution, each selected candidate atomically evaluates all scopes.
+All mutations commit only on admission. Rejected, dropped, deferred, discarded,
+or transaction-failed candidates consume nothing. Trusted processing time is
+mandatory and clock rollback fails closed.
 
-### M2-D3 — Per-minute window algorithm and scope interaction
+### M2-D4 — RESOLVED: durable budget state (ADR-016)
 
-- Option A: exact sliding-window counters for per-user and per-rule minute
-  limits; cooldown is a last-accepted timestamp; global limit remains the
-  specified token bucket.
-- Option B: fixed wall-clock minute buckets for per-user and per-rule limits.
-- Option C: token buckets for every scope.
+Cooldown, user/anonymous windows, rule windows, and game token state are
+durable. Restart does not reset limits; downtime advances time normally and
+tokens refill only to burst. Production has no in-memory fallback. Later
+Action Gateway persistence failure does not refund admitted budget.
 
-**Recommendation:** Option A. It avoids boundary bursts while preserving the
-design's explicitly separate global token bucket. Candidates are evaluated in
-deterministic order; a candidate consumes all applicable scopes atomically
-only when every scope admits it.
+### M2-D5 — RESOLVED: queue ownership (ADR-017)
 
-### M2-D4 — Restart behavior and durable budget state
+Milestone 2 retains and persists no queue and sends nothing. It returns typed
+accepted, rejected, dropped, or deferred results. A `queue_with_ttl` deferred
+result contains the resolved candidate, absolute expiry, and reason.
+Milestone 3 exclusively owns durable queue insertion and transport lifecycle.
 
-- Option A: persist per-user, per-rule, cooldown, and global token state; a
-  restart resumes the same effective limits.
-- Option B: reset all budgets at restart.
-- Option C: persist cooldown/rule windows but reset the global token bucket.
+### M2-D6 — RESOLVED: bounded state (ADR-018)
 
-**Recommendation:** Option A. Restart should not create a rate-limit bypass,
-and Milestone 1 already supplies durable storage foundations. Test fakes may
-remain in memory behind the identical interface.
-
-### M2-D5 — `queue_with_ttl` ownership and durable boundary
-
-- Option A: Milestone 2 returns a typed deferred decision and expiry; Milestone
-  3 persists and owns the bounded queue before anything can later be sent.
-- Option B: Milestone 2 owns a durable queue now.
-- Option C: exclude `queue_with_ttl` until Milestone 3 and reject profiles that
-  select it.
-
-**Recommendation:** Option A. It preserves the approved policy without creating
-a second action lifecycle or allowing volatile queued gameplay.
-
-### M2-D6 — Bounded-state capacities and cleanup
-
-- Option A: require explicit validated per-profile capacity/retention settings
-  with conservative repository defaults.
-- Option B: freeze repository-wide constants with no profile override.
-- Option C: derive capacity dynamically from configured rates.
-
-**Recommendation:** Option A. Expire entries after the longest applicable
-window/TTL, remove oldest inactive entries deterministically, never evict
-active deferred work, and fail closed for a new identity if capacity remains
-full.
+Profiles contain validated capacity/retention settings backed by conservative
+repository defaults. Cleanup is trusted-clock-only, lazy plus bounded sweeps,
+and deterministic oldest-inactive removal. Live state is never evicted.
+Exhaustion fails closed with a typed result. Diagnostics are not retained
+without an explicit bound, and Milestone 2 has no queue state. Exact defaults
+are justified and tested during implementation rather than frozen from review
+examples.
 
 ## Failure and diagnostic freeze
 
@@ -131,7 +108,7 @@ Subject to the decisions above:
 
 | Work unit | Owner | Allowed files | Frozen interfaces | Acceptance | Escalation |
 |---|---|---|---|---|---|
-| Semantic decisions and ADR | Product owner + CODEX | `docs/execution/DECISIONS.md`, this plan, current execution docs | M2-D1–M2-D6 | Every choice recorded before code | Unresolved choice = BLOCKED_DECISION |
+| Semantic decisions and ADR | Product owner + CODEX | `docs/execution/DECISIONS.md`, this plan, current execution docs | ADR-013–ADR-018 | All six choices recorded | Any new ambiguity = BLOCKED_DECISION |
 | Mapping public model and validation | CODEX | `packages/mapping-engine/src/**`, its package config/tests; contracts only for a proven reviewed gap | Phase B envelopes, existing action/JSON contracts | Runtime/type alignment; strict validation; no invented normalized facts | Contract change requires separate review |
 | Deterministic evaluator and resolver | CODEX | `packages/mapping-engine/src/**`, focused tests | Ordering, specificity, operators, match modes | Deterministic zero/one/many output and safe diagnostics | Semantic ambiguity returns to decision register |
 | Budget core and persistence adapter | CODEX | `packages/mapping-engine/src/**`, focused `apps/server/src/**` adapter/storage files and migrations if approved | Selected M2-D2–D6 semantics; Milestone 1 repositories | Atomic multi-scope admission, bounded cleanup, restart tests | Data-integrity/concurrency issue stays CODEX-owned |
@@ -146,7 +123,7 @@ at most one focused rework round.
 
 ## Internal checkpoints for CODEX
 
-1. Record M2-D1–M2-D6; freeze schemas/interfaces and declaration tests.
+1. Apply ADR-013–ADR-018; freeze schemas/interfaces and declaration tests.
 2. Implement deterministic rule validation, matching, ordering, resolution,
    and dry-run without budgets.
 3. Implement atomic bounded budget state and selected persistence behavior.

@@ -5,8 +5,8 @@
 **Phase B commit:** `86f1a32` (`feat: complete Phase B event pipeline`)
 **Current phase:** Phase C — Game Vertical Slice
 **Phase C status:** IN_PROGRESS
-**Current milestone:** PHASE-C-MILESTONE-02 — READY_TO_START
-**Working tree:** Accumulated uncommitted approved Milestone 1 implementation and Milestone 2 planning documents
+**Current milestone:** PHASE-C-MILESTONE-02 — READY_TO_IMPLEMENT
+**Working tree:** Accumulated uncommitted approved Milestone 1 implementation and Milestone 2 architecture/planning documents; no Milestone 2 production implementation
 
 ## Runtime baseline
 
@@ -19,7 +19,7 @@
 ## Phase C milestones
 
 1. Authentication and durable persistence prerequisites — DONE
-2. Mapping and action-budget capability — READY_TO_START; implementation blocked pending recorded semantic decisions
+2. Mapping and action-budget capability — READY_TO_IMPLEMENT
 3. Durable Action Gateway lifecycle — BLOCKED_BY_PREVIOUS_MILESTONE
 4. Authenticated game-session delivery and SDK — BLOCKED_BY_PREVIOUS_MILESTONE
 5. Demo game, recovery, and Phase C acceptance — BLOCKED_BY_PREVIOUS_MILESTONE
@@ -40,6 +40,21 @@ automatically replaying gameplay. In-memory repositories are test fakes only.
 `BE-07A` now depends on `FOUND-03D`, `FOUND-04D`, and `BE-05E`. Downstream
 delivery and SDK work inherit the authentication and durable-state gates.
 
+## Milestone 2 architecture
+
+M2-D1 through M2-D6 are resolved by ADR-013 through ADR-018:
+
+- deterministic versioned candidate seed; final `actionId` belongs to
+  Milestone 3;
+- stable user-ID precedence with a shared rule/profile-scoped anonymous bucket;
+- exact sliding user/rule windows and atomic multi-scope admission;
+- durable cooldown, window, and global-token state across restart;
+- typed deferred mapping results with durable queue ownership in Milestone 3;
+- validated bounded state, deterministic cleanup, and fail-closed exhaustion.
+
+Milestone 2 is ready to implement, but no Milestone 2 production implementation
+has started.
+
 ## Planning artifacts
 
 - `docs/orchestration/plans/PHASE-C-MILESTONE-PLAN.md`
@@ -48,7 +63,9 @@ delivery and SDK work inherit the authentication and durable-state gates.
 - `docs/orchestration/prompts/PHASE-C-MILESTONE-02-CODEX.md`
 - `docs/orchestration/prompts/PHASE-C-MILESTONE-02-GEMINI-01.md`
 - `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-01-COMPLETE.md`
+- `docs/orchestration/reviews/PHASE-C-MILESTONE-01-FINAL-APPROVAL-RECORD.md`
 - ADR-012 in `docs/execution/DECISIONS.md`
+- ADR-013 through ADR-018 in `docs/execution/DECISIONS.md`
 
 ## Milestone 1 implementation evidence
 

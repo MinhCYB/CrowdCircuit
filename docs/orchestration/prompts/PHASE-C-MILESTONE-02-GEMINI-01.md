@@ -4,7 +4,7 @@
 
 Do not execute until CODEX has:
 
-1. resolved and recorded M2-D1–M2-D6;
+1. implemented ADR-013 through ADR-018;
 2. implemented and frozen the Milestone 2 public package interfaces; and
 3. provided the exact resulting package-name APIs and confirmed this prompt's
    allowed file list.
@@ -40,7 +40,7 @@ exact names, stop and report the discovered paths to CODEX before editing.
 
 ## Frozen interfaces
 
-All production exports, schemas, result shapes, decisions, algorithms,
+All production exports, schemas, result shapes, ADR-013–ADR-018, algorithms,
 ordering, clocks, repositories, and adapters are immutable for this task.
 Import only from package names in declaration tests. Do not import internal
 source paths.

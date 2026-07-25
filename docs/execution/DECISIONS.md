@@ -205,6 +205,196 @@ whose restart and reconciliation semantics differ from the required system.
 - `packages/game-sdk-js`
 - `games/zombie-survival`
 
+## ADR-013 — Deterministic mapping candidate identity seed
+
+**Date:** 2026-07-25
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-02 / M2-D1
+
+### Context
+
+Mapping needs replay-stable idempotency input without taking ownership of the
+durable Action Gateway's final action identity.
+
+### Decision
+
+- Mapping does not allocate the final `actionId`.
+- Mapping emits a deterministic, explicitly versioned idempotency seed derived
+  from `gameProfileId`, `ruleId`, normalized `eventId`, candidate ordinal, and
+  canonical resolved action output.
+- Canonical action output includes action type and canonical JSON-safe params.
+- Timestamp, randomness, and UUID do not participate.
+- Different rules producing identical output remain distinct.
+- Re-evaluating the same event/rule/output produces the same seed.
+- Configuration version does not participate directly when the matched rule
+  and resolved output are unchanged.
+- Milestone 3 allocates and durably persists the final `actionId`.
+
+### Consequences
+
+Mapping replay is stable without coupling the public boundary to final action
+ID generation or a configuration revision.
+
+### Affected packages
+
+- `packages/mapping-engine`
+- `apps/server`
+
+## ADR-014 — Stable user identity and shared anonymous budget
+
+**Date:** 2026-07-25
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-02 / M2-D2
+
+### Decision
+
+Stable budget identity precedence is:
+
+1. nonempty `user.id`;
+2. otherwise nonempty `user.uniqueId`;
+3. otherwise a shared anonymous identity.
+
+The anonymous bucket key is scoped by `gameProfileId`, `ruleId`, and the
+constant anonymous identity. Userless aggregates and events without stable
+identity use this bucket. Anonymous traffic remains subject to its per-user
+scope, per-rule limits, and the per-game global budget.
+
+Display name, avatar, provider payload, and unstable metadata never become
+identity inputs.
+
+### Consequences
+
+Anonymous traffic cannot bypass rate limits, and CrowdCircuit does not
+fabricate identity from unstable facts.
+
+### Affected packages
+
+- `packages/mapping-engine`
+- `packages/contracts`
+
+## ADR-015 — Sliding windows and atomic multi-scope admission
+
+**Date:** 2026-07-25
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-02 / M2-D3
+
+### Decision
+
+- Per-user/anonymous and per-rule minute limits use exact sliding windows.
+- Rule cooldown uses the last accepted timestamp.
+- The per-game global limit remains the approved token bucket.
+- All time comes from an injected trusted processing clock, never event time.
+- Clock rollback fails closed.
+
+Evaluation order is:
+
+1. validate profile and event;
+2. match rule event types and conditions;
+3. sort matches deterministically;
+4. resolve `first`, `all`, or `exclusive_group`;
+5. resolve candidate action output and identity;
+6. for each selected candidate, atomically evaluate user/anonymous sliding
+   window, rule cooldown, rule sliding window, and game token bucket;
+7. commit every corresponding mutation only when admitted.
+
+A rejected, dropped, or deferred candidate consumes no capacity. Rules removed
+by match-mode resolution consume no capacity. Global rejection consumes no
+user or rule capacity. Persistence/transaction failure rolls back every scope.
+Selected candidates are evaluated in deterministic order. Exact window
+boundaries are permanent regression cases.
+
+### Consequences
+
+Admission is deterministic and cannot leave partial budget mutations.
+
+### Affected packages
+
+- `packages/mapping-engine`
+- `apps/server`
+
+## ADR-016 — Durable mapping budget state
+
+**Date:** 2026-07-25
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-02 / M2-D4
+
+### Decision
+
+Rule cooldown, per-rule sliding-window, per-user/anonymous sliding-window, and
+per-game token-bucket state are durable.
+
+Restart does not reset limits. Downtime is ordinary elapsed wall-clock time;
+expired entries age out and global tokens refill by elapsed time up to burst.
+Production has no in-memory fallback. Test fakes implement the same repository
+and atomic semantics. Budget consumption is not refunded after a later,
+separate Action Gateway persistence failure.
+
+### Consequences
+
+Restart cannot be used to bypass limits, while testability remains available
+behind the frozen repository interface.
+
+### Affected packages
+
+- `apps/server`
+- `packages/mapping-engine`
+
+## ADR-017 — Deferred result boundary and Milestone 3 queue ownership
+
+**Date:** 2026-07-25
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-02 / M2-D5
+
+### Decision
+
+Milestone 2 retains no queue, sends nothing, and persists no candidate queue.
+It returns typed accepted, rejected, dropped, or deferred results. For
+`queue_with_ttl`, a deferred result includes the resolved candidate, absolute
+expiry, and reason.
+
+Milestone 3 exclusively owns durable queue insertion, delivery ordering, queue
+persistence, retry, TTL expiry processing, backpressure, and transport send.
+
+### Consequences
+
+Mapping can express overflow outcomes without creating a second, volatile
+action lifecycle.
+
+### Affected packages
+
+- `packages/mapping-engine`
+- `apps/server`
+
+## ADR-018 — Bounded durable mapping state
+
+**Date:** 2026-07-25
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-02 / M2-D6
+
+### Decision
+
+- Capacity and retention settings are validated per profile with conservative
+  repository defaults.
+- Cleanup uses trusted time, lazy pruning, and deterministic bounded sweeps.
+- Cleanup removes the oldest inactive state deterministically and never evicts
+  live budget state.
+- Exhausted capacity after cleanup returns a typed fail-closed rejection.
+- Diagnostics history is not retained unless explicitly bounded.
+- Milestone 2 has no queue state.
+- Exact defaults are selected during implementation, documented with rationale,
+  and tested using configurable smaller limits; illustrative review numbers
+  are not architectural defaults.
+
+### Consequences
+
+Budget persistence has explicit growth bounds without inventing premature
+numeric constants.
+
+### Affected packages
+
+- `apps/server`
+- `packages/mapping-engine`
+
 ## New decision template
 
 

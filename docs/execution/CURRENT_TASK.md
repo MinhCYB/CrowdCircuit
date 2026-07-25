@@ -2,7 +2,7 @@
 
 **Task ID:** PHASE-C-MILESTONE-02
 **Parent Task:** Phase C — Game Vertical Slice
-**Status:** READY_TO_START — BLOCKED_DECISION before implementation
+**Status:** READY_TO_IMPLEMENT
 **Primary owner:** CODEX
 **Priority:** P0
 
@@ -24,9 +24,8 @@ output boundary consumed later by the durable Action Gateway.
 - Milestone 1: DONE
 - `FOUND-03A`–`FOUND-03D`: DONE
 - `FOUND-04A`–`FOUND-04D`: DONE
-- Milestone 2: READY_TO_START, with implementation blocked until the decisions
-  in `docs/orchestration/plans/PHASE-C-MILESTONE-02-DELEGATION-PLAN.md` are
-  resolved and recorded
+- Milestone 2: READY_TO_IMPLEMENT
+- M2-D1 through M2-D6: RESOLVED by ADR-013 through ADR-018
 - Milestones 3–5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
 
@@ -42,8 +41,9 @@ output boundary consumed later by the durable Action Gateway.
 
 - Do not implement transport, Socket.IO, SDK, demo game, voice, or Phase D.
 - Do not begin Milestones 3–5.
-- Do not invent unresolved action identity, anonymous-budget, budget-window,
-  restart-state, or queue-with-TTL semantics.
+- Follow ADR-013 through ADR-018 for action identity, anonymous budgeting,
+  windowing and atomic admission, durable budget state, deferred queue
+  ownership, and bounded-state cleanup.
 - Durable persist-before-send remains a Milestone 3 requirement. Milestone 2
   may define only its frozen output boundary.
 

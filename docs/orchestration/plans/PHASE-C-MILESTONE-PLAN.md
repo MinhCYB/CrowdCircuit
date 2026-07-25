@@ -4,7 +4,7 @@
 
 **Phase status:** IN_PROGRESS  
 **Milestone 1:** DONE  
-**Milestone 2:** READY_TO_START (implementation blocked pending recorded semantic decisions)  
+**Milestone 2:** READY_TO_IMPLEMENT
 **Milestones 3–5:** BLOCKED_BY_PREVIOUS_MILESTONE  
 **Phase D:** untouched
 
@@ -190,7 +190,7 @@ recovery, package, or declaration finding. Milestone handoff is complete.
 
 ## Milestone 2 — Mapping and action-budget capability
 
-**Status:** READY_TO_START (implementation blocked pending recorded semantic decisions)  
+**Status:** READY_TO_IMPLEMENT
 **Primary owner:** CODEX  
 **Roadmap:** `BE-05A`–`BE-05E`, `BE-06A`–`BE-06B`
 

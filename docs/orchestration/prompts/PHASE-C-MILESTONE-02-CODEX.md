@@ -2,11 +2,9 @@
 
 ## Gate
 
-Do not execute this prompt until decisions M2-D1 through M2-D6 in
-`docs/orchestration/plans/PHASE-C-MILESTONE-02-DELEGATION-PLAN.md` are selected
-by the product owner and recorded in `docs/execution/DECISIONS.md`.
-
-If any remains unresolved, return `BLOCKED_DECISION`; do not implement.
+M2-D1 through M2-D6 are resolved by ADR-013 through ADR-018. Execute only
+against those recorded decisions. Any newly discovered semantic conflict
+returns `BLOCKED_DECISION`; do not silently change an ADR.
 
 ## Task and objective
 
@@ -22,7 +20,7 @@ budgets.
 2. `docs/execution/CURRENT_TASK.md`
 3. `docs/orchestration/plans/PHASE-C-MILESTONE-PLAN.md`
 4. `docs/orchestration/plans/PHASE-C-MILESTONE-02-DELEGATION-PLAN.md`
-5. Recorded M2 decisions in `docs/execution/DECISIONS.md`
+5. ADR-013 through ADR-018 in `docs/execution/DECISIONS.md`
 6. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-01-COMPLETE.md`
 7. `docs/handoffs/HANDOFF-PHASE-B-COMPLETE.md`
 8. System Design sections 11.5, 11.9, 15, 18, and the precise mapping error
@@ -72,8 +70,9 @@ Preserve all accumulated Milestone 1 and Phase B work.
 ## Required implementation checkpoints
 
 1. Freeze strict mapping profile, rule, condition, template, manifest, result,
-   candidate, diagnostic, clock, ID-input, and budget interfaces from the
-   recorded decisions. Add runtime and package-name declaration tests first.
+   candidate, diagnostic, clock, versioned idempotency-seed, and durable budget
+   interfaces from ADR-013 through ADR-018. Add runtime and package-name
+   declaration tests first.
 2. Implement safe field selection, approved operators, exact specificity,
    deterministic ordering, `all`/`first`/`exclusive_group`, parameter
    resolution, JSON safety, manifest validation, and side-effect-free dry-run.
@@ -94,7 +93,22 @@ Preserve all accumulated Milestone 1 and Phase B work.
 - Parameters and diagnostics are JSON safe and finite-number safe.
 - Invalid configuration fails atomically before budget consumption.
 - Dry-run never consumes budget or writes action state.
-- A candidate consumes budgets only under the selected atomic admission rule.
+- Mapping never allocates the final `actionId`. Its versioned seed uses profile,
+  rule, event, ordinal, action type, and canonical JSON-safe params only.
+- Stable user identity is nonempty `user.id`, then nonempty `user.uniqueId`,
+  then the profile/rule-scoped shared anonymous identity.
+- Admission order is: validate profile/event; match; deterministically sort;
+  resolve match mode/group; resolve candidate output and identity; atomically
+  evaluate user/anonymous sliding window, rule cooldown, rule sliding window,
+  and game token bucket; commit every scope only when admitted.
+- Match-mode-discarded, rejected, dropped, deferred, globally rejected, or
+  transaction-failed candidates consume no capacity.
+- Sliding windows use trusted processing time; clock rollback fails closed.
+- All budget state is durable across restart. Downtime ages windows and refills
+  global tokens only to burst; production has no volatile fallback.
+- Milestone 2 owns no queue. Deferred output includes candidate, absolute
+  expiry, and reason; Milestone 3 owns durable queuing.
+- State cleanup follows ADR-018 and never evicts live state.
 - State, caches, and queues are explicitly bounded and deterministically
   cleaned.
 - Milestone 2 never sends an action and never substitutes volatile state for
@@ -141,7 +155,7 @@ Update only current Milestone 2 execution state and create:
 
 `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-02.md`
 
-Record selected decisions, exact files, API boundaries, tests/counts, command
+Record ADR-013–ADR-018 compliance, exact files, API boundaries, tests/counts, command
 output, dist inspection, limitations, Git status, and explicit Milestone 3
 boundary. Preserve historical reports.
 
