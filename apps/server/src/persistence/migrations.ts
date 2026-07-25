@@ -8,7 +8,7 @@ export interface Migration {
   readonly sql: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 export const MIGRATIONS: readonly Migration[] = [
   {
@@ -75,6 +75,53 @@ CREATE TABLE runtime_ownership (
 CREATE INDEX action_logs_status_idx ON action_logs(status);
 CREATE INDEX action_logs_created_at_idx ON action_logs(created_at);
 CREATE INDEX event_logs_created_at_idx ON event_logs(created_at);
+`,
+  },
+  {
+    version: 2,
+    id: "phase-c-mapping-budgets",
+    sql: `
+CREATE TABLE mapping_budget_profiles (
+  profile_id TEXT PRIMARY KEY,
+  last_observed_at INTEGER NOT NULL
+);
+CREATE TABLE mapping_budget_user_buckets (
+  profile_id TEXT NOT NULL,
+  rule_id TEXT NOT NULL,
+  user_key TEXT NOT NULL,
+  last_active_at INTEGER NOT NULL,
+  PRIMARY KEY (profile_id, rule_id, user_key)
+);
+CREATE TABLE mapping_budget_user_events (
+  sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+  profile_id TEXT NOT NULL,
+  rule_id TEXT NOT NULL,
+  user_key TEXT NOT NULL,
+  admitted_at INTEGER NOT NULL
+);
+CREATE TABLE mapping_budget_rule_events (
+  sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+  profile_id TEXT NOT NULL,
+  rule_id TEXT NOT NULL,
+  admitted_at INTEGER NOT NULL
+);
+CREATE TABLE mapping_budget_cooldowns (
+  profile_id TEXT NOT NULL,
+  rule_id TEXT NOT NULL,
+  last_accepted_at INTEGER NOT NULL,
+  PRIMARY KEY (profile_id, rule_id)
+);
+CREATE TABLE mapping_budget_game_tokens (
+  profile_id TEXT PRIMARY KEY,
+  tokens REAL NOT NULL,
+  refilled_at INTEGER NOT NULL
+);
+CREATE INDEX mapping_budget_user_events_window_idx
+  ON mapping_budget_user_events(profile_id, rule_id, user_key, admitted_at);
+CREATE INDEX mapping_budget_rule_events_window_idx
+  ON mapping_budget_rule_events(profile_id, rule_id, admitted_at);
+CREATE INDEX mapping_budget_user_buckets_cleanup_idx
+  ON mapping_budget_user_buckets(profile_id, last_active_at, rule_id, user_key);
 `,
   },
 ];

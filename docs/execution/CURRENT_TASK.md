@@ -2,7 +2,7 @@
 
 **Task ID:** PHASE-C-MILESTONE-02
 **Parent Task:** Phase C — Game Vertical Slice
-**Status:** READY_TO_IMPLEMENT
+**Status:** CORE_READY_FOR_GEMINI_ADDITIVE
 **Primary owner:** CODEX
 **Priority:** P0
 
@@ -24,7 +24,8 @@ output boundary consumed later by the durable Action Gateway.
 - Milestone 1: DONE
 - `FOUND-03A`–`FOUND-03D`: DONE
 - `FOUND-04A`–`FOUND-04D`: DONE
-- Milestone 2: READY_TO_IMPLEMENT
+- Milestone 2: CORE_READY_FOR_GEMINI_ADDITIVE
+- Gemini additive task: READY_TO_START
 - M2-D1 through M2-D6: RESOLVED by ADR-013 through ADR-018
 - Milestones 3–5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
@@ -46,6 +47,24 @@ output boundary consumed later by the durable Action Gateway.
   ownership, and bounded-state cleanup.
 - Durable persist-before-send remains a Milestone 3 requirement. Milestone 2
   may define only its frozen output boundary.
+
+## Core implementation state
+
+The CODEX-owned production core is implemented in the uncommitted working tree:
+
+- strict mapping/profile/manifest schemas and package-name declarations;
+- deterministic operators, specificity, ordering, match modes, templates,
+  candidate output, and ADR-013 identity;
+- schema version 2 durable cooldown, sliding-window, anonymous/user, and
+  per-game token-bucket state;
+- runtime-owner-fenced atomic admission with rollback, restart preservation,
+  clock-rollback rejection, bounded capacity, and deterministic cleanup;
+- typed accepted, rejected, dropped, and deferred boundary results;
+- no queue, transport, final `actionId`, or Milestone 3 implementation.
+
+The frozen additive task is
+`docs/orchestration/prompts/PHASE-C-MILESTONE-02-GEMINI-01.md`.
+Milestone 2 is not yet `DONE` or `READY_FOR_FOCUSED_REVIEW`.
 
 ## Milestone 1 closure
 

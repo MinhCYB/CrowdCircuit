@@ -1,4 +1,5 @@
 import type { JsonValue } from "@crowdcircuit/contracts";
+import type { DurableBudgetRepository } from "@crowdcircuit/mapping-engine";
 import type { SendAuthorization } from "./authorization.js";
 export type { SendAuthorization } from "./authorization.js";
 
@@ -144,6 +145,7 @@ export interface EventDiagnosticRepository {
 
 export interface ServerPersistence
   extends DurableActionRepository,
+    DurableBudgetRepository,
     ConfigurationRepository,
     EventDiagnosticRepository {}
 

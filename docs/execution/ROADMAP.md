@@ -82,7 +82,7 @@ Phase C work.
 | Milestone | Capability | Status |
 |---|---|---|
 | PHASE-C-MILESTONE-01 | Authentication and durable persistence prerequisites | DONE |
-| PHASE-C-MILESTONE-02 | Mapping and action-budget capability | READY_TO_IMPLEMENT |
+| PHASE-C-MILESTONE-02 | Mapping and action-budget capability | CORE_READY_FOR_GEMINI_ADDITIVE |
 | PHASE-C-MILESTONE-03 | Durable Action Gateway lifecycle | BLOCKED_BY_PREVIOUS_MILESTONE |
 | PHASE-C-MILESTONE-04 | Authenticated game-session delivery and SDK vertical slice | BLOCKED_BY_PREVIOUS_MILESTONE |
 | PHASE-C-MILESTONE-05 | Demo game, recovery, and Phase C acceptance | BLOCKED_BY_PREVIOUS_MILESTONE |
@@ -229,7 +229,7 @@ Required:
 
 **Current orchestration unit:** `Phase C — Game Vertical Slice`
 
-**Current milestone:** `PHASE-C-MILESTONE-02 — READY_TO_IMPLEMENT`
+**Current milestone:** `PHASE-C-MILESTONE-02 — CORE_READY_FOR_GEMINI_ADDITIVE`
 
 **Plan:** `docs/orchestration/plans/PHASE-C-MILESTONE-PLAN.md`
 

@@ -5,8 +5,8 @@
 **Phase B commit:** `86f1a32` (`feat: complete Phase B event pipeline`)
 **Current phase:** Phase C — Game Vertical Slice
 **Phase C status:** IN_PROGRESS
-**Current milestone:** PHASE-C-MILESTONE-02 — READY_TO_IMPLEMENT
-**Working tree:** Accumulated uncommitted approved Milestone 1 implementation and Milestone 2 architecture/planning documents; no Milestone 2 production implementation
+**Current milestone:** PHASE-C-MILESTONE-02 — CORE_READY_FOR_GEMINI_ADDITIVE
+**Working tree:** Accumulated uncommitted Phase C work including approved Milestone 1 and the verified CODEX-owned Milestone 2 production core
 
 ## Runtime baseline
 
@@ -19,7 +19,7 @@
 ## Phase C milestones
 
 1. Authentication and durable persistence prerequisites — DONE
-2. Mapping and action-budget capability — READY_TO_IMPLEMENT
+2. Mapping and action-budget capability — CORE_READY_FOR_GEMINI_ADDITIVE
 3. Durable Action Gateway lifecycle — BLOCKED_BY_PREVIOUS_MILESTONE
 4. Authenticated game-session delivery and SDK — BLOCKED_BY_PREVIOUS_MILESTONE
 5. Demo game, recovery, and Phase C acceptance — BLOCKED_BY_PREVIOUS_MILESTONE
@@ -52,8 +52,10 @@ M2-D1 through M2-D6 are resolved by ADR-013 through ADR-018:
 - typed deferred mapping results with durable queue ownership in Milestone 3;
 - validated bounded state, deterministic cleanup, and fail-closed exhaustion.
 
-Milestone 2 is ready to implement, but no Milestone 2 production implementation
-has started.
+The CODEX-owned Milestone 2 core is implemented and verified. The frozen
+Gemini additive fixture/test/declaration/documentation task is
+`READY_TO_START`. Milestone 2 remains incomplete until that additive work and
+focused review finish.
 
 ## Planning artifacts
 
@@ -62,6 +64,8 @@ has started.
 - `docs/orchestration/prompts/PHASE-C-MILESTONE-01-CODEX.md`
 - `docs/orchestration/prompts/PHASE-C-MILESTONE-02-CODEX.md`
 - `docs/orchestration/prompts/PHASE-C-MILESTONE-02-GEMINI-01.md`
+- `docs/orchestration/reviews/PHASE-C-MILESTONE-02-CODEX-CORE-SELF-REVIEW.md`
+- `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-02-CODEX-CORE.md`
 - `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-01-COMPLETE.md`
 - `docs/orchestration/reviews/PHASE-C-MILESTONE-01-FINAL-APPROVAL-RECORD.md`
 - ADR-012 in `docs/execution/DECISIONS.md`

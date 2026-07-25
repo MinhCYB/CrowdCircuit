@@ -1,95 +1,128 @@
-# Gemini Prompt — Phase C Milestone 2 Safe Additive Work 01
+# Gemini Prompt — Phase C Milestone 2 Additive Verification 01
 
-## Gate
+## Task and authority
 
-Do not execute until CODEX has:
+The CODEX-owned Milestone 2 production core and public APIs are frozen.
+Perform additive fixtures, black-box tests, declaration consumption, and
+documentation only. You have no authority to change production behavior,
+interfaces, schemas, algorithms, persistence, package exports, or execution
+status.
 
-1. implemented ADR-013 through ADR-018;
-2. implemented and frozen the Milestone 2 public package interfaces; and
-3. provided the exact resulting package-name APIs and confirmed this prompt's
-   allowed file list.
+Gemini receives at most one focused rework round.
 
-If any API is missing or contradictory, stop and report it. Do not repair or
-redesign production code.
+## Reading order
 
-## Objective
+1. Exact current `git status` and accumulated diff
+2. ADR-013 through ADR-018 in `docs/execution/DECISIONS.md`
+3. `docs/orchestration/plans/PHASE-C-MILESTONE-02-DELEGATION-PLAN.md`
+4. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-02-CODEX-CORE.md`
+5. `docs/orchestration/reviews/PHASE-C-MILESTONE-02-CODEX-CORE-SELF-REVIEW.md`
+6. Built `@crowdcircuit/mapping-engine` declarations
+7. Existing mapping-engine and server tests, without editing them
 
-Add representative black-box fixtures, mapping configurations, package-name
-declaration consumers, and documentation against CODEX's frozen Milestone 2
-interfaces. This is additive verification work only.
+## Frozen package APIs
 
-## Reading order and preflight
+Import only from `@crowdcircuit/mapping-engine` and
+`@crowdcircuit/contracts` package names.
 
-Read the delegation plan, recorded M2 decisions, CODEX Milestone 2 handoff or
-checkpoint note, package public declarations, existing tests, and exact diff.
-Then run `git status`, `git diff --stat HEAD --`, `git diff --check HEAD --`,
-Node/pnpm versions, and the mapping-engine focused test/build/declaration
-commands.
+Frozen mapping exports include:
+
+- `MappingEngine`
+- mapping profile/rule/condition/action-template schemas and inferred types
+- manifest, match-mode, overflow, global-budget, and capacity schemas/types
+- `MappingCandidate`, `MappingResult`, `MappingEvaluation`, and diagnostics
+- `CandidateIdentityInput`, `MAPPING_SEED_FORMAT_VERSION`,
+  `createCandidateSeed`, and `canonicalJson`
+- `TrustedClock`, `DurableBudgetRepository`, `BudgetAdmissionRequest`, and
+  `BudgetAdmissionResult`
+
+Frozen behavior is ADR-013 through ADR-018. Do not request or add `actionId`,
+queue state, transport behavior, replay storage, provider payloads, or runtime
+fakes exported from a package root.
 
 ## Exact allowed files
 
-Only create or modify:
+Create only:
 
 - `packages/mapping-engine/test/fixtures/phase-c-milestone-02.ts`
 - `packages/mapping-engine/test/milestone-02.black-box.test.ts`
-- `packages/mapping-engine/test-d/phase-c-milestone-02.test-d.ts`
+- `packages/mapping-engine/test/phase-c-milestone-02.declaration-consumer.ts`
+- `packages/mapping-engine/test/tsconfig.phase-c-milestone-02.json`
 - `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-02-GEMINI-01.md`
 
-If the repository's established test/declaration directories use different
-exact names, stop and report the discovered paths to CODEX before editing.
+Do not modify any existing file. If one of these paths conflicts with actual
+configuration, stop and report the mismatch rather than widening scope.
 
-## Frozen interfaces
+## Required additive fixtures and black-box coverage
 
-All production exports, schemas, result shapes, ADR-013–ADR-018, algorithms,
-ordering, clocks, repositories, and adapters are immutable for this task.
-Import only from package names in declaration tests. Do not import internal
-source paths.
+Create representative, literal-preserving inputs for:
 
-## Required fixtures and tests
+- exact gift-ID mapping;
+- normalized comment command;
+- equal-priority specificity and full deterministic tie ordering;
+- `all`, `first`, and multiple `exclusive_group` cases;
+- identical output from two distinct rules with distinct stable seeds;
+- identified, unique-ID fallback, anonymous viewer, and userless like inputs;
+- gift streak `update` treated only as normalized input;
+- cooldown, exact sliding boundary, rule/user/global limits;
+- `drop_low_priority`, `reject_newest`, and `queue_with_ttl`;
+- malformed duplicate IDs, invalid regex/operator/configuration, unsafe
+  template path, manifest mismatch, JSON-unsafe/non-finite values;
+- dry-run non-consumption and repeated byte-stable evaluation.
 
-After CODEX supplies exact APIs, add:
+Use a test-local deterministic fake implementing the frozen
+`DurableBudgetRepository`. Do not export it. Additive tests must not duplicate
+or weaken existing focused invariant tests.
 
-- a valid gift mapping with exact gift match and finite JSON-safe params;
-- a valid comment command mapping using prefix/contains behavior;
-- equal-priority rules exercising specificity and full tie ordering;
-- `all`, `first`, and two `exclusive_group` configurations;
-- an anonymous-user budget scenario using the selected decision;
-- rule cooldown/per-minute and global-bucket boundary scenarios;
-- each selected overflow outcome, including bounded TTL evidence where
-  applicable;
-- malformed duplicate IDs, invalid operator/regex, unsafe template path,
-  manifest mismatch, non-finite/JSON-unsafe value, and invalid limit cases;
-- dry-run evidence showing no state consumption;
-- package-name declarations proving valid representative construction and
-  rejecting invalid operators, match modes, limit values, non-JSON parameters,
-  malformed candidates, and wrong normalized-event types.
+## Declaration consumer
 
-All expected output must follow frozen deterministic ordering. Preserve every
-existing test and declaration regression.
+Using package-name imports, prove valid construction and active rejection of:
 
-## Forbidden work
+- invalid operators and match modes;
+- missing required nullable/configuration fields;
+- invalid limit and capacity types;
+- non-JSON condition/template/candidate values;
+- an invented final `actionId`;
+- queue/transport fields;
+- mutable or malformed result variants;
+- wrong repository result discriminators.
 
-Do not edit production code, package manifests, exports, schemas, configs,
-execution documents, decisions, existing tests, contracts, server code,
-transport, Socket.IO, SDK, demo game, voice, or Phase D. Do not use `any`,
-`z.any()`, assertions, skips, snapshots that conceal semantics, or runtime
-source imports in declaration consumers.
-
-Gemini may receive at most one focused rework round. Any substantive issue
-returns immediately to CODEX.
+Preserve existing LIVE, action, voice, fixture, authentication, and mapping
+declaration checks.
 
 ## Verification
 
-Run the focused mapping-engine lint/typecheck/test/build/declaration commands,
-the new black-box and package-name declaration checks, `git diff --check HEAD
---`, and any repository-wide checks CODEX explicitly requests. Inspect emitted
-mapping declarations to confirm tests did not change public output.
+Run:
+
+```text
+git diff --check HEAD --
+pnpm --filter @crowdcircuit/mapping-engine lint
+pnpm --filter @crowdcircuit/mapping-engine typecheck
+pnpm --filter @crowdcircuit/mapping-engine test
+pnpm --filter @crowdcircuit/mapping-engine build
+pnpm --filter @crowdcircuit/mapping-engine test:declarations
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+Also compile the new declaration consumer with its dedicated tsconfig and
+inspect mapping-engine emitted declarations. Record exact fresh test counts,
+Node/pnpm versions, and Git status.
+
+## Forbidden work
+
+Do not modify production code, existing tests, package manifests, exports,
+server code, contracts, lockfile, configs, decisions, execution documents,
+Milestone 3, transport, Socket.IO, SDK, demo game, voice, or Phase D. Do not
+use `any`, `z.any()`, unsafe assertions, test skips, or source-path imports.
 
 ## Handoff and final response
 
-Create the allowed handoff with exact fixtures, assertions, commands, counts,
-versions, changed files, and Git status. Clearly state that APIs were frozen
+Create the allowed handoff with exact files, cases, commands, counts, artifact
+inspection, and Git evidence. State explicitly that frozen APIs were preserved
 and no production file changed.
 
-Do not commit or push. Return files changed, focused results/counts, any
-blocker, exact Git status, and the handoff path.
+Do not commit or push. Return files created, coverage added, exact results,
+declaration/dist assessment, blockers, handoff path, and Git status.

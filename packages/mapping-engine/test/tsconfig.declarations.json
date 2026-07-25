@@ -5,9 +5,8 @@
     "composite": false,
     "baseUrl": "../../..",
     "paths": {
-      "@crowdcircuit/server": ["apps/server"],
-      "@crowdcircuit/contracts": ["packages/contracts"],
-      "@crowdcircuit/mapping-engine": ["packages/mapping-engine"]
+      "@crowdcircuit/mapping-engine": ["packages/mapping-engine"],
+      "@crowdcircuit/contracts": ["packages/contracts"]
     }
   },
   "include": ["declaration-consumer.ts"]

@@ -1,8 +1,14 @@
 import { DatabaseSync } from "node:sqlite";
 import { createHash, randomBytes } from "node:crypto";
 import { JsonValueSchema, type JsonValue } from "@crowdcircuit/contracts";
+import type {
+  BudgetAdmissionRequest,
+  BudgetAdmissionResult,
+  DurableBudgetRepository,
+} from "@crowdcircuit/mapping-engine";
 import { z } from "zod";
 import { migrateDatabase } from "./migrations.js";
+import { admitMappingBudget } from "./budget.js";
 import {
   issueSendAuthorization,
   readSendAuthorization,
@@ -174,12 +180,14 @@ export interface OpenActionRepositoryOptions {
   readonly runtimeOwnerRandom?: (size: number) => Uint8Array;
   /** @internal */
   readonly transactionFault?: (
-    operation: "create" | "attempt" | "reconcile",
+    operation: "create" | "attempt" | "reconcile" | "budget",
     phase: "before_commit" | "commit_path" | "after_statements",
   ) => void;
 }
 
-export class SqliteDurableActionRepository implements DurableActionRepository {
+export class SqliteDurableActionRepository
+  implements DurableActionRepository, DurableBudgetRepository
+{
   readonly #database: DatabaseSync;
   readonly #authorizationRandom: (size: number) => Uint8Array;
   readonly #repositoryOwner = {};
@@ -214,8 +222,8 @@ export class SqliteDurableActionRepository implements DurableActionRepository {
         database = undefined;
         throw new Error("simulated");
       }
-      migrateDatabase(database);
       database.exec("PRAGMA busy_timeout = 1000");
+      migrateDatabase(database);
       const ownerRandom = (options.runtimeOwnerRandom ?? randomBytes)(32);
       if (!(ownerRandom instanceof Uint8Array) || ownerRandom.byteLength !== 32) {
         throw new PersistenceError("DATABASE_UNAVAILABLE", "Runtime ownership generation failed");
@@ -250,6 +258,17 @@ export class SqliteDurableActionRepository implements DurableActionRepository {
       if (error instanceof PersistenceError) throw error;
       throw new PersistenceError("DATABASE_UNAVAILABLE", "Database is unavailable");
     }
+  }
+
+  admit(input: BudgetAdmissionRequest): BudgetAdmissionResult {
+    return admitMappingBudget(
+      this.#database,
+      input,
+      () => this.#requireActiveOwner(true),
+      this.#transactionFault === null
+        ? null
+        : () => this.#transactionFault?.("budget", "before_commit"),
+    );
   }
 
   createBeforeFirstSend(input: CreateDurableAction): DurableCreateResult {

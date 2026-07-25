@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const schemaVersions = sqliteTable("schema_versions", {
   version: integer("version").primaryKey(),
@@ -119,4 +119,59 @@ export const runtimeOwnership = sqliteTable("runtime_ownership", {
   singletonId: integer("singleton_id").primaryKey(),
   ownerId: text("owner_id").notNull(),
   reconciledAt: integer("reconciled_at"),
+});
+
+export const mappingBudgetProfiles = sqliteTable("mapping_budget_profiles", {
+  profileId: text("profile_id").primaryKey(),
+  lastObservedAt: integer("last_observed_at").notNull(),
+});
+
+export const mappingBudgetUserBuckets = sqliteTable(
+  "mapping_budget_user_buckets",
+  {
+    profileId: text("profile_id").notNull(),
+    ruleId: text("rule_id").notNull(),
+    userKey: text("user_key").notNull(),
+    lastActiveAt: integer("last_active_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("mapping_budget_user_bucket_unique").on(
+      table.profileId,
+      table.ruleId,
+      table.userKey,
+    ),
+  ],
+);
+
+export const mappingBudgetUserEvents = sqliteTable("mapping_budget_user_events", {
+  sequence: integer("sequence").primaryKey({ autoIncrement: true }),
+  profileId: text("profile_id").notNull(),
+  ruleId: text("rule_id").notNull(),
+  userKey: text("user_key").notNull(),
+  admittedAt: integer("admitted_at").notNull(),
+});
+
+export const mappingBudgetRuleEvents = sqliteTable("mapping_budget_rule_events", {
+  sequence: integer("sequence").primaryKey({ autoIncrement: true }),
+  profileId: text("profile_id").notNull(),
+  ruleId: text("rule_id").notNull(),
+  admittedAt: integer("admitted_at").notNull(),
+});
+
+export const mappingBudgetCooldowns = sqliteTable(
+  "mapping_budget_cooldowns",
+  {
+    profileId: text("profile_id").notNull(),
+    ruleId: text("rule_id").notNull(),
+    lastAcceptedAt: integer("last_accepted_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("mapping_budget_cooldown_unique").on(table.profileId, table.ruleId),
+  ],
+);
+
+export const mappingBudgetGameTokens = sqliteTable("mapping_budget_game_tokens", {
+  profileId: text("profile_id").primaryKey(),
+  tokens: real("tokens").notNull(),
+  refilledAt: integer("refilled_at").notNull(),
 });

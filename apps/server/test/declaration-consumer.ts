@@ -6,6 +6,18 @@ import {
   type DurableActionStatus,
   type SendAuthorization,
 } from "@crowdcircuit/server";
+import type {
+  BudgetAdmissionRequest,
+  DurableBudgetRepository,
+} from "@crowdcircuit/mapping-engine";
+
+const budgetRepository: DurableBudgetRepository =
+  SqliteDurableActionRepository.open({ filename: ":memory:" });
+declare const budgetRequest: BudgetAdmissionRequest;
+budgetRepository.admit(budgetRequest);
+
+// @ts-expect-error final action identity is not accepted by budget admission
+budgetRequest.candidate.actionId = "action";
 
 const params: JsonValue = { count: 1 };
 const input: CreateDurableAction = {

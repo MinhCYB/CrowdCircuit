@@ -1,8 +1,42 @@
-/**
- * @crowdcircuit/mapping-engine
- *
- * Event-to-action mapping rules engine.
- * Placeholder — implementation in BE-05.
- */
+export const MAPPING_ENGINE_VERSION = "0.2.0" as const;
 
-export const MAPPING_ENGINE_VERSION = "0.1.0" as const;
+export { canonicalJson, createCandidateSeed } from "./canonical.js";
+export { MappingEngine } from "./engine.js";
+export {
+  ActionTemplateSchema,
+  BudgetCapacitySchema,
+  ConditionOperatorSchema,
+  EventConditionSchema,
+  GameActionManifestSchema,
+  GlobalActionBudgetSchema,
+  MAPPING_SEED_FORMAT_VERSION,
+  ManifestParameterTypeSchema,
+  MappingProfileSchema,
+  MappingRuleControlsSchema,
+  MappingRuleSchema,
+  MatchModeSchema,
+  OverflowPolicySchema,
+  type ActionTemplate,
+  type BudgetAdmissionRequest,
+  type BudgetAdmissionResult,
+  type BudgetCapacity,
+  type BudgetRejectionReason,
+  type CandidateIdentityInput,
+  type ConditionOperator,
+  type DurableBudgetRepository,
+  type EvaluateMappingInput,
+  type EventCondition,
+  type GameActionManifest,
+  type GlobalActionBudget,
+  type ManifestParameterType,
+  type MappingCandidate,
+  type MappingDiagnostic,
+  type MappingEvaluation,
+  type MappingProfile,
+  type MappingResult,
+  type MappingRule,
+  type MappingRuleControls,
+  type MatchMode,
+  type OverflowPolicy,
+  type TrustedClock,
+} from "./model.js";
