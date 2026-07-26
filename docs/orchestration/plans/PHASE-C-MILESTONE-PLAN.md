@@ -6,7 +6,8 @@
 **Milestone 1:** DONE  
 **Milestone 2:** APPROVED_AND_COMPLETE
 **Milestone 2 remediation:** COMPLETE
-**Milestone 3:** READY_FOR_ARCHITECTURE_AND_DELEGATION
+**Milestone 3 architecture:** RESOLVED
+**Milestone 3 implementation:** READY_FOR_GEMINI_SCHEMA_SLICE
 **Milestones 4–5:** BLOCKED_BY_PREVIOUS_MILESTONE
 **Phase D:** untouched
 
@@ -255,7 +256,7 @@ budgets, bounded state, declarations, and Phase B regressions.
 
 ## Milestone 3 — Durable Action Gateway lifecycle
 
-**Status:** READY_FOR_ARCHITECTURE_AND_DELEGATION
+**Status:** READY_FOR_GEMINI_SCHEMA_SLICE
 **Primary owner:** CODEX  
 **Roadmap:** transport-independent core of `BE-07B`–`BE-07D`
 

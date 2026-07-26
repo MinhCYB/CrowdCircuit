@@ -1,20 +1,20 @@
 # Current Task
 
-**Task ID:** PHASE-C-MILESTONE-02
+**Task ID:** PHASE-C-MILESTONE-03
 **Parent Task:** Phase C — Game Vertical Slice
-**Status:** APPROVED_AND_COMPLETE
+**Status:** READY_FOR_GEMINI_SCHEMA_SLICE
 **Primary owner:** CODEX
 **Priority:** P0
 
 ## Objective
 
-Deliver deterministic event-to-action mapping and bounded action-budget
-capability for roadmap items `BE-05A`–`BE-05E` and `BE-06A`–`BE-06B`.
+Implement the durable Action Gateway lifecycle and delivery orchestration for
+roadmap items `BE-07B`–`BE-07D`.
 
-Milestone 2 covers mapping configuration and validation, deterministic
-evaluation of approved Phase B normalized events, action candidate
-construction, rule/user/game budgets, dry-run diagnostics, and the frozen
-output boundary consumed later by the durable Action Gateway.
+Milestone 3 covers deterministic `actionId` derivation, durable idempotency
+claims, deferred candidate persistence and full budget re-admission promotion,
+persist-before-send delivery orchestration, retry scheduling, live TTL expiry,
+restart reconciliation, and transport-neutral delivery port boundaries.
 
 ## State
 
@@ -24,10 +24,9 @@ output boundary consumed later by the durable Action Gateway.
 - Milestone 1: DONE
 - `FOUND-03A`–`FOUND-03D`: DONE
 - `FOUND-04A`–`FOUND-04D`: DONE
-- Milestone 2: APPROVED_AND_COMPLETE
-- Milestone 2 remediation: COMPLETE
-- M2-D1 through M2-D6: RESOLVED by ADR-013 through ADR-018
-- Milestone 3: READY_FOR_ARCHITECTURE_AND_DELEGATION
+- Milestone 2: APPROVED_AND_COMPLETE (`BE-05A`–`BE-06B` complete)
+- Milestone 3 architecture: RESOLVED (ADR-019 through ADR-024 accepted)
+- Milestone 3 implementation: READY_FOR_GEMINI_SCHEMA_SLICE
 - Milestones 4–5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
 

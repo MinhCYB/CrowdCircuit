@@ -428,3 +428,221 @@ What was chosen.
 
 - package/path
 ```
+
+## ADR-019 — Action ID Derivation and Idempotency Binding
+
+**Date:** 2026-07-26
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-03 / M3-D1
+
+### Context
+
+Milestone 2 produces mapping candidate idempotency seeds (`candidate.idempotencySeed`), but does not allocate final `actionId` strings or execute durable claims. Milestone 3 requires a permanent, replay-safe binding between candidate idempotency seeds and durable action records.
+
+### Decision
+
+- `candidate.idempotencySeed` is the permanent durable idempotency key.
+- One idempotency seed maps permanently to exactly one `actionId`.
+- Terminal, failed, or expired actions never release their idempotency seed; the unique claim is permanent.
+- Duplicate claim requests return the original durable record without creating a new action and issue no second `SendAuthorization`.
+- `actionId` is derived deterministically from the idempotency seed using a dedicated, module-local format version:
+  ```ts
+  const ACTION_ID_FORMAT_VERSION = 1 as const;
+  ```
+  `ACTION_ID_FORMAT_VERSION` is decoupled from `MAPPING_SEED_FORMAT_VERSION` and `USER_BUDGET_KEY_FORMAT_VERSION`.
+- `actionId` derivation uses a cryptographically strong digest retaining at least 128 bits of entropy (e.g. SHA-256 truncated to 26 base32/hex characters with prefix `act_`).
+- The database unique constraint (`action_logs_idempotency_key_unique`) remains the authoritative concurrency guarantee; deterministic derivation alone is not treated as a substitute for database-level uniqueness.
+
+### Consequences
+
+- Duplicate event evaluation produces the exact same durable action ID without race conditions.
+- Versioning candidate seeds, budget keys, and action IDs remain completely independent.
+
+### Affected packages
+
+- `apps/server`
+- `packages/mapping-engine` (reference)
+
+---
+
+## ADR-020 — Deferred Storage and Full Budget Re-admission
+
+**Date:** 2026-07-26
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-03 / M3-D2
+
+### Context
+
+Milestone 2 produces typed `deferred` mapping results (`queue_with_ttl` overflow policy) without persisting them. Milestone 3 must store deferred candidates and promote them when capacity becomes available. Because Milestone 2's atomic budget admission consumes zero capacity when returning a deferred result, promotion cannot simply check the global token bucket.
+
+### Decision
+
+- Deferred candidates are stored in a dedicated durable table (`mapping_budget_deferred_candidates`), completely separate from `action_logs`.
+- One `idempotencySeed` has at most one active deferred record.
+- Queued deferred candidates have no action lifecycle status, cannot issue `SendAuthorization`, and are never sent directly to transport.
+- Deferred rows have validated, explicit capacity limits and deterministic cleanup.
+- Expiry of a deferred row produces no action.
+- At promotion time, Milestone 3 must re-run full atomic budget admission across all four scopes:
+  1. Per-user or per-anonymous sliding window;
+  2. Per-rule cooldown;
+  3. Per-rule sliding window;
+  4. Per-game global token bucket.
+- Every deferred row persists an immutable `BudgetAdmissionSnapshot` containing all parameters required to re-run `DurableBudgetRepository.admit` under the current processing clock, without re-evaluating rule templates or reading mutable rule configurations.
+- Promotion is executed as a single, atomic repository-level transaction:
+  1. Verify the deferred row is queued and unexpired;
+  2. Re-run full atomic budget admission;
+  3. Create or recover the idempotent durable action;
+  4. Mark the deferred row promoted.
+- Promotion must use a dedicated repository transaction boundary or an internal transaction-aware primitive, rather than nesting high-level `createBeforeFirstSend` transactions inside another transaction.
+
+### Consequences
+
+- Deferred candidates cannot bypass user sliding windows, rule cooldowns, or rule limits when promoted.
+- Promotion cannot leave partial budget mutations or orphaned actions on failure.
+
+### Affected packages
+
+- `apps/server`
+
+---
+
+## ADR-021 — Action Lifecycle Statuses, Retries, and Restart Recovery
+
+**Date:** 2026-07-26
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-03 / M3-D3
+
+### Context
+
+Milestone 3 requires a robust delivery retry mechanism and clear crash recovery rules without introducing unnecessary state-machine complexity.
+
+### Decision
+
+- Retain existing `action_logs` status set (`pending`, `in_flight`, `received`, `completed`, `failed`, `expired`, `delivery_failed`, `delivery_unknown_restart`, `aborted_restart`).
+- Add legal transition `in_flight -> delivery_failed` for permanent delivery exhaustion.
+- Do not add `retry_wait` status. Retry scheduling is represented in memory and by durable scheduling metadata (`nextAttemptAt`, attempt count, last failure reason).
+- Maximum retries: two retries (three total attempts).
+- Retries reuse the same `actionId` and idempotency key, but each actual delivery attempt consumes a new `SendAuthorization` and records a unique `attempt_number`.
+- Backoff is deterministic and unjittered in the MVP.
+- "No connected game destination" is not an actual delivery attempt: it consumes no attempt number, consumes no `SendAuthorization`, and schedules a bounded later availability check.
+- TTL always wins over retry eligibility.
+- Restart reconciliation rules:
+  - `pending` (never sent): revoke stale authorization, reassign to active runtime owner, remain pending if unexpired.
+  - `in_flight` (without receipt): transition to `delivery_unknown_restart` unless expired; revoke open authorization.
+  - `received`: remain `received`; never retry delivery; await completion or expiry.
+  - `expired`: remain terminal.
+  - Stale runtime owner: zero durable mutation (`RUNTIME_SUPERSEDED`).
+- `aborted_restart` is reserved exclusively for unrecoverable pre-send conditions documented during implementation, not used as a blanket default for pending actions.
+
+### Consequences
+
+- Delivery retries are strictly bounded and restart-safe.
+- State-machine complexity remains minimal.
+
+### Affected packages
+
+- `apps/server`
+
+---
+
+## ADR-022 — Send Authorization Binding and Persist-Before-Send Ordering
+
+**Date:** 2026-07-26
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-03 / M3-D4
+
+### Context
+
+ADR-012 requires every action to be durably recorded before its first transport send. Milestone 3 must enforce strict persist-before-send execution order and extend authorization scope to anticipate game instance delivery.
+
+### Decision
+
+- Extend `SendAuthorization` and `action_send_authorizations` schema to include a nullable `gameInstanceId` binding parameter alongside `actionId`, `attemptNumber`, `expectedVersion`, `runtimeId`, `runtimeOwnerId`, `role`, `clientId`, and `expiresAt`.
+- Production execution MUST follow this strict 6-step sequence:
+  1. Durable action record exists;
+  2. Valid `SendAuthorization` is issued;
+  3. Authorization is consumed and a durable attempt with `send_started` is recorded atomically;
+  4. Action transitions to `in_flight`;
+  5. SQLite transaction commits;
+  6. Transport-neutral port is invoked ONLY AFTER committed transaction success.
+- `transport send -> recordAttempt` is forbidden.
+- Transport exceptions after committed `send_started` attempt do not erase the attempt record; it remains durable retry evidence.
+- Every retry attempt requires a newly issued `SendAuthorization`.
+
+### Consequences
+
+- Network failures can never corrupt durable delivery history.
+- Authorization schema is pre-aligned for Milestone 4 game instance delivery.
+
+### Affected packages
+
+- `apps/server`
+
+---
+
+## ADR-023 — Transport-Neutral Delivery Port Boundary
+
+**Date:** 2026-07-26
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-03 / M3-D5
+
+### Context
+
+Milestone 3 is strictly transport-independent. Socket.IO, `/game` namespace, and SDK connections belong to Milestone 4. Milestone 3 requires a clean port interface for delivery.
+
+### Decision
+
+- Milestone 3 defines a transport-neutral delivery port interface (`ActionDeliveryPort`) and a deterministic test fake (`FakeActionDeliveryPort`).
+- `ActionDeliveryPort` contains zero Socket.IO dependencies or imports.
+- The port interface must distinguish at least:
+  - `sent` (destination available, send invoked);
+  - `no_destination` (no connected client destination);
+  - `transport_error` (transport exception).
+- A `no_destination` outcome occurs before attempt authorization consumption and does not count as a delivery attempt.
+- Receipt (`received`) and completion (`completed` / `failed`) are separate domain signals:
+  - Delivery receipt ACK stops retry scheduling;
+  - Gameplay completion terminates action lifecycle.
+
+### Consequences
+
+- Milestone 3 can be fully implemented and verified with 100% deterministic test coverage without network or transport dependencies.
+
+### Affected packages
+
+- `apps/server`
+
+---
+
+## ADR-024 — Trusted Time, Expiry, Ordering, and Bounded Capacity
+
+**Date:** 2026-07-26
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-03 / M3-D6
+
+### Context
+
+Milestone 3 needs clear rules for action TTL, deferred expiry, delivery ordering, and capacity bounds.
+
+### Decision
+
+- All time calculations use the injected trusted processing clock.
+- Action `expiresAt` is calculated once at durable action creation (`createdAt + candidate.ttlMs`).
+- Deferred candidate expiry (`deferredExpiresAt`) and action expiry (`expiresAt`) are separate boundaries. A promoted candidate receives its action TTL starting at durable action creation.
+- Expired actions or deferred rows never return to a live state.
+- Replaying a mapping seed for an expired action returns the original expired record; it does not create a new action.
+- Action delivery selection ordering:
+  ```sql
+  ORDER BY priority DESC, created_at ASC, action_id ASC
+  ```
+- Default MVP delivery model is one in-flight action per game destination.
+- Deferred storage capacity is explicit, validated, bounded, and fail-closed.
+- Cleanup sweeps are deterministic and bounded.
+- Exact default values for receipt timeout, retry backoff intervals, deferred capacity, retention, and sweep limits are implementation-time constants documented with rationale and verified via boundary tests.
+
+### Consequences
+
+- All timing, ordering, and capacity behaviors are bounded, deterministic, and testable.
+
+### Affected packages
+
+- `apps/server`

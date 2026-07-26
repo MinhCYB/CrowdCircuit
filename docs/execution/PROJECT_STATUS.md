@@ -5,9 +5,9 @@
 **Phase B commit:** `86f1a32` (`feat: complete Phase B event pipeline`)
 **Current phase:** Phase C — Game Vertical Slice
 **Phase C status:** IN_PROGRESS
-**Current milestone:** PHASE-C-MILESTONE-02 — APPROVED_AND_COMPLETE
-**Milestone 2 remediation status:** COMPLETE
-**Working tree:** Accumulated uncommitted Phase C work including approved Milestone 1 and approved Milestone 2 implementation
+**Current milestone:** PHASE-C-MILESTONE-03 — READY_FOR_GEMINI_SCHEMA_SLICE
+**Milestone 3 architecture status:** RESOLVED (ADR-019 through ADR-024 accepted)
+**Working tree:** Accumulated uncommitted Phase C work including approved Milestone 1 & 2 and Milestone 3 planning artifacts
 
 ## Runtime baseline
 
@@ -21,7 +21,7 @@
 
 1. Authentication and durable persistence prerequisites — DONE
 2. Mapping and action-budget capability — APPROVED_AND_COMPLETE
-3. Durable Action Gateway lifecycle — READY_FOR_ARCHITECTURE_AND_DELEGATION
+3. Durable Action Gateway lifecycle — READY_FOR_GEMINI_SCHEMA_SLICE
 4. Authenticated game-session delivery and SDK vertical slice — BLOCKED_BY_PREVIOUS_MILESTONE
 5. Demo game, recovery, and Phase C acceptance — BLOCKED_BY_PREVIOUS_MILESTONE
 

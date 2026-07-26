@@ -83,19 +83,19 @@ Phase C work.
 |---|---|---|
 | PHASE-C-MILESTONE-01 | Authentication and durable persistence prerequisites | DONE |
 | PHASE-C-MILESTONE-02 | Mapping and action-budget capability | APPROVED_AND_COMPLETE |
-| PHASE-C-MILESTONE-03 | Durable Action Gateway lifecycle | READY_FOR_ARCHITECTURE_AND_DELEGATION |
+| PHASE-C-MILESTONE-03 | Durable Action Gateway lifecycle | READY_FOR_GEMINI_SCHEMA_SLICE |
 | PHASE-C-MILESTONE-04 | Authenticated game-session delivery and SDK vertical slice | BLOCKED_BY_PREVIOUS_MILESTONE |
 | PHASE-C-MILESTONE-05 | Demo game, recovery, and Phase C acceptance | BLOCKED_BY_PREVIOUS_MILESTONE |
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| BE-05A | Mapping rule model and operators | TODO | FOUND-02F, BE-03D |
-| BE-05B | Mapping parameter resolver | TODO | BE-05A |
-| BE-05C | Priority, specificity and match modes | TODO | BE-05B |
-| BE-05D | Mapping cooldown and per-rule limits | TODO | BE-05C |
-| BE-05E | Mapping dry-run and integration tests | TODO | BE-05D |
-| BE-06A | Per-game global action budget | TODO | BE-05E |
-| BE-06B | Overflow and priority policies | TODO | BE-06A |
+| BE-05A | Mapping rule model and operators | DONE | FOUND-02F, BE-03D |
+| BE-05B | Mapping parameter resolver | DONE | BE-05A |
+| BE-05C | Priority, specificity and match modes | DONE | BE-05B |
+| BE-05D | Mapping cooldown and per-rule limits | DONE | BE-05C |
+| BE-05E | Mapping dry-run and integration tests | DONE | BE-05D |
+| BE-06A | Per-game global action budget | DONE | BE-05E |
+| BE-06B | Overflow and priority policies | DONE | BE-06A |
 | BE-07A | Game Socket.IO namespace and registration | TODO | FOUND-03D, FOUND-04D, BE-05E |
 | BE-07B | Action delivery and received ACK | TODO | BE-07A, FOUND-04D |
 | BE-07C | Completion result, retry and TTL | TODO | BE-07B, FOUND-04D |
