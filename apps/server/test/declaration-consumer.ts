@@ -90,6 +90,9 @@ const invalidParams: CreateDurableAction = { ...input, params: new Date() };
 // @ts-expect-error send authorizations cannot be constructed from public fields
 const forgedAuthorization: SendAuthorization = { actionId: "a" };
 
+// @ts-expect-error authorizeRetry requires explicit gameInstanceId fourth argument
+repository.authorizeRetry("a", 1, "runtime");
+
 // Snapshot declaration assertions
 const validSnapshot: BudgetAdmissionSnapshot = {
   gameProfileId: "prof-1",
@@ -105,15 +108,26 @@ const validSnapshot: BudgetAdmissionSnapshot = {
 // @ts-expect-error BudgetAdmissionSnapshot fields are readonly
 validSnapshot.gameProfileId = "prof-2";
 
+// @ts-expect-error null userLimit is rejected
+const nullUserLimitSnapshot: BudgetAdmissionSnapshot = { ...validSnapshot, userLimit: null };
+// @ts-expect-error null cooldownMs is rejected
+const nullCooldownMsSnapshot: BudgetAdmissionSnapshot = { ...validSnapshot, cooldownMs: null };
+// @ts-expect-error null ruleLimit is rejected
+const nullRuleLimitSnapshot: BudgetAdmissionSnapshot = { ...validSnapshot, ruleLimit: null };
+// @ts-expect-error null globalToken is rejected
+const nullGlobalTokenSnapshot: BudgetAdmissionSnapshot = { ...validSnapshot, globalToken: null };
+// @ts-expect-error null capacityConfig is rejected
+const nullCapacityConfigSnapshot: BudgetAdmissionSnapshot = { ...validSnapshot, capacityConfig: null };
+
 // @ts-expect-error missing required snapshot fields fail
 const missingSnapshotField: BudgetAdmissionSnapshot = {
   gameProfileId: "prof-1",
   ruleId: "rule-1",
   userBudgetKey: "user-1",
-  userLimit: null,
-  cooldownMs: null,
-  ruleLimit: null,
-  globalToken: null,
+  userLimit: { limitPerMinute: 60 },
+  cooldownMs: 1000,
+  ruleLimit: { limitPerMinute: 120 },
+  globalToken: { maxPerSecond: 10, burst: 20 },
 };
 
 function mutateSnapshot(snapshot: BudgetAdmissionSnapshot): void {
@@ -179,6 +193,11 @@ void forgedAuthorization;
 void validSnapshot;
 void missingSnapshotField;
 void nonJsonSnapshot;
+void nullUserLimitSnapshot;
+void nullCooldownMsSnapshot;
+void nullRuleLimitSnapshot;
+void nullGlobalTokenSnapshot;
+void nullCapacityConfigSnapshot;
 void preparedDelivery;
 void invalidPreparedDelivery;
 void resolutionAvailable;

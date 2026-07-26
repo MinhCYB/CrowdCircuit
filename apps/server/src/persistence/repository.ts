@@ -372,11 +372,14 @@ export class SqliteDurableActionRepository
     actionId: string,
     expectedVersion: number,
     runtimeId: string,
-    gameInstanceId?: string | null,
+    gameInstanceId: string | null,
   ): SendAuthorization {
     try {
       this.#database.exec("BEGIN IMMEDIATE");
       this.#requireActiveOwner(true);
+      if (gameInstanceId === undefined) {
+        throw new PersistenceError("INVALID_INPUT", "Game instance ID is required for retry authorization");
+      }
       const current = this.require(actionId);
       if (
         current.status !== "in_flight" ||
@@ -385,21 +388,7 @@ export class SqliteDurableActionRepository
       ) {
         throw new PersistenceError("STALE_TRANSITION", "Retry authorization is stale");
       }
-      let targetGameInstanceId: string | null = null;
-      if (gameInstanceId !== undefined) {
-        targetGameInstanceId = normalizeGameInstanceId(gameInstanceId);
-      } else {
-        const prevAuth = this.#database
-          .prepare(
-            `SELECT game_instance_id FROM action_send_authorizations
-             WHERE action_id = ? ORDER BY attempt_number DESC LIMIT 1`,
-          )
-          .get(actionId);
-        targetGameInstanceId =
-          prevAuth !== undefined
-            ? ((Reflect.get(prevAuth, "game_instance_id") as string | null) ?? null)
-            : null;
-      }
+      const targetGameInstanceId = normalizeGameInstanceId(gameInstanceId);
       const details = this.#newAuthorizationDetails(
         current,
         current.retryCount + 1,

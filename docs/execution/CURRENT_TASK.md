@@ -2,8 +2,8 @@
 
 **Task ID:** PHASE-C-MILESTONE-03-SLICE-01
 **Parent Task:** Phase C — Game Vertical Slice
-**Status:** READY_FOR_CODEX_CORE_SLICE
-**Primary owner:** GEMINI / CODEX
+**Status:** REMEDIATED_AND_READY_FOR_RE_REVIEW
+**Primary owner:** GEMINI
 **Priority:** P0
 
 ## Objective
@@ -26,8 +26,8 @@ restart reconciliation, and transport-neutral delivery port boundaries.
 - `FOUND-04A`–`FOUND-04D`: DONE
 - Milestone 2: APPROVED_AND_COMPLETE (`BE-05A`–`BE-06B` complete)
 - Milestone 3 architecture: RESOLVED (ADR-019 through ADR-024 accepted)
-- Milestone 3 Slice 1 (GEMINI-01): APPROVED_AND_COMPLETE
-- Milestone 3 Slice 2 (CODEX-CORE): READY_TO_BEGIN
+- Milestone 3 Slice 1 (GEMINI-01): REMEDIATED_AND_READY_FOR_RE_REVIEW (independent review: PENDING)
+- Milestone 3 Slice 2 (CODEX-CORE): BLOCKED_BY_SLICE_1_RE_REVIEW
 - Milestones 4–5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
 

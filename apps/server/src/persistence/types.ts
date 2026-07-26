@@ -42,11 +42,11 @@ export interface BudgetAdmissionSnapshot {
   readonly gameProfileId: string;
   readonly ruleId: string;
   readonly userBudgetKey: string;
-  readonly userLimit: BudgetUserWindowSnapshot | null;
-  readonly cooldownMs: number | null;
-  readonly ruleLimit: BudgetRuleWindowSnapshot | null;
-  readonly globalToken: BudgetGlobalTokenSnapshot | null;
-  readonly capacityConfig: BudgetCapacitySnapshot | null;
+  readonly userLimit: BudgetUserWindowSnapshot;
+  readonly cooldownMs: number;
+  readonly ruleLimit: BudgetRuleWindowSnapshot;
+  readonly globalToken: BudgetGlobalTokenSnapshot;
+  readonly capacityConfig: BudgetCapacitySnapshot;
 }
 
 export interface CreateDurableAction {
@@ -129,7 +129,7 @@ export interface DurableActionRepository {
     actionId: string,
     expectedVersion: number,
     runtimeId: string,
-    gameInstanceId?: string | null,
+    gameInstanceId: string | null,
   ): SendAuthorization;
   revokeSendAuthorization(actionId: string, attemptNumber: number, at: number): boolean;
   findById(actionId: string): DurableActionRecord | null;

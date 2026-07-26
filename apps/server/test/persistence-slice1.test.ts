@@ -159,7 +159,7 @@ describe("Milestone 3 Slice 1 Mechanical Persistence Extensions", () => {
       ).toThrowError(PersistenceError);
     });
 
-    it("retry authorization preserves explicit or previous gameInstanceId binding", () => {
+    it("requires explicit gameInstanceId during authorizeRetry and fails closed on omitted/undefined", () => {
       const input: CreateDurableAction = {
         ...baseInput,
         gameInstanceId: "inst_original",
@@ -180,40 +180,72 @@ describe("Milestone 3 Slice 1 Mechanical Persistence Extensions", () => {
       expect(record).not.toBeNull();
       if (record === null) return;
 
-      // Authorize retry without overriding preserves inst_original
-      const retryAuth1 = repository.authorizeRetry(
+      // 1 & 2: Omitted / undefined gameInstanceId fails closed
+      expect(() =>
+        repository.authorizeRetry(
+          record.actionId,
+          record.version,
+          record.runtimeId,
+          undefined as unknown as string,
+        ),
+      ).toThrowError(PersistenceError);
+
+      // 3: Explicit null succeeds and persists null (does NOT inherit inst_original)
+      const retryAuthNull = repository.authorizeRetry(
         record.actionId,
         record.version,
         record.runtimeId,
+        null,
       );
 
-      const retryAttempt1 = repository.recordAttempt(
-        retryAuth1,
-        { role: "game", clientId: "game_1" },
+      const retryAttemptNull = repository.recordAttempt(
+        retryAuthNull,
+        { role: "game", clientId: "game_1", gameInstanceId: null },
         1200,
         "send_started",
       );
-      expect(retryAttempt1.gameInstanceId).toBe("inst_original");
+      expect(retryAttemptNull.gameInstanceId).toBeNull();
 
       const record2 = repository.findById(baseInput.actionId);
       expect(record2).not.toBeNull();
       if (record2 === null) return;
 
-      // Authorize retry with new explicit gameInstanceId override
-      const retryAuth2 = repository.authorizeRetry(
+      // 4, 5 & 6: Explicit valid string succeeds and copies explicit binding without inheriting previous
+      const retryAuthNew = repository.authorizeRetry(
         record2.actionId,
         record2.version,
         record2.runtimeId,
         "inst_new_destination",
       );
 
-      const retryAttempt2 = repository.recordAttempt(
-        retryAuth2,
+      const retryAttemptNew = repository.recordAttempt(
+        retryAuthNew,
         { role: "game", clientId: "game_1", gameInstanceId: "inst_new_destination" },
         1300,
         "send_started",
       );
-      expect(retryAttempt2.gameInstanceId).toBe("inst_new_destination");
+      expect(retryAttemptNew.gameInstanceId).toBe("inst_new_destination");
+
+      // 7: Attempt recording mismatch against new authorization fails closed
+      const record3 = repository.findById(baseInput.actionId);
+      expect(record3).not.toBeNull();
+      if (record3 === null) return;
+
+      const retryAuthMismatch = repository.authorizeRetry(
+        record3.actionId,
+        record3.version,
+        record3.runtimeId,
+        "inst_auth_bound",
+      );
+
+      expect(() =>
+        repository.recordAttempt(
+          retryAuthMismatch,
+          { role: "game", clientId: "game_1", gameInstanceId: "inst_wrong" },
+          1400,
+          "send_started",
+        ),
+      ).toThrowError(PersistenceError);
     });
   });
 

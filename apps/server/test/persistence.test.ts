@@ -191,7 +191,13 @@ class DeterministicFakeRepository implements DurableActionRepository {
     return this.records.get(actionId) ?? null;
   }
 
-  authorizeRetry(actionId: string, expectedVersion: number, runtimeId: string): SendAuthorization {
+  authorizeRetry(
+    actionId: string,
+    expectedVersion: number,
+    runtimeId: string,
+    gameInstanceId: string | null,
+  ): SendAuthorization {
+    void gameInstanceId;
     this.assertOwner(true);
     const record = this.records.get(actionId);
     if (
@@ -543,6 +549,7 @@ function repositoryBehavior(factory: () => DurableActionRepository): void {
       "action-1",
       afterFirst?.version ?? 0,
       "runtime-1",
+      null,
     );
     const retry = repository.recordAttempt(
       retryAuthorization,
@@ -696,7 +703,7 @@ describe("SQLite durable action repository parity", () => {
         at: 1_100,
       }),
     );
-    expectSuperseded(() => first.authorizeRetry("old", 1, "runtime-a"));
+    expectSuperseded(() => first.authorizeRetry("old", 1, "runtime-a", null));
     expectSuperseded(() => first.reconcilePreviousRuntime("runtime-a", 1_100));
     expectSuperseded(() =>
       first.cleanup({ terminalBefore: 2_000, maximumTerminalRecords: 0 }),
@@ -1131,7 +1138,7 @@ describe("SQLite migration, recovery, and failure boundaries", () => {
           }),
         );
       }
-      expectSuperseded(() => first.authorizeRetry("flight", 2, "runtime-a"));
+      expectSuperseded(() => first.authorizeRetry("flight", 2, "runtime-a", null));
       expectSuperseded(() =>
         first.reconcilePreviousRuntime("runtime-a", 1_200 + repeat),
       );

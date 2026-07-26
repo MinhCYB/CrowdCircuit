@@ -4,7 +4,7 @@
 **From**: Additive Implementation Agent (GEMINI-01)  
 **To**: Concurrency-Sensitive Core Implementation Agent (CODEX-CORE) / Independent Reviewer  
 **Baseline Commit**: `e70e97b` (`docs: resolve Phase C milestone 3 architecture`)  
-**Status**: APPROVED_AND_COMPLETE  
+**Status**: REMEDIATED_AND_READY_FOR_RE_REVIEW (independent review: PENDING)
 
 ---
 
@@ -25,10 +25,11 @@ Milestone 3 Slice 1 (GEMINI-01) delivers the complete additive schema foundation
    - Added `gameInstanceId` to `actionSendAuthorizations` and `actionAttempts`.
 
 3. **Budget Admission Snapshot Types**:
-   - Declared `BudgetAdmissionSnapshot`, `BudgetUserWindowSnapshot`, `BudgetRuleWindowSnapshot`, `BudgetGlobalTokenSnapshot`, and `BudgetCapacitySnapshot` interfaces in `apps/server/src/persistence/types.ts`.
+   - Declared `BudgetAdmissionSnapshot`, `BudgetUserWindowSnapshot`, `BudgetRuleWindowSnapshot`, `BudgetGlobalTokenSnapshot`, and `BudgetCapacitySnapshot` interfaces in `apps/server/src/persistence/types.ts`. All 5 scope fields (`userLimit`, `cooldownMs`, `ruleLimit`, `globalToken`, `capacityConfig`) are strictly mandatory and non-nullable.
 
-4. **Destination Binding Pass-Through**:
-   - Extended `AuthorizationDetails`, `CreateDurableAction`, `ActionAttempt`, and `DurableActionRepository` methods to accept and validate optional `gameInstanceId`.
+4. **Destination Binding & Authorization**:
+   - Extended `AuthorizationDetails`, `CreateDurableAction`, `ActionAttempt`, and `DurableActionRepository` methods to accept and validate `gameInstanceId`.
+   - `DurableActionRepository.authorizeRetry` explicitly requires `gameInstanceId: string | null` (no optional or previous destination fallback).
    - Verified that `recordAttempt` validates supplied `binding.gameInstanceId` against authorization `details.gameInstanceId` and fails closed on mismatch with `INVALID_AUTHORIZATION`.
 
 5. **Transport-Neutral Action Delivery Port**:

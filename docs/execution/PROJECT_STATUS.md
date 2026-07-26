@@ -7,9 +7,9 @@
 **Phase C status:** IN_PROGRESS
 **Current milestone:** PHASE-C-MILESTONE-03 — IN_PROGRESS
 **Milestone 3 architecture status:** RESOLVED (ADR-019 through ADR-024 accepted)
-**Milestone 3 Slice 1 (GEMINI-01):** APPROVED_AND_COMPLETE
-**Milestone 3 Slice 2 (CODEX-CORE):** READY_TO_BEGIN
-**Working tree:** Accumulated uncommitted Phase C work including approved Milestone 1 & 2 and Milestone 3 Slice 1 additive schema layer
+**Milestone 3 Slice 1 (GEMINI-01):** REMEDIATED_AND_READY_FOR_RE_REVIEW (independent review: PENDING)
+**Milestone 3 Slice 2 (CODEX-CORE):** BLOCKED_BY_SLICE_1_RE_REVIEW
+**Working tree:** Accumulated Phase C work including approved Milestone 1 & 2 and Milestone 3 Slice 1 remediated schema layer
 
 ## Runtime baseline
 
@@ -23,7 +23,7 @@
 
 1. Authentication and durable persistence prerequisites — DONE
 2. Mapping and action-budget capability — APPROVED_AND_COMPLETE
-3. Durable Action Gateway lifecycle — IN_PROGRESS (Slice 1 GEMINI-01 APPROVED_AND_COMPLETE)
+3. Durable Action Gateway lifecycle — IN_PROGRESS (Slice 1 GEMINI-01 REMEDIATED_AND_READY_FOR_RE_REVIEW)
 4. Authenticated game-session delivery and SDK vertical slice — BLOCKED_BY_PREVIOUS_MILESTONE
 5. Demo game, recovery, and Phase C acceptance — BLOCKED_BY_PREVIOUS_MILESTONE
 

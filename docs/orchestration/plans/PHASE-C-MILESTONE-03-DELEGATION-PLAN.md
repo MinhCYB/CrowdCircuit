@@ -39,7 +39,7 @@ To preserve strict architectural boundaries and prevent multi-connection concurr
 ### Slice 1 Status — Gemini Additive Schema & Interface Layer
 
 **Primary Owner**: GEMINI  
-**Status**: APPROVED_AND_COMPLETE  
+**Status**: REMEDIATED_AND_READY_FOR_RE_REVIEW (independent review: PENDING)
 **Scope Boundary**: Additive schemas, types, DDL migration v3, port interfaces, fakes, declaration tests, and additive unit tests.
 
 ### Tasks for Gemini
