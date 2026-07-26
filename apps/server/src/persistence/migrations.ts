@@ -8,7 +8,7 @@ export interface Migration {
   readonly sql: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 export const MIGRATIONS: readonly Migration[] = [
   {
@@ -122,6 +122,45 @@ CREATE INDEX mapping_budget_rule_events_window_idx
   ON mapping_budget_rule_events(profile_id, rule_id, admitted_at);
 CREATE INDEX mapping_budget_user_buckets_cleanup_idx
   ON mapping_budget_user_buckets(profile_id, last_active_at, rule_id, user_key);
+`,
+  },
+  {
+    version: 3,
+    id: "phase-c-deferred-and-retry-metadata",
+    sql: `
+CREATE TABLE mapping_budget_deferred_candidates (
+  idempotency_seed TEXT PRIMARY KEY,
+  game_profile_id TEXT NOT NULL,
+  game_id TEXT NOT NULL,
+  rule_id TEXT NOT NULL,
+  event_id TEXT NOT NULL,
+  candidate_ordinal INTEGER NOT NULL CHECK (candidate_ordinal >= 0),
+  action_type TEXT NOT NULL,
+  params_json TEXT NOT NULL,
+  actor_json TEXT,
+  priority INTEGER NOT NULL,
+  action_priority INTEGER NOT NULL,
+  candidate_ttl_ms INTEGER NOT NULL CHECK (candidate_ttl_ms > 0),
+  deferred_expires_at INTEGER NOT NULL CHECK (deferred_expires_at >= 0 AND deferred_expires_at >= created_at),
+  created_at INTEGER NOT NULL CHECK (created_at >= 0),
+  admission_snapshot_json TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'queued' CHECK (
+    status IN ('queued', 'promoted', 'expired') AND (
+      (status = 'promoted' AND promoted_action_id IS NOT NULL AND promoted_at IS NOT NULL AND promoted_at >= 0) OR
+      (status IN ('queued', 'expired') AND promoted_action_id IS NULL AND promoted_at IS NULL)
+    )
+  ),
+  owning_runtime_id TEXT NOT NULL,
+  promoted_action_id TEXT,
+  promoted_at INTEGER CHECK (promoted_at IS NULL OR promoted_at >= 0)
+);
+CREATE INDEX mapping_budget_deferred_promotion_idx
+  ON mapping_budget_deferred_candidates(game_id, status, priority, created_at);
+ALTER TABLE action_logs ADD COLUMN next_attempt_at INTEGER CHECK (next_attempt_at IS NULL OR next_attempt_at >= 0);
+CREATE INDEX action_logs_retry_schedule_idx
+  ON action_logs(status, next_attempt_at);
+ALTER TABLE action_send_authorizations ADD COLUMN game_instance_id TEXT;
+ALTER TABLE action_attempts ADD COLUMN game_instance_id TEXT;
 `,
   },
 ];

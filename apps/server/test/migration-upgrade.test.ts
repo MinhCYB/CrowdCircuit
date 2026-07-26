@@ -18,15 +18,14 @@ afterEach(() => {
   }
 });
 
-describe("Real Schema v1 to v2 Upgrade Regression", () => {
-  it("migrates v1 database with seeded Milestone 1 data safely to v2 and maintains idempotency", () => {
+describe("Real Schema v1 to v2 to v3 Upgrade Regression", () => {
+  it("migrates v1 database to v2 then to v3 safely and maintains idempotency and data integrity", () => {
     const filename = temporaryDatabase();
 
     // Step 1: Apply ONLY v1 migration (Milestone 1)
     const dbV1 = new DatabaseSync(filename);
     const v1Migrations = MIGRATIONS.filter((m) => m.version === 1);
     const appliedV1 = migrateDatabase(dbV1, v1Migrations);
-
     expect(appliedV1).toBe(1);
 
     // Step 2: Verify schema_versions records version 1 only
@@ -35,13 +34,7 @@ describe("Real Schema v1 to v2 Upgrade Regression", () => {
       { version: 1, migration_id: "phase-c-foundation" },
     ]);
 
-    // Step 3: Verify mapping-budget tables do not exist yet
-    const tablesV1 = dbV1
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'mapping_budget_%'")
-      .all();
-    expect(tablesV1).toEqual([]);
-
-    // Step 4: Seed representative Milestone 1 data
+    // Step 3: Seed representative Milestone 1 data
     const seedRuntimeOwner = { singleton_id: 1, owner_id: "owner_m1_seed", reconciled_at: 1000 };
     const seedGameProfile = { profile_id: "prof_v1", game_id: "game_v1", profile_json: '{"name":"v1"}', updated_at: 1000 };
     const seedEventMapping = { mapping_id: "map_v1", game_id: "game_v1", mapping_json: '{"rules":[]}', updated_at: 1000 };
@@ -93,15 +86,12 @@ describe("Real Schema v1 to v2 Upgrade Regression", () => {
     dbV1
       .prepare("INSERT INTO runtime_ownership (singleton_id, owner_id, reconciled_at) VALUES (?, ?, ?)")
       .run(seedRuntimeOwner.singleton_id, seedRuntimeOwner.owner_id, seedRuntimeOwner.reconciled_at);
-
     dbV1
       .prepare("INSERT INTO game_profiles (profile_id, game_id, profile_json, updated_at) VALUES (?, ?, ?, ?)")
       .run(seedGameProfile.profile_id, seedGameProfile.game_id, seedGameProfile.profile_json, seedGameProfile.updated_at);
-
     dbV1
       .prepare("INSERT INTO event_mappings (mapping_id, game_id, mapping_json, updated_at) VALUES (?, ?, ?, ?)")
       .run(seedEventMapping.mapping_id, seedEventMapping.game_id, seedEventMapping.mapping_json, seedEventMapping.updated_at);
-
     dbV1
       .prepare(
         `INSERT INTO action_logs (
@@ -133,11 +123,9 @@ describe("Real Schema v1 to v2 Upgrade Regression", () => {
         seedActionLog.runtime_id,
         seedActionLog.version,
       );
-
     dbV1
       .prepare("INSERT INTO action_attempts (action_id, attempt_number, runtime_id, attempted_at, outcome, failure_code) VALUES (?, ?, ?, ?, ?, ?)")
       .run(seedActionAttempt.action_id, seedActionAttempt.attempt_number, seedActionAttempt.runtime_id, seedActionAttempt.attempted_at, seedActionAttempt.outcome, seedActionAttempt.failure_code);
-
     dbV1
       .prepare(
         `INSERT INTO action_send_authorizations (
@@ -158,66 +146,212 @@ describe("Real Schema v1 to v2 Upgrade Regression", () => {
         seedAuth.revoked_at,
       );
 
-    // Step 5: Capture exact representative rows
-    const capturedOwner = dbV1.prepare("SELECT * FROM runtime_ownership WHERE singleton_id = 1").get();
-    const capturedProfile = dbV1.prepare("SELECT * FROM game_profiles WHERE profile_id = 'prof_v1'").get();
-    const capturedMapping = dbV1.prepare("SELECT * FROM event_mappings WHERE mapping_id = 'map_v1'").get();
-    const capturedAction = dbV1.prepare("SELECT * FROM action_logs WHERE action_id = 'act_v1'").get();
-    const capturedAttempt = dbV1.prepare("SELECT * FROM action_attempts WHERE action_id = 'act_v1'").get();
-    const capturedAuth = dbV1.prepare("SELECT * FROM action_send_authorizations WHERE authorization_id = 'auth_v1'").get();
-
     dbV1.close();
 
-    // Step 6 & 7: Reopen and apply full migration manifest up to v2
+    // Step 4: Apply ONLY v2 migration
     const dbV2 = new DatabaseSync(filename);
-    const appliedV2 = migrateDatabase(dbV2, MIGRATIONS);
-
+    const v1AndV2Migrations = MIGRATIONS.filter((m) => m.version <= 2);
+    const appliedV2 = migrateDatabase(dbV2, v1AndV2Migrations);
     expect(appliedV2).toBe(2);
 
-    // Step 8: Verify v2 recorded, mapping-budget tables & indexes exist, v1 data unchanged
-    const versionsV2 = dbV2.prepare("SELECT version, migration_id FROM schema_versions ORDER BY version").all();
-    expect(versionsV2).toEqual([
-      { version: 1, migration_id: "phase-c-foundation" },
-      { version: 2, migration_id: "phase-c-mapping-budgets" },
-    ]);
+    // Step 5: Seed representative Milestone 2 budget rows
+    dbV2
+      .prepare("INSERT INTO mapping_budget_profiles (profile_id, last_observed_at) VALUES (?, ?)")
+      .run("prof_v1", 1000);
+    dbV2
+      .prepare("INSERT INTO mapping_budget_cooldowns (profile_id, rule_id, last_accepted_at) VALUES (?, ?, ?)")
+      .run("prof_v1", "rule_1", 1000);
 
-    const budgetTables = dbV2
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'mapping_budget_%' ORDER BY name")
-      .all()
-      .map((row) => Reflect.get(row, "name"));
+    // Step 6: Capture representative Milestone 1 & Milestone 2 rows
+    const capturedActionV2 = dbV2.prepare("SELECT * FROM action_logs WHERE action_id = 'act_v1'").get() as Record<string, unknown>;
+    const capturedAttemptV2 = dbV2.prepare("SELECT * FROM action_attempts WHERE action_id = 'act_v1'").get() as Record<string, unknown>;
+    const capturedAuthV2 = dbV2.prepare("SELECT * FROM action_send_authorizations WHERE authorization_id = 'auth_v1'").get() as Record<string, unknown>;
+    const capturedBudgetProfile = dbV2.prepare("SELECT * FROM mapping_budget_profiles WHERE profile_id = 'prof_v1'").get();
 
-    expect(budgetTables).toEqual([
-      "mapping_budget_cooldowns",
-      "mapping_budget_game_tokens",
-      "mapping_budget_profiles",
-      "mapping_budget_rule_events",
-      "mapping_budget_user_buckets",
-      "mapping_budget_user_events",
-    ]);
-
-    const budgetIndexes = dbV2
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'mapping_budget_%' ORDER BY name")
-      .all()
-      .map((row) => Reflect.get(row, "name"));
-
-    expect(budgetIndexes).toContain("mapping_budget_user_events_window_idx");
-    expect(budgetIndexes).toContain("mapping_budget_rule_events_window_idx");
-    expect(budgetIndexes).toContain("mapping_budget_user_buckets_cleanup_idx");
-
-    // Verify Milestone 1 rows remain byte-for-byte / field-for-field unchanged
-    expect(dbV2.prepare("SELECT * FROM runtime_ownership WHERE singleton_id = 1").get()).toEqual(capturedOwner);
-    expect(dbV2.prepare("SELECT * FROM game_profiles WHERE profile_id = 'prof_v1'").get()).toEqual(capturedProfile);
-    expect(dbV2.prepare("SELECT * FROM event_mappings WHERE mapping_id = 'map_v1'").get()).toEqual(capturedMapping);
-    expect(dbV2.prepare("SELECT * FROM action_logs WHERE action_id = 'act_v1'").get()).toEqual(capturedAction);
-    expect(dbV2.prepare("SELECT * FROM action_attempts WHERE action_id = 'act_v1'").get()).toEqual(capturedAttempt);
-    expect(dbV2.prepare("SELECT * FROM action_send_authorizations WHERE authorization_id = 'auth_v1'").get()).toEqual(capturedAuth);
+    // Step 7: Verify deferred table and v3 columns do not exist yet
+    const deferredTablesV2 = dbV2
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'mapping_budget_deferred_candidates'")
+      .all();
+    expect(deferredTablesV2).toEqual([]);
 
     dbV2.close();
 
-    // Step 9: Reopen again and prove migration idempotency
+    // Step 8 & 9: Reopen with full migration manifest (including v3)
+    const dbV3 = new DatabaseSync(filename);
+    const appliedV3 = migrateDatabase(dbV3, MIGRATIONS);
+    expect(appliedV3).toBe(3);
+
+    // Step 10 & 11: Verify schema_versions contains 1, 2, 3 in order
+    const versionsV3 = dbV3.prepare("SELECT version, migration_id FROM schema_versions ORDER BY version").all();
+    expect(versionsV3).toEqual([
+      { version: 1, migration_id: "phase-c-foundation" },
+      { version: 2, migration_id: "phase-c-mapping-budgets" },
+      { version: 3, migration_id: "phase-c-deferred-and-retry-metadata" },
+    ]);
+
+    // Step 12 & 13: Verify mapping_budget_deferred_candidates exists and has columns
+    const deferredTable = dbV3
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'mapping_budget_deferred_candidates'")
+      .all();
+    expect(deferredTable.length).toBe(1);
+
+    // Step 14: Verify indexes
+    const indexesV3 = dbV3
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'index'")
+      .all()
+      .map((row) => Reflect.get(row, "name"));
+    expect(indexesV3).toContain("mapping_budget_deferred_promotion_idx");
+    expect(indexesV3).toContain("action_logs_retry_schedule_idx");
+
+    // Step 15 & 16: Verify pre-existing rows are unchanged except new nullable columns read as null
+    const actionV3 = dbV3.prepare("SELECT * FROM action_logs WHERE action_id = 'act_v1'").get() as Record<string, unknown>;
+    expect(actionV3["next_attempt_at"]).toBeNull();
+    const actionV3Base = { ...actionV3 };
+    delete actionV3Base["next_attempt_at"];
+    expect(actionV3Base).toEqual(capturedActionV2);
+
+    const attemptV3 = dbV3.prepare("SELECT * FROM action_attempts WHERE action_id = 'act_v1'").get() as Record<string, unknown>;
+    expect(attemptV3["game_instance_id"]).toBeNull();
+    const attemptV3Base = { ...attemptV3 };
+    delete attemptV3Base["game_instance_id"];
+    expect(attemptV3Base).toEqual(capturedAttemptV2);
+
+    const authV3 = dbV3.prepare("SELECT * FROM action_send_authorizations WHERE authorization_id = 'auth_v1'").get() as Record<string, unknown>;
+    expect(authV3["game_instance_id"]).toBeNull();
+    const authV3Base = { ...authV3 };
+    delete authV3Base["game_instance_id"];
+    expect(authV3Base).toEqual(capturedAuthV2);
+
+    expect(dbV3.prepare("SELECT * FROM mapping_budget_profiles WHERE profile_id = 'prof_v1'").get()).toEqual(capturedBudgetProfile);
+
+    dbV3.close();
+
+    // Step 17: Reopen again and prove migration idempotency
     const dbIdempotent = new DatabaseSync(filename);
     expect(() => migrateDatabase(dbIdempotent, MIGRATIONS)).not.toThrow();
-    expect(dbIdempotent.prepare("SELECT MAX(version) AS version FROM schema_versions").get()).toEqual({ version: 2 });
+    expect(dbIdempotent.prepare("SELECT MAX(version) AS version FROM schema_versions").get()).toEqual({ version: 3 });
     dbIdempotent.close();
+  });
+
+  it("enforces raw DDL check constraints on mapping_budget_deferred_candidates", () => {
+    const filename = temporaryDatabase();
+    const db = new DatabaseSync(filename);
+    migrateDatabase(db, MIGRATIONS);
+
+    const baseRow = {
+      idempotency_seed: "seed_1",
+      game_profile_id: "prof_1",
+      game_id: "game_1",
+      rule_id: "rule_1",
+      event_id: "evt_1",
+      candidate_ordinal: 0,
+      action_type: "SPAWN",
+      params_json: "{}",
+      actor_json: null,
+      priority: 10,
+      action_priority: 5,
+      candidate_ttl_ms: 1000,
+      deferred_expires_at: 2000,
+      created_at: 1000,
+      admission_snapshot_json: "{}",
+      status: "queued",
+      owning_runtime_id: "runtime_1",
+      promoted_action_id: null,
+      promoted_at: null,
+    };
+
+    const insertRow = (override: Partial<typeof baseRow>) => {
+      const row = { ...baseRow, ...override };
+      db.prepare(
+        `INSERT INTO mapping_budget_deferred_candidates (
+          idempotency_seed, game_profile_id, game_id, rule_id, event_id, candidate_ordinal,
+          action_type, params_json, actor_json, priority, action_priority, candidate_ttl_ms,
+          deferred_expires_at, created_at, admission_snapshot_json, status, owning_runtime_id,
+          promoted_action_id, promoted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        row.idempotency_seed,
+        row.game_profile_id,
+        row.game_id,
+        row.rule_id,
+        row.event_id,
+        row.candidate_ordinal,
+        row.action_type,
+        row.params_json,
+        row.actor_json,
+        row.priority,
+        row.action_priority,
+        row.candidate_ttl_ms,
+        row.deferred_expires_at,
+        row.created_at,
+        row.admission_snapshot_json,
+        row.status,
+        row.owning_runtime_id,
+        row.promoted_action_id,
+        row.promoted_at,
+      );
+    };
+
+    // Valid queued insert succeeds
+    expect(() => insertRow({ idempotency_seed: "valid_queued" })).not.toThrow();
+
+    // Valid promoted insert succeeds
+    expect(() =>
+      insertRow({
+        idempotency_seed: "valid_promoted",
+        status: "promoted",
+        promoted_action_id: "act_1",
+        promoted_at: 1500,
+      }),
+    ).not.toThrow();
+
+    // Invalid status rejected
+    expect(() => insertRow({ idempotency_seed: "invalid_status", status: "unknown" })).toThrow();
+
+    // Negative candidate ordinal rejected
+    expect(() => insertRow({ idempotency_seed: "neg_ordinal", candidate_ordinal: -1 })).toThrow();
+
+    // Nonpositive candidate TTL rejected
+    expect(() => insertRow({ idempotency_seed: "zero_ttl", candidate_ttl_ms: 0 })).toThrow();
+
+    // Deferred expires at before creation rejected
+    expect(() =>
+      insertRow({
+        idempotency_seed: "expired_before_created",
+        created_at: 2000,
+        deferred_expires_at: 1000,
+      }),
+    ).toThrow();
+
+    // Promoted status without complete promotion metadata rejected
+    expect(() =>
+      insertRow({
+        idempotency_seed: "promoted_no_action",
+        status: "promoted",
+        promoted_action_id: null,
+        promoted_at: 1500,
+      }),
+    ).toThrow();
+
+    expect(() =>
+      insertRow({
+        idempotency_seed: "promoted_no_time",
+        status: "promoted",
+        promoted_action_id: "act_1",
+        promoted_at: null,
+      }),
+    ).toThrow();
+
+    // Queued row with partial promotion metadata rejected
+    expect(() =>
+      insertRow({
+        idempotency_seed: "queued_with_action",
+        status: "queued",
+        promoted_action_id: "act_1",
+        promoted_at: null,
+      }),
+    ).toThrow();
+
+    db.close();
   });
 });

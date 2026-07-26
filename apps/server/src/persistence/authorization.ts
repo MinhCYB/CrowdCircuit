@@ -17,6 +17,7 @@ export interface AuthorizationDetails {
   readonly expiresAt: number;
   readonly runtimeOwnerId: string;
   readonly repositoryOwner: object;
+  readonly gameInstanceId: string | null;
 }
 
 const issued = new WeakMap<SendAuthorization, AuthorizationDetails>();

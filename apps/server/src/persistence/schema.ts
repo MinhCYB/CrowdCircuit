@@ -70,8 +70,12 @@ export const actionLogs = sqliteTable(
     reconciliationReason: text("reconciliation_reason"),
     runtimeId: text("runtime_id").notNull(),
     version: integer("version").notNull(),
+    nextAttemptAt: integer("next_attempt_at"),
   },
-  (table) => [uniqueIndex("action_logs_idempotency_key_unique").on(table.idempotencyKey)],
+  (table) => [
+    uniqueIndex("action_logs_idempotency_key_unique").on(table.idempotencyKey),
+    index("action_logs_retry_schedule_idx").on(table.status, table.nextAttemptAt),
+  ],
 );
 
 export const actionAttempts = sqliteTable(
@@ -83,6 +87,7 @@ export const actionAttempts = sqliteTable(
     attemptedAt: integer("attempted_at").notNull(),
     outcome: text("outcome").notNull(),
     failureCode: text("failure_code"),
+    gameInstanceId: text("game_instance_id"),
   },
   (table) => [
     uniqueIndex("action_attempts_action_number_unique").on(
@@ -106,6 +111,7 @@ export const actionSendAuthorizations = sqliteTable(
     expiresAt: integer("expires_at").notNull(),
     consumedAt: integer("consumed_at"),
     revokedAt: integer("revoked_at"),
+    gameInstanceId: text("game_instance_id"),
   },
   (table) => [
     uniqueIndex("action_send_authorizations_action_attempt_unique").on(
@@ -202,3 +208,36 @@ export const mappingBudgetGameTokens = sqliteTable("mapping_budget_game_tokens",
   tokens: real("tokens").notNull(),
   refilledAt: integer("refilled_at").notNull(),
 });
+
+export const mappingBudgetDeferredCandidates = sqliteTable(
+  "mapping_budget_deferred_candidates",
+  {
+    idempotencySeed: text("idempotency_seed").primaryKey(),
+    gameProfileId: text("game_profile_id").notNull(),
+    gameId: text("game_id").notNull(),
+    ruleId: text("rule_id").notNull(),
+    eventId: text("event_id").notNull(),
+    candidateOrdinal: integer("candidate_ordinal").notNull(),
+    actionType: text("action_type").notNull(),
+    paramsJson: text("params_json").notNull(),
+    actorJson: text("actor_json"),
+    priority: integer("priority").notNull(),
+    actionPriority: integer("action_priority").notNull(),
+    candidateTtlMs: integer("candidate_ttl_ms").notNull(),
+    deferredExpiresAt: integer("deferred_expires_at").notNull(),
+    createdAt: integer("created_at").notNull(),
+    admissionSnapshotJson: text("admission_snapshot_json").notNull(),
+    status: text("status").notNull().default("queued"),
+    owningRuntimeId: text("owning_runtime_id").notNull(),
+    promotedActionId: text("promoted_action_id"),
+    promotedAt: integer("promoted_at"),
+  },
+  (table) => [
+    index("mapping_budget_deferred_promotion_idx").on(
+      table.gameId,
+      table.status,
+      table.priority,
+      table.createdAt,
+    ),
+  ],
+);

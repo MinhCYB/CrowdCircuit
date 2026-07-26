@@ -55,6 +55,7 @@ const RowSchema = z.object({
   reconciliation_reason: z.string().nullable(),
   runtime_id: z.string(),
   version: z.number().int().positive(),
+  next_attempt_at: z.number().int().nonnegative().nullable().optional(),
 });
 
 const AttemptRowSchema = z.object({
@@ -64,6 +65,7 @@ const AttemptRowSchema = z.object({
   attempted_at: z.number().int().nonnegative(),
   outcome: z.enum(["send_started", "send_failed"]),
   failure_code: z.string().nullable(),
+  game_instance_id: z.string().nullable().optional(),
 });
 
 const nonempty = (value: string, name: string): void => {
@@ -77,6 +79,17 @@ const timestamp = (value: number, name: string): void => {
     throw new PersistenceError("INVALID_INPUT", `${name} is invalid`);
   }
 };
+
+function normalizeGameInstanceId(value: string | null | undefined): string | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string") {
+    if (value.length === 0 || value.length > 256) {
+      throw new PersistenceError("INVALID_INPUT", "Game instance ID is invalid");
+    }
+    return value;
+  }
+  throw new PersistenceError("INVALID_INPUT", "Game instance ID is invalid");
+}
 
 function parseRecord(raw: unknown): DurableActionRecord {
   const row = RowSchema.safeParse(raw);
@@ -129,6 +142,7 @@ function parseRecord(raw: unknown): DurableActionRecord {
     reconciliationReason: row.data.reconciliation_reason,
     runtimeId: row.data.runtime_id,
     version: row.data.version,
+    nextAttemptAt: row.data.next_attempt_at ?? null,
   };
 }
 
@@ -136,8 +150,14 @@ function validateCreate(input: CreateDurableAction): void {
   nonempty(input.actionId, "Action ID");
   nonempty(input.idempotencyKey, "Idempotency key");
   nonempty(input.gameId, "Game ID");
+  normalizeGameInstanceId(input.gameInstanceId);
   nonempty(input.actionType, "Action type");
   nonempty(input.runtimeId, "Runtime ID");
+  if (input.nextAttemptAt !== undefined && input.nextAttemptAt !== null) {
+    if (!Number.isSafeInteger(input.nextAttemptAt) || input.nextAttemptAt < 0) {
+      throw new PersistenceError("INVALID_INPUT", "Next attempt timestamp is invalid");
+    }
+  }
   if (!JsonValueSchema.safeParse(input.params).success) {
     throw new PersistenceError("INVALID_INPUT", "Action parameters must be JSON-safe");
   }
@@ -309,8 +329,8 @@ export class SqliteDurableActionRepository
             action_id, idempotency_key, event_id, mapping_id, game_id, action_type,
             params_json, status, priority, ttl_ms, retry_count, created_at, updated_at,
             expires_at, received_at, completed_at, failure_code, result_json,
-            reconciliation_reason, runtime_id, version
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, 0, ?, ?, ?, NULL, NULL, NULL, NULL, NULL, ?, 1)`,
+            reconciliation_reason, runtime_id, version, next_attempt_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, 0, ?, ?, ?, NULL, NULL, NULL, NULL, NULL, ?, 1, ?)`,
         )
         .run(
           input.actionId,
@@ -326,6 +346,7 @@ export class SqliteDurableActionRepository
           input.createdAt,
           input.expiresAt,
           input.runtimeId,
+          input.nextAttemptAt ?? null,
         );
       const details = this.#newAuthorizationDetails(input, 1);
       this.#insertAuthorization(details);
@@ -351,6 +372,7 @@ export class SqliteDurableActionRepository
     actionId: string,
     expectedVersion: number,
     runtimeId: string,
+    gameInstanceId?: string | null,
   ): SendAuthorization {
     try {
       this.#database.exec("BEGIN IMMEDIATE");
@@ -363,7 +385,26 @@ export class SqliteDurableActionRepository
       ) {
         throw new PersistenceError("STALE_TRANSITION", "Retry authorization is stale");
       }
-      const details = this.#newAuthorizationDetails(current, current.retryCount + 1);
+      let targetGameInstanceId: string | null = null;
+      if (gameInstanceId !== undefined) {
+        targetGameInstanceId = normalizeGameInstanceId(gameInstanceId);
+      } else {
+        const prevAuth = this.#database
+          .prepare(
+            `SELECT game_instance_id FROM action_send_authorizations
+             WHERE action_id = ? ORDER BY attempt_number DESC LIMIT 1`,
+          )
+          .get(actionId);
+        targetGameInstanceId =
+          prevAuth !== undefined
+            ? ((Reflect.get(prevAuth, "game_instance_id") as string | null) ?? null)
+            : null;
+      }
+      const details = this.#newAuthorizationDetails(
+        current,
+        current.retryCount + 1,
+        targetGameInstanceId,
+      );
       this.#insertAuthorization(details);
       this.#commitTransaction("attempt");
       return issueSendAuthorization(details);
@@ -644,7 +685,11 @@ export class SqliteDurableActionRepository
 
   recordAttempt(
     authorization: SendAuthorization,
-    binding: { readonly role: "game"; readonly clientId: string },
+    binding: {
+      readonly role: "game";
+      readonly clientId: string;
+      readonly gameInstanceId?: string | null;
+    },
     attemptedAt: number,
     outcome: ActionAttempt["outcome"],
     failureCode: string | null = null,
@@ -656,6 +701,12 @@ export class SqliteDurableActionRepository
     }
     if (binding.role !== details.role || binding.clientId !== details.clientId) {
       throw new PersistenceError("INVALID_AUTHORIZATION", "Send authorization is invalid");
+    }
+    if (binding.gameInstanceId !== undefined) {
+      const normalizedBindingInstance = normalizeGameInstanceId(binding.gameInstanceId);
+      if (normalizedBindingInstance !== details.gameInstanceId) {
+        throw new PersistenceError("INVALID_AUTHORIZATION", "Send authorization is invalid");
+      }
     }
     try {
       this.#database.exec("BEGIN IMMEDIATE");
@@ -677,6 +728,7 @@ export class SqliteDurableActionRepository
            WHERE authorization_id = ? AND action_id = ? AND expected_version = ?
            AND attempt_number = ? AND runtime_id = ? AND role = ? AND client_id = ?
            AND expires_at = ? AND runtime_owner_id = ?
+           AND (game_instance_id IS ? OR (game_instance_id IS NULL AND ? IS NULL))
            AND consumed_at IS NULL AND revoked_at IS NULL`,
         )
         .run(
@@ -690,6 +742,8 @@ export class SqliteDurableActionRepository
           details.clientId,
           details.expiresAt,
           details.runtimeOwnerId,
+          details.gameInstanceId,
+          details.gameInstanceId,
         );
       if (consumed.changes !== 1) {
         throw new PersistenceError("INVALID_AUTHORIZATION", "Send authorization is invalid");
@@ -697,8 +751,8 @@ export class SqliteDurableActionRepository
       this.#database
         .prepare(
           `INSERT INTO action_attempts
-           (action_id, attempt_number, runtime_id, attempted_at, outcome, failure_code)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+           (action_id, attempt_number, runtime_id, attempted_at, outcome, failure_code, game_instance_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           current.actionId,
@@ -707,6 +761,7 @@ export class SqliteDurableActionRepository
           attemptedAt,
           outcome,
           failureCode,
+          details.gameInstanceId,
         );
       const result = this.#database
         .prepare(
@@ -732,6 +787,7 @@ export class SqliteDurableActionRepository
         attemptedAt,
         outcome,
         failureCode,
+        gameInstanceId: details.gameInstanceId,
       };
     } catch (error) {
       try {
@@ -746,23 +802,24 @@ export class SqliteDurableActionRepository
 
   listAttempts(actionId: string): readonly ActionAttempt[] {
     nonempty(actionId, "Action ID");
-    return this.#database
+    const rows = this.#database
       .prepare("SELECT * FROM action_attempts WHERE action_id = ? ORDER BY attempt_number")
-      .all(actionId)
-      .map((raw) => {
-        const row = AttemptRowSchema.safeParse(raw);
-        if (!row.success) {
-          throw new PersistenceError("SCHEMA_INCOMPATIBLE", "Stored attempt is invalid");
-        }
-        return {
-          actionId: row.data.action_id,
-          attemptNumber: row.data.attempt_number,
-          runtimeId: row.data.runtime_id,
-          attemptedAt: row.data.attempted_at,
-          outcome: row.data.outcome,
-          failureCode: row.data.failure_code,
-        };
-      });
+      .all(actionId);
+    return rows.map((row) => {
+      const parsed = AttemptRowSchema.safeParse(row);
+      if (!parsed.success) {
+        throw new PersistenceError("SCHEMA_INCOMPATIBLE", "Stored attempt is invalid");
+      }
+      return {
+        actionId: parsed.data.action_id,
+        attemptNumber: parsed.data.attempt_number,
+        runtimeId: parsed.data.runtime_id,
+        attemptedAt: parsed.data.attempted_at,
+        outcome: parsed.data.outcome,
+        failureCode: parsed.data.failure_code,
+        gameInstanceId: parsed.data.game_instance_id ?? null,
+      };
+    });
   }
 
   listNonterminal(): readonly DurableActionRecord[] {
@@ -928,6 +985,7 @@ export class SqliteDurableActionRepository
   }
 
   #sameCreate(record: DurableActionRecord, input: CreateDurableAction): boolean {
+    const inputNextAttempt = input.nextAttemptAt ?? null;
     return (
       record.actionId === input.actionId &&
       record.idempotencyKey === input.idempotencyKey &&
@@ -940,18 +998,24 @@ export class SqliteDurableActionRepository
       record.ttlMs === input.ttlMs &&
       record.createdAt === input.createdAt &&
       record.expiresAt === input.expiresAt &&
-      record.runtimeId === input.runtimeId
+      record.runtimeId === input.runtimeId &&
+      record.nextAttemptAt === inputNextAttempt
     );
   }
 
   #newAuthorizationDetails(
     input: CreateDurableAction | DurableActionRecord,
     attemptNumber: number,
+    gameInstanceIdOverride?: string | null,
   ): AuthorizationDetails {
     const random = this.#authorizationRandom(32);
     if (!(random instanceof Uint8Array) || random.byteLength !== 32) {
       throw new PersistenceError("DATABASE_UNAVAILABLE", "Authorization generation failed");
     }
+    const gameInstanceId =
+      gameInstanceIdOverride !== undefined
+        ? normalizeGameInstanceId(gameInstanceIdOverride)
+        : normalizeGameInstanceId(input.gameInstanceId);
     return {
       authorizationId: createHash("sha256").update(random).digest("hex"),
       actionId: input.actionId,
@@ -963,6 +1027,7 @@ export class SqliteDurableActionRepository
       expiresAt: input.expiresAt,
       runtimeOwnerId: this.#runtimeOwnerId,
       repositoryOwner: this.#repositoryOwner,
+      gameInstanceId,
     };
   }
 
@@ -972,8 +1037,8 @@ export class SqliteDurableActionRepository
         `INSERT INTO action_send_authorizations
          (authorization_id, action_id, expected_version, attempt_number,
           runtime_id, runtime_owner_id, role, client_id, expires_at,
-          consumed_at, revoked_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
+          consumed_at, revoked_at, game_instance_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?)`,
       )
       .run(
         details.authorizationId,
@@ -985,6 +1050,7 @@ export class SqliteDurableActionRepository
         details.role,
         details.clientId,
         details.expiresAt,
+        details.gameInstanceId,
       );
   }
 

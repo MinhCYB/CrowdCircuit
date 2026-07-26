@@ -256,8 +256,8 @@ budgets, bounded state, declarations, and Phase B regressions.
 
 ## Milestone 3 — Durable Action Gateway lifecycle
 
-**Status:** READY_FOR_GEMINI_SCHEMA_SLICE
-**Primary owner:** CODEX  
+**Status:** IN_PROGRESS (Slice 1 GEMINI-01 APPROVED_AND_COMPLETE)
+**Primary owner:** CODEX / GEMINI  
 **Roadmap:** transport-independent core of `BE-07B`–`BE-07D`
 
 ### Objective

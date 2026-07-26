@@ -19,12 +19,43 @@ export type DurableActionStatus = (typeof ACTION_STATUSES)[number];
 export type NonterminalActionStatus = "pending" | "in_flight" | "received";
 export type TerminalActionStatus = Exclude<DurableActionStatus, NonterminalActionStatus>;
 
+export interface BudgetUserWindowSnapshot {
+  readonly limitPerMinute: number;
+}
+
+export interface BudgetRuleWindowSnapshot {
+  readonly limitPerMinute: number;
+}
+
+export interface BudgetGlobalTokenSnapshot {
+  readonly maxPerSecond: number;
+  readonly burst: number;
+}
+
+export interface BudgetCapacitySnapshot {
+  readonly maxUserBuckets: number;
+  readonly inactiveRetentionMs: number;
+  readonly sweepLimit: number;
+}
+
+export interface BudgetAdmissionSnapshot {
+  readonly gameProfileId: string;
+  readonly ruleId: string;
+  readonly userBudgetKey: string;
+  readonly userLimit: BudgetUserWindowSnapshot | null;
+  readonly cooldownMs: number | null;
+  readonly ruleLimit: BudgetRuleWindowSnapshot | null;
+  readonly globalToken: BudgetGlobalTokenSnapshot | null;
+  readonly capacityConfig: BudgetCapacitySnapshot | null;
+}
+
 export interface CreateDurableAction {
   readonly actionId: string;
   readonly idempotencyKey: string;
   readonly eventId: string | null;
   readonly mappingId: string | null;
   readonly gameId: string;
+  readonly gameInstanceId?: string | null;
   readonly actionType: string;
   readonly params: JsonValue;
   readonly priority: number;
@@ -32,9 +63,11 @@ export interface CreateDurableAction {
   readonly createdAt: number;
   readonly expiresAt: number;
   readonly runtimeId: string;
+  readonly nextAttemptAt?: number | null;
 }
 
 export interface DurableActionRecord extends CreateDurableAction {
+  readonly nextAttemptAt: number | null;
   readonly status: DurableActionStatus;
   readonly retryCount: number;
   readonly version: number;
@@ -66,6 +99,7 @@ export interface ActionAttempt {
   readonly attemptedAt: number;
   readonly outcome: "send_started" | "send_failed";
   readonly failureCode: string | null;
+  readonly gameInstanceId: string | null;
 }
 
 export interface ActionTransition {
@@ -91,14 +125,23 @@ export interface RetentionPolicy {
 
 export interface DurableActionRepository {
   createBeforeFirstSend(input: CreateDurableAction): DurableCreateResult;
-  authorizeRetry(actionId: string, expectedVersion: number, runtimeId: string): SendAuthorization;
+  authorizeRetry(
+    actionId: string,
+    expectedVersion: number,
+    runtimeId: string,
+    gameInstanceId?: string | null,
+  ): SendAuthorization;
   revokeSendAuthorization(actionId: string, attemptNumber: number, at: number): boolean;
   findById(actionId: string): DurableActionRecord | null;
   findByIdempotencyKey(idempotencyKey: string): DurableActionRecord | null;
   transition(input: ActionTransition): DurableActionRecord;
   recordAttempt(
     authorization: SendAuthorization,
-    binding: { readonly role: "game"; readonly clientId: string },
+    binding: {
+      readonly role: "game";
+      readonly clientId: string;
+      readonly gameInstanceId?: string | null;
+    },
     attemptedAt: number,
     outcome: ActionAttempt["outcome"],
     failureCode?: string | null,

@@ -6,6 +6,7 @@ import { createAuthRuntime, type AuthRuntime } from "./auth/index.js";
 import { registerAuthRoutes } from "./auth/routes.js";
 
 export * from "./persistence/index.js";
+export * from "./delivery/port.js";
 export { createAuthRuntime, type AuthRuntime } from "./auth/index.js";
 
 const HOST = process.env["HOST"] ?? "127.0.0.1";
