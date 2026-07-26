@@ -25,13 +25,19 @@ import {
   type EvaluateMappingInput,
 } from "./model.js";
 
-const ANONYMOUS_IDENTITY = "anonymous";
+const FORBIDDEN_SEGMENTS = new Set(["__proto__", "prototype", "constructor"]);
 
 function readPath(root: object, path: string): unknown {
   let current: unknown = root;
   for (const segment of path.split(".")) {
     if (typeof current !== "object" || current === null) return undefined;
-    current = Reflect.get(current, segment);
+    if (FORBIDDEN_SEGMENTS.has(segment)) return undefined;
+    if (!Object.hasOwn(current, segment)) return undefined;
+    const descriptor = Object.getOwnPropertyDescriptor(current, segment);
+    if (!descriptor || descriptor.get !== undefined || descriptor.set !== undefined || !("value" in descriptor)) {
+      return undefined;
+    }
+    current = descriptor.value;
   }
   return current;
 }
@@ -83,12 +89,22 @@ function conditionMatches(event: LiveEvent, condition: EventCondition): boolean 
   }
 }
 
+/**
+ * Approved +100 specificity condition fields.
+ * - payload.gift.id: Exact gift ID condition (+100)
+ * - payload.textNormalized: Exact command text condition (+100)
+ * Adding another +100 path requires an explicit policy update and regression case.
+ */
+const SPECIFICITY_EXACT_FIELDS = new Set([
+  "payload.gift.id",
+  "payload.textNormalized",
+]);
+
 function specificity(rule: MappingRule): number {
   return rule.conditions.reduce((score, condition) => {
     if (
       condition.operator === "eq" &&
-      (condition.field === "payload.gift.id" ||
-        condition.field === "payload.textNormalized")
+      SPECIFICITY_EXACT_FIELDS.has(condition.field)
     ) {
       return score + 100;
     }
@@ -102,12 +118,16 @@ function specificity(rule: MappingRule): number {
   }, 0);
 }
 
+function compareOrdinal(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function compareRules(left: MappingRule, right: MappingRule): number {
   return (
     right.priority - left.priority ||
     specificity(right) - specificity(left) ||
-    left.createdAt.localeCompare(right.createdAt) ||
-    left.id.localeCompare(right.id)
+    compareOrdinal(left.createdAt, right.createdAt) ||
+    compareOrdinal(left.id, right.id)
   );
 }
 
@@ -198,18 +218,25 @@ function manifestAllows(
   );
 }
 
-function userBudgetKey(event: LiveEvent, profileId: string, ruleId: string): string {
-  const stable =
+const USER_BUDGET_KEY_FORMAT_VERSION = 1 as const;
+
+function userBudgetKey(event: LiveEvent, gameProfileId: string, ruleId: string): string {
+  const identity =
     event.user !== null &&
     typeof event.user.id === "string" &&
     event.user.id.length > 0
-      ? `id:${event.user.id}`
+      ? { kind: "id" as const, value: event.user.id }
       : event.user !== null &&
           typeof event.user.uniqueId === "string" &&
           event.user.uniqueId.length > 0
-        ? `unique:${event.user.uniqueId}`
-        : ANONYMOUS_IDENTITY;
-  return `${profileId}\u001f${ruleId}\u001f${stable}`;
+        ? { kind: "uniqueId" as const, value: event.user.uniqueId }
+        : { kind: "anonymous" as const, value: null };
+  return canonicalJson({
+    keyFormatVersion: USER_BUDGET_KEY_FORMAT_VERSION,
+    gameProfileId,
+    ruleId,
+    identity,
+  });
 }
 
 export class MappingEngine {
@@ -221,6 +248,15 @@ export class MappingEngine {
     this.#clock = clock;
   }
 
+  /**
+   * Evaluates a normalized live event against a mapping profile and game manifest.
+   *
+   * Dry-run mode note:
+   * - Dry-run (`dryRun: true`) proves profile/manifest validation, condition matching,
+   *   rule ordering, and action template parameter resolution.
+   * - It does NOT evaluate or prove durable budget admission success.
+   * - Dry-run consumes zero budget capacity and persists no budget state.
+   */
   evaluate(input: EvaluateMappingInput): MappingEvaluation {
     const profile = MappingProfileSchema.safeParse(input.profile);
     if (!profile.success) {

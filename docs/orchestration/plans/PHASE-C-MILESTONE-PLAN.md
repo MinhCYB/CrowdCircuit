@@ -4,7 +4,8 @@
 
 **Phase status:** IN_PROGRESS  
 **Milestone 1:** DONE  
-**Milestone 2:** CORE_READY_FOR_GEMINI_ADDITIVE
+**Milestone 2:** READY_FOR_FOCUSED_REVIEW
+**Remediation 01:** COMPLETE
 **Milestones 3–5:** BLOCKED_BY_PREVIOUS_MILESTONE  
 **Phase D:** untouched
 

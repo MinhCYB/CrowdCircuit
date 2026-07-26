@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const schemaVersions = sqliteTable("schema_versions", {
   version: integer("version").primaryKey(),
@@ -140,23 +140,50 @@ export const mappingBudgetUserBuckets = sqliteTable(
       table.ruleId,
       table.userKey,
     ),
+    index("mapping_budget_user_buckets_cleanup_idx").on(
+      table.profileId,
+      table.lastActiveAt,
+      table.ruleId,
+      table.userKey,
+    ),
   ],
 );
 
-export const mappingBudgetUserEvents = sqliteTable("mapping_budget_user_events", {
-  sequence: integer("sequence").primaryKey({ autoIncrement: true }),
-  profileId: text("profile_id").notNull(),
-  ruleId: text("rule_id").notNull(),
-  userKey: text("user_key").notNull(),
-  admittedAt: integer("admitted_at").notNull(),
-});
+export const mappingBudgetUserEvents = sqliteTable(
+  "mapping_budget_user_events",
+  {
+    sequence: integer("sequence").primaryKey({ autoIncrement: true }),
+    profileId: text("profile_id").notNull(),
+    ruleId: text("rule_id").notNull(),
+    userKey: text("user_key").notNull(),
+    admittedAt: integer("admitted_at").notNull(),
+  },
+  (table) => [
+    index("mapping_budget_user_events_window_idx").on(
+      table.profileId,
+      table.ruleId,
+      table.userKey,
+      table.admittedAt,
+    ),
+  ],
+);
 
-export const mappingBudgetRuleEvents = sqliteTable("mapping_budget_rule_events", {
-  sequence: integer("sequence").primaryKey({ autoIncrement: true }),
-  profileId: text("profile_id").notNull(),
-  ruleId: text("rule_id").notNull(),
-  admittedAt: integer("admitted_at").notNull(),
-});
+export const mappingBudgetRuleEvents = sqliteTable(
+  "mapping_budget_rule_events",
+  {
+    sequence: integer("sequence").primaryKey({ autoIncrement: true }),
+    profileId: text("profile_id").notNull(),
+    ruleId: text("rule_id").notNull(),
+    admittedAt: integer("admitted_at").notNull(),
+  },
+  (table) => [
+    index("mapping_budget_rule_events_window_idx").on(
+      table.profileId,
+      table.ruleId,
+      table.admittedAt,
+    ),
+  ],
+);
 
 export const mappingBudgetCooldowns = sqliteTable(
   "mapping_budget_cooldowns",

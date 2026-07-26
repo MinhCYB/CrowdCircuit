@@ -5,6 +5,7 @@ import {
   CANONICAL_GIFT_SENT_EVENT,
 } from "@crowdcircuit/contracts/fixtures";
 import {
+  canonicalJson,
   MappingEngine,
   MappingProfileSchema,
   createCandidateSeed,
@@ -246,7 +247,12 @@ describe("deterministic mapping", () => {
     const event = { ...CANONICAL_ENGAGEMENT_LIKE_EVENT, user: null };
     engine.evaluate({ profile: profile([likeRule]), manifest, event });
     expect(budget.requests[0]?.candidate.userBudgetKey).toBe(
-      "profile\u001flike\u001fanonymous",
+      canonicalJson({
+        gameProfileId: "profile",
+        identity: { kind: "anonymous", value: null },
+        keyFormatVersion: 1,
+        ruleId: "like",
+      }),
     );
   });
 

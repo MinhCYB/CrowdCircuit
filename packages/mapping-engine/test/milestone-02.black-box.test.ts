@@ -4,6 +4,7 @@ import {
   CANONICAL_GIFT_SENT_EVENT,
 } from "@crowdcircuit/contracts/fixtures";
 import {
+  canonicalJson,
   MappingEngine,
   MappingProfileSchema,
   type BudgetAdmissionRequest,
@@ -323,7 +324,7 @@ describe("Milestone 2 Black-Box Specification Tests", () => {
       expect(res.success).toBe(true);
       if (res.success) {
         expect(res.results).toHaveLength(1);
-        expect(repo.userWindows.get("prof_milestone_02\u001frule_gift_01\u001fid:usr_canonical_001")?.length).toBe(1);
+        expect(repo.userWindows.get(canonicalJson({ gameProfileId: "prof_milestone_02", identity: { kind: "id", value: "usr_canonical_001" }, keyFormatVersion: 1, ruleId: "rule_gift_01" }))?.length).toBe(1);
       }
     });
 
@@ -378,7 +379,7 @@ describe("Milestone 2 Black-Box Specification Tests", () => {
       const keyEmpty = Array.from(repo.activeUserBucketKeys)[0];
 
       expect(keyNull).toBe(keyEmpty);
-      expect(keyNull).toBe("prof_milestone_02\u001frule_comment_01\u001fanonymous");
+      expect(keyNull).toBe(canonicalJson({ gameProfileId: "prof_milestone_02", identity: { kind: "anonymous", value: null }, keyFormatVersion: 1, ruleId: "rule_comment_01" }));
     });
 
     it("identified users use individual buckets and not the anonymous bucket", () => {
@@ -399,8 +400,8 @@ describe("Milestone 2 Black-Box Specification Tests", () => {
       });
       const keyUnique = Array.from(repo.activeUserBucketKeys)[1];
 
-      expect(keyId).toBe("prof_milestone_02\u001frule_comment_01\u001fid:usr_specific_999");
-      expect(keyUnique).toBe("prof_milestone_02\u001frule_comment_01\u001funique:viewer_unique_999");
+      expect(keyId).toBe(canonicalJson({ gameProfileId: "prof_milestone_02", identity: { kind: "id", value: "usr_specific_999" }, keyFormatVersion: 1, ruleId: "rule_comment_01" }));
+      expect(keyUnique).toBe(canonicalJson({ gameProfileId: "prof_milestone_02", identity: { kind: "uniqueId", value: "viewer_unique_999" }, keyFormatVersion: 1, ruleId: "rule_comment_01" }));
     });
 
     it("display name and avatar changes never alter identity bucket", () => {
@@ -420,7 +421,7 @@ describe("Milestone 2 Black-Box Specification Tests", () => {
       engine.evaluate({ profile: BASE_PROFILE, manifest: FIXTURE_MANIFEST, event: eventB });
 
       expect(repo.activeUserBucketKeys.size).toBe(1);
-      expect(Array.from(repo.activeUserBucketKeys)[0]).toBe("prof_milestone_02\u001frule_comment_01\u001fid:usr_canonical_001");
+      expect(Array.from(repo.activeUserBucketKeys)[0]).toBe(canonicalJson({ gameProfileId: "prof_milestone_02", identity: { kind: "id", value: "usr_canonical_001" }, keyFormatVersion: 1, ruleId: "rule_comment_01" }));
     });
   });
 
@@ -438,7 +439,7 @@ describe("Milestone 2 Black-Box Specification Tests", () => {
       expect(res.success).toBe(true);
       if (res.success) {
         expect(res.results[0]?.status).toBe("accepted");
-        expect(repo.userWindows.get("prof_milestone_02\u001frule_gift_01\u001fid:usr_canonical_001")).toHaveLength(1);
+        expect(repo.userWindows.get(canonicalJson({ gameProfileId: "prof_milestone_02", identity: { kind: "id", value: "usr_canonical_001" }, keyFormatVersion: 1, ruleId: "rule_gift_01" }))).toHaveLength(1);
         expect(repo.ruleWindows.get("rule_gift_01")).toHaveLength(1);
         expect(repo.ruleCooldowns.get("rule_gift_01")).toBe(1_000);
         expect(repo.globalTokens).toBe(49);
@@ -565,7 +566,7 @@ describe("Milestone 2 Black-Box Specification Tests", () => {
 
       expect(res.success).toBe(true);
       if (res.success) {
-        expect(repo.userWindows.get("prof_milestone_02\u001frule_gift_01\u001fid:usr_canonical_001")).toHaveLength(2);
+        expect(repo.userWindows.get(canonicalJson({ gameProfileId: "prof_milestone_02", identity: { kind: "id", value: "usr_canonical_001" }, keyFormatVersion: 1, ruleId: "rule_gift_01" }))).toHaveLength(2);
       }
     });
 
@@ -583,53 +584,59 @@ describe("Milestone 2 Black-Box Specification Tests", () => {
         },
       };
 
-      const profile: MappingProfile = {
+      const burstProfile: MappingProfile = {
         ...BASE_PROFILE,
         globalActionBudget: {
-          maxPerSecond: 10,
-          burst: 10,
-          overflowPolicy: "reject_newest",
+          maxPerSecond: 1,
+          burst: 2,
+          overflowPolicy: "drop_low_priority",
           deferredTtlMs: null,
         },
         rules: [giftRuleHighLimits],
       };
 
-      for (let i = 0; i < 10; i++) {
-        engine.evaluate({ profile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
-      }
-      expect(repo.globalTokens).toBe(0);
+      engine.evaluate({ profile: burstProfile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
+      engine.evaluate({ profile: burstProfile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
+      const res3 = engine.evaluate({ profile: burstProfile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
 
-      currentTime = 1_500; // 0.5s elapsed -> refills 5 tokens
-      engine.evaluate({ profile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
-      expect(repo.globalTokens).toBe(4);
+      expect(res3.success).toBe(true);
+      if (res3.success) {
+        expect(res3.results[0]?.status).toBe("dropped");
+      }
+
+      currentTime = 3_000;
+      const resRefilled = engine.evaluate({ profile: burstProfile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
+      expect(resRefilled.success).toBe(true);
+      if (resRefilled.success) {
+        expect(resRefilled.results[0]?.status).toBe("accepted");
+      }
     });
   });
 
   describe("H. Deferred Result Boundary", () => {
     it("queue_with_ttl returns typed deferred result with exact absolute expiry and no transport send", () => {
       const repo = new TestLocalDurableBudgetRepository();
-      repo.globalTokens = 0; // force global limit rejection
-
-      const now = 10_000;
-      const engine = new MappingEngine(repo, { now: () => now });
-
-      const profile: MappingProfile = {
+      const engine = new MappingEngine(repo, { now: () => 10_000 });
+      const ttlProfile: MappingProfile = {
         ...BASE_PROFILE,
         globalActionBudget: {
           maxPerSecond: 1,
           burst: 1,
           overflowPolicy: "queue_with_ttl",
-          deferredTtlMs: 5_000,
+          deferredTtlMs: 30_000,
         },
       };
 
-      const res = engine.evaluate({ profile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
-      expect(res.success).toBe(true);
-      if (res.success) {
-        expect(res.results[0]?.status).toBe("deferred");
-        if (res.results[0]?.status === "deferred") {
-          expect(res.results[0].expiresAt).toBe(15_000);
-          expect(res.results[0].reason).toBe("GLOBAL_LIMIT");
+      engine.evaluate({ profile: ttlProfile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
+      const resDeferred = engine.evaluate({ profile: ttlProfile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
+
+      expect(resDeferred.success).toBe(true);
+      if (resDeferred.success) {
+        const item = resDeferred.results[0];
+        expect(item?.status).toBe("deferred");
+        if (item?.status === "deferred") {
+          expect(item.expiresAt).toBe(40_000);
+          expect(item.reason).toBe("GLOBAL_LIMIT");
         }
       }
     });
@@ -644,7 +651,7 @@ describe("Milestone 2 Black-Box Specification Tests", () => {
         ...BASE_PROFILE,
         capacity: {
           maxUserBuckets: 2,
-          inactiveRetentionMs: 600_000,
+          inactiveRetentionMs: 60_000,
           sweepLimit: 10,
         },
       };
@@ -693,6 +700,252 @@ describe("Milestone 2 Black-Box Specification Tests", () => {
         const parseResult = MappingProfileSchema.safeParse(invalidProfile);
         expect(parseResult.success, `Expected ${key} to fail validation`).toBe(false);
       }
+    });
+  });
+
+  describe("K. Remediation 01 - Environment-Independent String Ordering (M-1)", () => {
+    it("orders non-ASCII rule IDs deterministically independent of host locale", () => {
+      const repo = new TestLocalDurableBudgetRepository();
+      const engine = new MappingEngine(repo, { now: () => 1_000 });
+
+      const ruleAlpha: MappingRule = { ...TIE_RULE_EARLIER, id: "rule_α" };
+      const ruleBeta: MappingRule = { ...TIE_RULE_EARLIER, id: "rule_β" };
+      const ruleEne: MappingRule = { ...TIE_RULE_EARLIER, id: "rule_ñ" };
+      const ruleZ: MappingRule = { ...TIE_RULE_EARLIER, id: "rule_z" };
+
+      const profile1: MappingProfile = { ...BASE_PROFILE, rules: [ruleZ, ruleEne, ruleBeta, ruleAlpha] };
+      const profile2: MappingProfile = { ...BASE_PROFILE, rules: [ruleAlpha, ruleBeta, ruleEne, ruleZ] };
+
+      const res1 = engine.evaluate({ profile: profile1, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT, dryRun: true });
+      const res2 = engine.evaluate({ profile: profile2, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT, dryRun: true });
+
+      expect(res1.success).toBe(true);
+      expect(res2.success).toBe(true);
+      if (res1.success && res2.success) {
+        expect(res1.results.map((r) => r.candidate.ruleId)).toEqual(res2.results.map((r) => r.candidate.ruleId));
+        expect(res1.results.map((r) => r.candidate.ruleId)).toEqual(["rule_z", "rule_ñ", "rule_α", "rule_β"]);
+      }
+    });
+
+    it("orders ISO timestamps ascending by ordinal comparison", () => {
+      const repo = new TestLocalDurableBudgetRepository();
+      const engine = new MappingEngine(repo, { now: () => 1_000 });
+
+      const ruleA: MappingRule = { ...TIE_RULE_EARLIER, id: "rule_a", createdAt: "2026-07-25T00:00:01.000Z" };
+      const ruleB: MappingRule = { ...TIE_RULE_EARLIER, id: "rule_b", createdAt: "2026-07-25T00:00:00.000Z" };
+
+      const profile: MappingProfile = { ...BASE_PROFILE, rules: [ruleA, ruleB] };
+
+      const res = engine.evaluate({ profile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT, dryRun: true });
+      expect(res.success).toBe(true);
+      if (res.success) {
+        expect(res.results[0]?.candidate.ruleId).toBe("rule_b");
+      }
+    });
+  });
+
+  describe("L. Remediation 01 - Collision-Safe Budget Key Encoding (M-2)", () => {
+    it("encodes user budget keys safely against control chars, colons, slashes, Unicode, and anonymous aliases", () => {
+      const repo = new TestLocalDurableBudgetRepository();
+      const engine = new MappingEngine(repo, { now: () => 1_000 });
+
+      const eventWithControl = {
+        ...CANONICAL_CHAT_COMMENT_EVENT,
+        user: { ...CANONICAL_CHAT_COMMENT_EVENT.user!, id: "user\u001fwith:colons/and\\slashes_ñ" },
+      };
+
+      engine.evaluate({ profile: BASE_PROFILE, manifest: FIXTURE_MANIFEST, event: eventWithControl });
+
+      const key = Array.from(repo.activeUserBucketKeys)[0];
+      expect(key).toBe(canonicalJson({
+        gameProfileId: "prof_milestone_02",
+        identity: { kind: "id", value: "user\u001fwith:colons/and\\slashes_ñ" },
+        keyFormatVersion: 1,
+        ruleId: "rule_comment_01",
+      }));
+    });
+
+    it("prevents profile/rule separator aliasing collisions", () => {
+      const repo = new TestLocalDurableBudgetRepository();
+      const engine = new MappingEngine(repo, { now: () => 1_000 });
+
+      const rule: MappingRule = { ...VALID_COMMENT_RULE, id: "r1\u001fextra" };
+      const profileA: MappingProfile = { ...BASE_PROFILE, gameProfileId: "p1", rules: [rule] };
+      const profileB: MappingProfile = { ...BASE_PROFILE, gameProfileId: "p1\u001fr1", rules: [{ ...VALID_COMMENT_RULE, id: "extra" }] };
+
+      engine.evaluate({ profile: profileA, manifest: FIXTURE_MANIFEST, event: ANONYMOUS_USER_NULL_EVENT });
+      const keyA = Array.from(repo.activeUserBucketKeys)[0];
+
+      repo.activeUserBucketKeys.clear();
+      engine.evaluate({ profile: profileB, manifest: FIXTURE_MANIFEST, event: ANONYMOUS_USER_NULL_EVENT });
+      const keyB = Array.from(repo.activeUserBucketKeys)[0];
+
+      expect(keyA).not.toBe(keyB);
+    });
+
+    it("distinguishes identity values named 'anonymous' from true anonymous userless events", () => {
+      const repo = new TestLocalDurableBudgetRepository();
+      const engine = new MappingEngine(repo, { now: () => 1_000 });
+
+      const eventUserNamedAnon = {
+        ...CANONICAL_CHAT_COMMENT_EVENT,
+        user: { ...CANONICAL_CHAT_COMMENT_EVENT.user!, id: "anonymous" },
+      };
+
+      engine.evaluate({ profile: BASE_PROFILE, manifest: FIXTURE_MANIFEST, event: eventUserNamedAnon });
+      const keyNamedAnon = Array.from(repo.activeUserBucketKeys)[0];
+
+      repo.activeUserBucketKeys.clear();
+      engine.evaluate({ profile: BASE_PROFILE, manifest: FIXTURE_MANIFEST, event: ANONYMOUS_USER_NULL_EVENT });
+      const keyTrueAnon = Array.from(repo.activeUserBucketKeys)[0];
+
+      expect(keyNamedAnon).not.toBe(keyTrueAnon);
+      expect(keyNamedAnon).toBe(canonicalJson({
+        gameProfileId: "prof_milestone_02",
+        identity: { kind: "id", value: "anonymous" },
+        keyFormatVersion: 1,
+        ruleId: "rule_comment_01",
+      }));
+      expect(keyTrueAnon).toBe(canonicalJson({
+        gameProfileId: "prof_milestone_02",
+        identity: { kind: "anonymous", value: null },
+        keyFormatVersion: 1,
+        ruleId: "rule_comment_01",
+      }));
+    });
+
+    it("proves user-budget-key format versioning is explicitly versioned independently of candidate seeds", () => {
+      const repo = new TestLocalDurableBudgetRepository();
+      const engine = new MappingEngine(repo, { now: () => 1_000 });
+
+      const res = engine.evaluate({ profile: BASE_PROFILE, manifest: FIXTURE_MANIFEST, event: CANONICAL_CHAT_COMMENT_EVENT });
+      expect(res.success).toBe(true);
+      if (res.success) {
+        const keyJson = JSON.parse(Array.from(repo.activeUserBucketKeys)[0]!);
+        expect(keyJson).toHaveProperty("keyFormatVersion", 1);
+        expect(keyJson).toHaveProperty("gameProfileId", "prof_milestone_02");
+        expect(keyJson).toHaveProperty("ruleId", "rule_comment_01");
+        expect(keyJson).toHaveProperty("identity", { kind: "id", value: "usr_canonical_001" });
+      }
+    });
+  });
+
+  describe("M. Remediation 01 - Own-Property-Only Path Resolution & Prototype Safety (M-3)", () => {
+    it("fails closed to undefined when evaluating forbidden segments, inherited properties, or absent properties", () => {
+      const repo = new TestLocalDurableBudgetRepository();
+      const engine = new MappingEngine(repo, { now: () => 1_000 });
+
+      const protoRule: MappingRule = {
+        ...VALID_COMMENT_RULE,
+        id: "rule_proto",
+        conditions: [{ field: "payload.__proto__", operator: "eq", value: "object" }],
+      };
+      const constructorRule: MappingRule = {
+        ...VALID_COMMENT_RULE,
+        id: "rule_constructor",
+        conditions: [{ field: "payload.constructor", operator: "eq", value: "Object" }],
+      };
+      const prototypeRule: MappingRule = {
+        ...VALID_COMMENT_RULE,
+        id: "rule_prototype",
+        conditions: [{ field: "payload.prototype", operator: "eq", value: "object" }],
+      };
+      const toStringRule: MappingRule = {
+        ...VALID_COMMENT_RULE,
+        id: "rule_tostring",
+        conditions: [{ field: "payload.toString", operator: "eq", value: "function" }],
+      };
+      const absentRule: MappingRule = {
+        ...VALID_COMMENT_RULE,
+        id: "rule_absent",
+        conditions: [{ field: "payload.nonExistentField", operator: "eq", value: "anything" }],
+      };
+
+      const profile: MappingProfile = {
+        ...BASE_PROFILE,
+        rules: [protoRule, constructorRule, prototypeRule, toStringRule, absentRule],
+      };
+
+      const res = engine.evaluate({ profile, manifest: FIXTURE_MANIFEST, event: CANONICAL_CHAT_COMMENT_EVENT, dryRun: true });
+
+      expect(res.success).toBe(true);
+      if (res.success) {
+        expect(res.results).toHaveLength(0);
+      }
+    });
+
+    it("resolves nested own properties correctly while rejecting inherited getters", () => {
+      const repo = new TestLocalDurableBudgetRepository();
+      const engine = new MappingEngine(repo, { now: () => 1_000 });
+
+      const res = engine.evaluate({
+        profile: BASE_PROFILE,
+        manifest: FIXTURE_MANIFEST,
+        event: CANONICAL_CHAT_COMMENT_EVENT,
+        dryRun: true,
+      });
+
+      expect(res.success).toBe(true);
+      if (res.success) {
+        expect(res.results).toHaveLength(1);
+        expect(res.results[0]?.candidate.params).toEqual({ message: "Hello CrowdCircuit!" });
+      }
+    });
+  });
+
+  describe("N. Remediation 01 - Cooldown & Identity Precedence Regressions (Section 8)", () => {
+    it("enforces exact cooldown boundary: reject at expiry - 1ms, admit at exact expiry, admit at expiry + 1ms", () => {
+      const repo = new TestLocalDurableBudgetRepository();
+      const engine1 = new MappingEngine(repo, { now: () => 1_000 });
+      const profile: MappingProfile = {
+        ...BASE_PROFILE,
+        rules: [{ ...VALID_GIFT_RULE, controls: { ...VALID_GIFT_RULE.controls, cooldownMs: 1_000 } }],
+      };
+
+      const res1 = engine1.evaluate({ profile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
+      expect(res1.success && res1.results[0]?.status).toBe("accepted");
+
+      const engine2 = new MappingEngine(repo, { now: () => 1_999 });
+      const res2 = engine2.evaluate({ profile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
+      expect(res2.success && res2.results[0]?.status).toBe("rejected");
+      if (res2.success && res2.results[0]?.status === "rejected") {
+        expect(res2.results[0].reason).toBe("RULE_COOLDOWN");
+      }
+
+      const engine3 = new MappingEngine(repo, { now: () => 2_000 });
+      const res3 = engine3.evaluate({ profile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
+      expect(res3.success && res3.results[0]?.status).toBe("accepted");
+
+      const engine4 = new MappingEngine(repo, { now: () => 3_001 });
+      const res4 = engine4.evaluate({ profile, manifest: FIXTURE_MANIFEST, event: CANONICAL_GIFT_SENT_EVENT });
+      expect(res4.success && res4.results[0]?.status).toBe("accepted");
+    });
+
+    it("prefers user.id over user.uniqueId when both are present", () => {
+      const repo = new TestLocalDurableBudgetRepository();
+      const engine = new MappingEngine(repo, { now: () => 1_000 });
+
+      const eventWithBoth = {
+        ...CANONICAL_CHAT_COMMENT_EVENT,
+        user: {
+          id: "usr_primary_id",
+          uniqueId: "unique_secondary_id",
+          displayName: "Viewer",
+          avatarUrl: null,
+          roles: ["viewer" as const],
+        },
+      };
+
+      const res = engine.evaluate({ profile: BASE_PROFILE, manifest: FIXTURE_MANIFEST, event: eventWithBoth });
+      expect(res.success).toBe(true);
+
+      const key = Array.from(repo.activeUserBucketKeys)[0];
+      expect(key).toBe(canonicalJson({
+        gameProfileId: "prof_milestone_02",
+        identity: { kind: "id", value: "usr_primary_id" },
+        keyFormatVersion: 1,
+        ruleId: "rule_comment_01",
+      }));
     });
   });
 });

@@ -15,7 +15,7 @@
     "lint": "eslint src test",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
-    "test:declarations": "tsc -p test/tsconfig.declarations.json --noEmit",
+    "test:declarations": "tsc -p test/tsconfig.declarations.json --noEmit && tsc -p test/tsconfig.phase-c-milestone-02.json --noEmit",
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -b --force"
   },
   "dependencies": {
