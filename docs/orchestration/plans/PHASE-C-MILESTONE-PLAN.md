@@ -4,9 +4,10 @@
 
 **Phase status:** IN_PROGRESS  
 **Milestone 1:** DONE  
-**Milestone 2:** READY_FOR_FOCUSED_REVIEW
-**Remediation 01:** COMPLETE
-**Milestones 3–5:** BLOCKED_BY_PREVIOUS_MILESTONE  
+**Milestone 2:** APPROVED_AND_COMPLETE
+**Milestone 2 remediation:** COMPLETE
+**Milestone 3:** READY_FOR_ARCHITECTURE_AND_DELEGATION
+**Milestones 4–5:** BLOCKED_BY_PREVIOUS_MILESTONE
 **Phase D:** untouched
 
 Deliver the first durable, authenticated, end-to-end game-action vertical
@@ -191,7 +192,7 @@ recovery, package, or declaration finding. Milestone handoff is complete.
 
 ## Milestone 2 — Mapping and action-budget capability
 
-**Status:** CORE_READY_FOR_GEMINI_ADDITIVE
+**Status:** APPROVED_AND_COMPLETE
 **Primary owner:** CODEX  
 **Roadmap:** `BE-05A`–`BE-05E`, `BE-06A`–`BE-06B`
 
@@ -254,7 +255,7 @@ budgets, bounded state, declarations, and Phase B regressions.
 
 ## Milestone 3 — Durable Action Gateway lifecycle
 
-**Status:** BLOCKED_BY_PREVIOUS_MILESTONE  
+**Status:** READY_FOR_ARCHITECTURE_AND_DELEGATION
 **Primary owner:** CODEX  
 **Roadmap:** transport-independent core of `BE-07B`–`BE-07D`
 

@@ -2,7 +2,7 @@
 
 **Task ID:** PHASE-C-MILESTONE-02
 **Parent Task:** Phase C — Game Vertical Slice
-**Status:** READY_FOR_FOCUSED_REVIEW
+**Status:** APPROVED_AND_COMPLETE
 **Primary owner:** CODEX
 **Priority:** P0
 
@@ -24,10 +24,11 @@ output boundary consumed later by the durable Action Gateway.
 - Milestone 1: DONE
 - `FOUND-03A`–`FOUND-03D`: DONE
 - `FOUND-04A`–`FOUND-04D`: DONE
-- Milestone 2: READY_FOR_FOCUSED_REVIEW
-- Remediation 01: COMPLETE
+- Milestone 2: APPROVED_AND_COMPLETE
+- Milestone 2 remediation: COMPLETE
 - M2-D1 through M2-D6: RESOLVED by ADR-013 through ADR-018
-- Milestones 3–5: BLOCKED_BY_PREVIOUS_MILESTONE
+- Milestone 3: READY_FOR_ARCHITECTURE_AND_DELEGATION
+- Milestones 4–5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
 
 ## Required reading
