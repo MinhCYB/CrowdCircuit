@@ -39,7 +39,7 @@ To preserve strict architectural boundaries and prevent multi-connection concurr
 ### Slice 1 Status — Gemini Additive Schema & Interface Layer
 
 **Primary Owner**: GEMINI  
-**Status**: REMEDIATED_AND_READY_FOR_RE_REVIEW (independent review: PENDING)
+**Status**: APPROVED_AND_COMPLETE (independent review: APPROVE_WITH_SMALL_FIX; approved small fix: CLOSED)
 **Scope Boundary**: Additive schemas, types, DDL migration v3, port interfaces, fakes, declaration tests, and additive unit tests.
 
 ### Tasks for Gemini
@@ -107,6 +107,7 @@ Gemini MUST NOT implement:
 ## Slice 2 Breakdown — Codex Core Orchestration & Concurrency Layer
 
 **Primary Owner**: CODEX (or Claude Code via explicit separate assignment if Codex remains unavailable)  
+**Status**: READY_FOR_IMPLEMENTATION
 **Scope Boundary**: Concurrency-sensitive production transactions, promotion, retry scheduler, TTL worker, restart reconciliation, and core orchestration.
 
 ### Tasks for Core Owner
