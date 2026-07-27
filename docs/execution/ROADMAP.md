@@ -229,7 +229,7 @@ Required:
 
 **Current orchestration unit:** `Phase C — Game Vertical Slice`
 
-**Current milestone:** `PHASE-C-MILESTONE-03 — CODEX_CORE_APPROVED_CLOSURE_PENDING`
+**Current milestone:** `PHASE-C-MILESTONE-03 — READY_FOR_INDEPENDENT_RE_REVIEW`
 
 **Plan:** `docs/orchestration/plans/PHASE-C-MILESTONE-PLAN.md`
 

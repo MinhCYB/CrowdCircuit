@@ -9,6 +9,7 @@ import type { MappingCandidate } from "@crowdcircuit/mapping-engine";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   ActionGateway,
+  ActionLifecycleWorker,
   computeActionId,
   MAX_SEND_ATTEMPTS,
   PersistenceError,
@@ -271,5 +272,496 @@ describe("Phase C Milestone 3 core", () => {
     expect(Reflect.get(database.prepare("SELECT COUNT(*) AS count FROM mapping_budget_user_events").get() ?? {}, "count"))
       .toBe(1);
     database.close();
+  });
+
+  describe("H-2 — Live TTL Worker Coverage", () => {
+    it("expires pending actions at exact boundary (expiresAt === now)", () => {
+      const store = repository();
+      const created = store.createPending({
+        actionId: "act_ttl_1",
+        idempotencyKey: "seed_ttl_1",
+        eventId: "evt_1",
+        mappingId: "rule_1",
+        gameId: "game_1",
+        actionType: "SPAWN",
+        params: {},
+        priority: 5,
+        ttlMs: 1000,
+        createdAt: 1000,
+        expiresAt: 2000,
+        runtimeId: "runtime",
+        nextAttemptAt: 1000,
+      });
+      expect(created.record.status).toBe("pending");
+
+      // Before boundary
+      expect(store.expireDue(1999, 128)).toBe(0);
+      expect(store.findById("act_ttl_1")?.status).toBe("pending");
+
+      // Exact boundary
+      expect(store.expireDue(2000, 128)).toBe(1);
+      const expired = store.findById("act_ttl_1");
+      expect(expired?.status).toBe("expired");
+      expect(expired?.failureCode).toBe("ttl_expired");
+      expect(expired?.version).toBe(2);
+      store.close();
+    });
+
+    it("expires queued deferred candidates at exact boundary and prevents later promotion", () => {
+      const store = repository();
+      store.enqueueDeferredCandidate({
+        candidate,
+        deferredExpiresAt: 2000,
+        createdAt: 1000,
+        admissionSnapshot: snapshot,
+        runtimeId: "runtime",
+      });
+      expect(store.findDeferredCandidate(candidate.idempotencySeed)?.status).toBe("queued");
+
+      // Before boundary
+      expect(store.expireDue(1999, 128)).toBe(0);
+
+      // Exact boundary
+      expect(store.expireDue(2000, 128)).toBe(1);
+      expect(store.findDeferredCandidate(candidate.idempotencySeed)?.status).toBe("expired");
+
+      // Cannot later be promoted
+      const promotion = store.promoteDeferredCandidate(candidate.idempotencySeed, 2001);
+      expect(promotion.status).toBe("expired");
+      store.close();
+    });
+
+    it("enforces bounded sweep limits and processes remainder in subsequent calls", () => {
+      const store = repository();
+      for (let i = 0; i < 5; i += 1) {
+        store.createPending({
+          actionId: `act_sweep_${i}`,
+          idempotencyKey: `seed_sweep_act_${i}`,
+          eventId: `evt_${i}`,
+          mappingId: "rule",
+          gameId: "game",
+          actionType: "SPAWN",
+          params: {},
+          priority: 1,
+          ttlMs: 1000,
+          createdAt: 1000,
+          expiresAt: 2000,
+          runtimeId: "runtime",
+        });
+        store.enqueueDeferredCandidate({
+          candidate: { ...candidate, idempotencySeed: `seed_sweep_def_${i}` },
+          deferredExpiresAt: 2000,
+          createdAt: 1000,
+          admissionSnapshot: snapshot,
+          runtimeId: "runtime",
+        });
+      }
+
+      // First sweep with sweepLimit = 3 (processes up to 3 actions and 3 deferred candidates = 6 total)
+      const swept1 = store.expireDue(2000, 3);
+      expect(swept1).toBe(6);
+
+      // Second sweep processes remainder (2 actions and 2 deferred candidates = 4 total)
+      const swept2 = store.expireDue(2000, 3);
+      expect(swept2).toBe(4);
+
+      // Subsequent sweep returns 0
+      expect(store.expireDue(2000, 3)).toBe(0);
+      store.close();
+    });
+
+    it("is idempotent on re-sweep with zero additional mutation or version churn", () => {
+      const store = repository();
+      store.createPending({
+        actionId: "act_idempotent_sweep",
+        idempotencyKey: "seed_idempotent_sweep",
+        eventId: "evt",
+        mappingId: "rule",
+        gameId: "game",
+        actionType: "SPAWN",
+        params: {},
+        priority: 1,
+        ttlMs: 1000,
+        createdAt: 1000,
+        expiresAt: 2000,
+        runtimeId: "runtime",
+      });
+      const worker = new ActionLifecycleWorker(store, { now: () => 2000 }, 128);
+
+      expect(worker.tick()).toBe(1);
+      const expiredVersion = store.findById("act_idempotent_sweep")?.version;
+
+      // Second sweep via tick and expireDue
+      expect(worker.tick()).toBe(0);
+      expect(store.expireDue(2000, 128)).toBe(0);
+      expect(store.findById("act_idempotent_sweep")?.version).toBe(expiredVersion);
+      store.close();
+    });
+
+    it("prioritizes TTL expiry over delivery or retry without issuing authorizations or attempts", async () => {
+      const store = repository();
+      const port = new FakeActionDeliveryPort();
+      port.queueResolution({
+        status: "available",
+        destination: { clientId: "game", gameInstanceId: "instance" },
+      });
+      const gateway = new ActionGateway(store, port, { now: () => 2000 }, "runtime");
+
+      const created = store.createPending({
+        actionId: "act_ttl_deliver",
+        idempotencyKey: "seed_ttl_deliver",
+        eventId: "evt",
+        mappingId: "rule",
+        gameId: "game",
+        actionType: "SPAWN",
+        params: {},
+        priority: 1,
+        ttlMs: 1000,
+        createdAt: 1000,
+        expiresAt: 2000,
+        runtimeId: "runtime",
+      });
+
+      const delivered = await gateway.deliver(created.record, candidate);
+      expect(delivered.status).toBe("expired");
+      expect(store.listAttempts("act_ttl_deliver")).toEqual([]);
+      expect(port.sentDeliveries).toEqual([]);
+      store.close();
+    });
+
+    it("handles mixed action and deferred candidate sweeps deterministically via ActionLifecycleWorker", () => {
+      const store = repository();
+      store.createPending({
+        actionId: "act_mixed",
+        idempotencyKey: "seed_mixed_act",
+        eventId: "evt",
+        mappingId: "rule",
+        gameId: "game",
+        actionType: "SPAWN",
+        params: {},
+        priority: 1,
+        ttlMs: 1000,
+        createdAt: 1000,
+        expiresAt: 2000,
+        runtimeId: "runtime",
+      });
+      store.enqueueDeferredCandidate({
+        candidate: { ...candidate, idempotencySeed: "seed_mixed_def" },
+        deferredExpiresAt: 2000,
+        createdAt: 1000,
+        admissionSnapshot: snapshot,
+        runtimeId: "runtime",
+      });
+
+      const worker = new ActionLifecycleWorker(store, { now: () => 2000 }, 128);
+      expect(worker.tick()).toBe(2);
+      expect(store.findById("act_mixed")?.status).toBe("expired");
+      expect(store.findDeferredCandidate("seed_mixed_def")?.status).toBe("expired");
+      store.close();
+    });
+  });
+
+  describe("M-1 — Promotion Negative-Path Coverage", () => {
+    it("returns expired status when promoting an expired candidate with zero action or budget mutation", () => {
+      const store = repository();
+      store.enqueueDeferredCandidate({
+        candidate,
+        deferredExpiresAt: 2000,
+        createdAt: 1000,
+        admissionSnapshot: snapshot,
+        runtimeId: "runtime",
+      });
+
+      const result = store.promoteDeferredCandidate(candidate.idempotencySeed, 2005);
+      expect(result.status).toBe("expired");
+
+      const deferred = store.findDeferredCandidate(candidate.idempotencySeed);
+      expect(deferred?.status).toBe("expired");
+      expect(deferred?.promotedActionId).toBeNull();
+      expect(deferred?.promotedAt).toBeNull();
+      expect(store.findById(computeActionId(candidate.idempotencySeed))).toBeNull();
+      store.close();
+    });
+
+    it("returns not_admitted when budget re-admission fails and rolls back atomically", () => {
+      const directory = mkdtempSync(join(tmpdir(), "crowdcircuit-m3-neg-"));
+      directories.push(directory);
+      const filename = join(directory, "database.sqlite");
+      const store = SqliteDurableActionRepository.open({ filename });
+
+      const strictSnapshot: BudgetAdmissionSnapshot = {
+        ...snapshot,
+        userLimit: { limitPerMinute: 1 },
+      };
+      store.enqueueDeferredCandidate({
+        candidate,
+        deferredExpiresAt: 10000,
+        createdAt: 1000,
+        admissionSnapshot: strictSnapshot,
+        runtimeId: "runtime",
+      });
+
+      // Pre-fill user events table to consume the 1-per-minute user limit before promotion
+      const db = new DatabaseSync(filename);
+      db.prepare(
+        "INSERT INTO mapping_budget_user_events (profile_id, rule_id, user_key, admitted_at) VALUES (?, ?, ?, ?)",
+      ).run(candidate.gameProfileId, candidate.ruleId, candidate.userBudgetKey, 2000);
+      db.close();
+
+      const result = store.promoteDeferredCandidate(candidate.idempotencySeed, 2000);
+      expect(result).toEqual({ status: "not_admitted", reason: "USER_LIMIT" });
+
+      // Transaction rollback assertions: deferred candidate remains queued, action is not created
+      const deferred = store.findDeferredCandidate(candidate.idempotencySeed);
+      expect(deferred?.status).toBe("queued");
+      expect(deferred?.promotedActionId).toBeNull();
+      expect(deferred?.promotedAt).toBeNull();
+      expect(store.findById(computeActionId(candidate.idempotencySeed))).toBeNull();
+
+      // Assert user events count remains exactly 1 (the pre-filled row)
+      const dbAfter = new DatabaseSync(filename);
+      const userEventCount = dbAfter
+        .prepare("SELECT COUNT(*) AS count FROM mapping_budget_user_events")
+        .get() as { count: number };
+      expect(userEventCount.count).toBe(1);
+      dbAfter.close();
+      store.close();
+    });
+
+    it("returns not_found for nonexistent idempotency seed with zero mutation", () => {
+      const store = repository();
+      const result = store.promoteDeferredCandidate("nonexistent:seed", 2000);
+      expect(result).toEqual({ status: "not_found" });
+      store.close();
+    });
+
+    it("fails closed with RUNTIME_SUPERSEDED when runtime ownership is superseded", () => {
+      const directory = mkdtempSync(join(tmpdir(), "crowdcircuit-m3-stale-"));
+      directories.push(directory);
+      const filename = join(directory, "database.sqlite");
+      const store1 = SqliteDurableActionRepository.open({ filename });
+      store1.enqueueDeferredCandidate({
+        candidate,
+        deferredExpiresAt: 10000,
+        createdAt: 1000,
+        admissionSnapshot: snapshot,
+        runtimeId: "runtime_1",
+      });
+
+      const store2 = SqliteDurableActionRepository.open({ filename });
+      store2.reconcilePreviousRuntime("runtime_2", 1500);
+
+      expect(() => store1.promoteDeferredCandidate(candidate.idempotencySeed, 2000)).toThrowError(
+        expect.objectContaining({ code: "RUNTIME_SUPERSEDED" }),
+      );
+
+      const candidateAfter = store2.findDeferredCandidate(candidate.idempotencySeed);
+      expect(candidateAfter?.status).toBe("queued");
+      expect(candidateAfter?.owningRuntimeId).toBe("runtime_2");
+      expect(store2.findById(computeActionId(candidate.idempotencySeed))).toBeNull();
+      store1.close();
+      store2.close();
+    });
+  });
+
+  describe("M-2 — Restart Reconciliation Coverage", () => {
+    it("retains received actions, reassigns runtime owner, avoids retry scheduling, and is idempotent", () => {
+      const store = repository();
+      const created = store.createPending({
+        actionId: "act_recv_rec",
+        idempotencyKey: "seed_recv_rec",
+        eventId: "evt",
+        mappingId: "rule",
+        gameId: "game",
+        actionType: "SPAWN",
+        params: {},
+        priority: 1,
+        ttlMs: 10000,
+        createdAt: 1000,
+        expiresAt: 11000,
+        runtimeId: "old_runtime",
+      });
+
+      const auth = store.authorizePending(created.record.actionId, 1, "old_runtime", "inst");
+      store.recordAttempt(auth, { role: "game", clientId: "game", gameInstanceId: "inst" }, 1100, "send_started");
+      const inflight = store.findById(created.record.actionId);
+      store.transition({
+        actionId: created.record.actionId,
+        expectedVersion: inflight?.version ?? 1,
+        expectedStatuses: ["in_flight"],
+        nextStatus: "received",
+        at: 1200,
+      });
+
+      const results = store.reconcilePreviousRuntime("new_runtime", 1500);
+      expect(results).toEqual([
+        { actionId: "act_recv_rec", previousStatus: "received", status: "received" },
+      ]);
+
+      const record = store.findById("act_recv_rec");
+      expect(record?.status).toBe("received");
+      expect(record?.runtimeId).toBe("new_runtime");
+      expect(record?.reconciliationReason).toBe("received_reassigned_after_restart");
+      expect(store.listDeliverable(2000, 10)).toEqual([]);
+
+      expect(store.reconcilePreviousRuntime("new_runtime", 1600)).toEqual([]);
+      store.close();
+    });
+
+    it("reassigns unexpired queued deferred candidate runtime owner while leaving status queued and promotion metadata null", () => {
+      const store = repository();
+      store.enqueueDeferredCandidate({
+        candidate,
+        deferredExpiresAt: 10000,
+        createdAt: 1000,
+        admissionSnapshot: snapshot,
+        runtimeId: "old_runtime",
+      });
+
+      store.reconcilePreviousRuntime("new_runtime", 1500);
+
+      const deferred = store.findDeferredCandidate(candidate.idempotencySeed);
+      expect(deferred?.status).toBe("queued");
+      expect(deferred?.owningRuntimeId).toBe("new_runtime");
+      expect(deferred?.promotedActionId).toBeNull();
+      expect(deferred?.promotedAt).toBeNull();
+      store.close();
+    });
+
+    it("expires queued deferred candidates whose expiry timestamp has elapsed during restart reconciliation", () => {
+      const store = repository();
+      store.enqueueDeferredCandidate({
+        candidate,
+        deferredExpiresAt: 1500,
+        createdAt: 1000,
+        admissionSnapshot: snapshot,
+        runtimeId: "old_runtime",
+      });
+
+      store.reconcilePreviousRuntime("new_runtime", 2000);
+
+      const deferred = store.findDeferredCandidate(candidate.idempotencySeed);
+      expect(deferred?.status).toBe("expired");
+      expect(store.promoteDeferredCandidate(candidate.idempotencySeed, 2001).status).toBe("expired");
+      store.close();
+    });
+
+    it("reconciles a mixed restart set of pending, in_flight, received, expired actions, and deferred candidates", () => {
+      const store = repository();
+
+      // 1. Pending action
+      store.createPending({
+        actionId: "act_pending",
+        idempotencyKey: "seed_pending",
+        eventId: "evt1",
+        mappingId: "rule",
+        gameId: "game",
+        actionType: "SPAWN",
+        params: {},
+        priority: 1,
+        ttlMs: 10000,
+        createdAt: 1000,
+        expiresAt: 11000,
+        runtimeId: "old_runtime",
+      });
+
+      // 2. In_flight action
+      store.createPending({
+        actionId: "act_flight",
+        idempotencyKey: "seed_flight",
+        eventId: "evt2",
+        mappingId: "rule",
+        gameId: "game",
+        actionType: "SPAWN",
+        params: {},
+        priority: 1,
+        ttlMs: 10000,
+        createdAt: 1000,
+        expiresAt: 11000,
+        runtimeId: "old_runtime",
+      });
+      const authFlight = store.authorizePending("act_flight", 1, "old_runtime", "inst");
+      store.recordAttempt(authFlight, { role: "game", clientId: "game", gameInstanceId: "inst" }, 1100, "send_started");
+
+      // 3. Received action
+      store.createPending({
+        actionId: "act_received",
+        idempotencyKey: "seed_received",
+        eventId: "evt3",
+        mappingId: "rule",
+        gameId: "game",
+        actionType: "SPAWN",
+        params: {},
+        priority: 1,
+        ttlMs: 10000,
+        createdAt: 1000,
+        expiresAt: 11000,
+        runtimeId: "old_runtime",
+      });
+      const authReceived = store.authorizePending("act_received", 1, "old_runtime", "inst");
+      store.recordAttempt(authReceived, { role: "game", clientId: "game", gameInstanceId: "inst" }, 1100, "send_started");
+      const recordReceived = store.findById("act_received");
+      store.transition({
+        actionId: "act_received",
+        expectedVersion: recordReceived?.version ?? 1,
+        expectedStatuses: ["in_flight"],
+        nextStatus: "received",
+        at: 1200,
+      });
+
+      // 4. Expired action
+      store.createPending({
+        actionId: "act_expired",
+        idempotencyKey: "seed_expired",
+        eventId: "evt4",
+        mappingId: "rule",
+        gameId: "game",
+        actionType: "SPAWN",
+        params: {},
+        priority: 1,
+        ttlMs: 500,
+        createdAt: 1000,
+        expiresAt: 1500,
+        runtimeId: "old_runtime",
+      });
+      store.expireDue(1500, 10);
+
+      // 5. Unexpired queued deferred candidate
+      store.enqueueDeferredCandidate({
+        candidate: { ...candidate, idempotencySeed: "seed_unexpired_deferred" },
+        deferredExpiresAt: 10000,
+        createdAt: 1000,
+        admissionSnapshot: snapshot,
+        runtimeId: "old_runtime",
+      });
+
+      // 6. Expired queued deferred candidate
+      store.enqueueDeferredCandidate({
+        candidate: { ...candidate, idempotencySeed: "seed_expired_deferred" },
+        deferredExpiresAt: 1500,
+        createdAt: 1000,
+        admissionSnapshot: snapshot,
+        runtimeId: "old_runtime",
+      });
+
+      const results = store.reconcilePreviousRuntime("new_runtime", 2000);
+
+      expect(results).toEqual([
+        { actionId: "act_flight", previousStatus: "in_flight", status: "delivery_unknown_restart" },
+        { actionId: "act_pending", previousStatus: "pending", status: "pending" },
+        { actionId: "act_received", previousStatus: "received", status: "received" },
+      ]);
+
+      expect(store.findById("act_pending")).toMatchObject({ status: "pending", runtimeId: "new_runtime" });
+      expect(store.findById("act_flight")).toMatchObject({ status: "delivery_unknown_restart", runtimeId: "new_runtime" });
+      expect(store.findById("act_received")).toMatchObject({ status: "received", runtimeId: "new_runtime" });
+      expect(store.findById("act_expired")).toMatchObject({ status: "expired", runtimeId: "old_runtime" });
+
+      expect(store.findDeferredCandidate("seed_unexpired_deferred")).toMatchObject({ status: "queued", owningRuntimeId: "new_runtime" });
+      expect(store.findDeferredCandidate("seed_expired_deferred")).toMatchObject({ status: "expired", owningRuntimeId: "old_runtime" });
+
+      expect(store.reconcilePreviousRuntime("new_runtime", 2100)).toEqual([]);
+      store.close();
+    });
   });
 });

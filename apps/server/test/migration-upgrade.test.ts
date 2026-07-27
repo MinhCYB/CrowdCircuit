@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it } from "vitest";
 import { migrateDatabase, MIGRATIONS } from "../src/persistence/migrations.js";
+import { SqliteDurableActionRepository } from "../src/persistence/repository.js";
 
 const directories: string[] = [];
 const temporaryDatabase = (): string => {
@@ -354,5 +355,93 @@ describe("Real Schema v1 through v4 Upgrade Regression", () => {
     ).toThrow();
 
     db.close();
+  });
+
+  it("preserves v3-era deferred candidate rows field-for-field during v4 migration with default backfills", () => {
+    const filename = temporaryDatabase();
+
+    // Step 1: Apply migrations through version 3
+    const dbV3 = new DatabaseSync(filename);
+    const v3Migrations = MIGRATIONS.filter((m) => m.version <= 3);
+    const appliedV3 = migrateDatabase(dbV3, v3Migrations);
+    expect(appliedV3).toBe(3);
+
+    // Step 2: Insert a representative v3-era row into mapping_budget_deferred_candidates (no event_type/user_budget_key columns)
+    const snapshotJson = JSON.stringify({
+      gameProfileId: "prof_v3",
+      ruleId: "rule_v3",
+      userBudgetKey: "user_v3",
+      userLimit: { limitPerMinute: 5 },
+      cooldownMs: 0,
+      ruleLimit: { limitPerMinute: 10 },
+      globalToken: { maxPerSecond: 2, burst: 5 },
+      capacityConfig: { maxUserBuckets: 8, inactiveRetentionMs: 60000, sweepLimit: 8 },
+    });
+
+    dbV3
+      .prepare(
+        `INSERT INTO mapping_budget_deferred_candidates (
+          idempotency_seed, game_profile_id, game_id, rule_id, event_id, candidate_ordinal,
+          action_type, params_json, actor_json, priority, action_priority, candidate_ttl_ms,
+          deferred_expires_at, created_at, admission_snapshot_json, status, owning_runtime_id,
+          promoted_action_id, promoted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        "v3_deferred_seed",
+        "prof_v3",
+        "game_v3",
+        "rule_v3",
+        "evt_v3",
+        0,
+        "SPAWN",
+        '{"count":1}',
+        null,
+        10,
+        5,
+        5000,
+        10000,
+        1000,
+        snapshotJson,
+        "queued",
+        "runtime_v3",
+        null,
+        null,
+      );
+    dbV3.close();
+
+    // Step 3: Apply migration 4
+    const dbV4 = new DatabaseSync(filename);
+    const appliedV4 = migrateDatabase(dbV4, MIGRATIONS);
+    expect(appliedV4).toBe(4);
+
+    // Step 4 & 5: Assert row survives field-for-field with backfilled values
+    const row = dbV4
+      .prepare("SELECT * FROM mapping_budget_deferred_candidates WHERE idempotency_seed = 'v3_deferred_seed'")
+      .get() as Record<string, unknown>;
+    expect(row).toBeDefined();
+    expect(row["event_type"]).toBe("unknown");
+    expect(row["user_budget_key"]).toBe("anonymous");
+    expect(row["game_profile_id"]).toBe("prof_v3");
+    expect(row["game_id"]).toBe("game_v3");
+    expect(row["rule_id"]).toBe("rule_v3");
+    expect(row["event_id"]).toBe("evt_v3");
+    expect(row["action_type"]).toBe("SPAWN");
+    dbV4.close();
+
+    // Step 6 & 7: Open upgraded database through SqliteDurableActionRepository and find candidate
+    const repository = SqliteDurableActionRepository.open({ filename });
+    const deferred = repository.findDeferredCandidate("v3_deferred_seed");
+    expect(deferred).not.toBeNull();
+    expect(deferred?.candidate.eventType).toBe("unknown");
+    expect(deferred?.candidate.userBudgetKey).toBe("anonymous");
+    expect(deferred?.candidate.idempotencySeed).toBe("v3_deferred_seed");
+    repository.close();
+
+    // Step 8: Assert migration reopen/idempotency and checksum/order guards remain green
+    const reopenDb = new DatabaseSync(filename);
+    expect(() => migrateDatabase(reopenDb, MIGRATIONS)).not.toThrow();
+    expect(reopenDb.prepare("SELECT MAX(version) AS version FROM schema_versions").get()).toEqual({ version: 4 });
+    reopenDb.close();
   });
 });
