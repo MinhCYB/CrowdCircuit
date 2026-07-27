@@ -1,48 +1,48 @@
 # Current Task
 
-**Task ID:** PHASE-C-MILESTONE-03-CLOSURE
+**Task ID:** PHASE-C-MILESTONE-04-ARCHITECTURE
 **Parent Task:** Phase C — Game Vertical Slice
-**Status:** APPROVED_AND_COMPLETE
+**Status:** READY_FOR_INDEPENDENT_REVIEW
 **Primary owner:** CODEX
 **Priority:** P0
 
 ## Objective
 
-Close Phase C Milestone 3 (Durable Action Gateway Lifecycle) following full independent approval by Claude.
-
-Milestone 3 covers deterministic `actionId` derivation, durable idempotency claims, deferred candidate persistence and full budget re-admission promotion, persist-before-send delivery orchestration, retry scheduling, live TTL expiry, restart reconciliation, and transport-neutral delivery port boundaries (`BE-07B`–`BE-07D`).
+Obtain independent approval for the Phase C Milestone 4 transport/session
+architecture that connects the approved Milestone 3 core to authenticated
+Socket.IO game clients and the JavaScript SDK.
 
 ## State
 
 - Phase C: IN_PROGRESS
 - Milestone 3: APPROVED_AND_COMPLETE
 - Milestone 3 architecture: RESOLVED (ADR-019 through ADR-024 accepted)
-- Milestone 3 Slice 1 (GEMINI-01): APPROVED_AND_COMPLETE
-- Milestone 3 Slice 2 (CODEX core): APPROVED_AND_COMPLETE
-- Claude Independent Review 01: REQUEST_CHANGES (historical)
-- Remediation 01: COMPLETE
-- Claude Independent Re-Review 02: APPROVE_WITH_SMALL_FIX (historical)
-- Final fix verification: APPROVE
-- Milestone 4: READY_FOR_ARCHITECTURE
+- Milestone 4 architecture: READY_FOR_INDEPENDENT_REVIEW
+- Milestone 4 implementation: BLOCKED_BY_ARCHITECTURE_REVIEW
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
 
 ## Required reading
 
-1. `docs/orchestration/plans/PHASE-C-MILESTONE-PLAN.md`
-2. `docs/orchestration/plans/PHASE-C-MILESTONE-03-DELEGATION-PLAN.md`
-3. `docs/orchestration/reviews/PHASE-C-MILESTONE-03-CODEX-CORE-GEMINI-PRECOMMIT-AUDIT-01.md`
-4. `docs/orchestration/reviews/PHASE-C-MILESTONE-03-CODEX-CORE-INDEPENDENT-REVIEW-02.md`
-5. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-03-CODEX-CORE-REMEDIATION-01.md`
-6. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-03-CLOSURE.md`
-7. ADR-019 through ADR-024 in `docs/execution/DECISIONS.md`
+1. `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-REVIEW-01.md`
+2. `docs/orchestration/plans/PHASE-C-MILESTONE-04-DELEGATION-PLAN.md`
+3. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-ARCHITECTURE.md`
+4. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-03-CLOSURE.md`
+5. ADR-019 through ADR-024 in `docs/execution/DECISIONS.md`
 
 ## Hard boundaries
 
-- Do not implement transport, Socket.IO, SDK, demo game, voice, or Phase D.
-- Milestone 4 is READY_FOR_ARCHITECTURE; do not begin implementation until architecture review complete.
+- Do not implement transport, Socket.IO, SDK, demo game, voice, or Phase D
+  during architecture review.
+- Do not begin Milestone 4 implementation until independent architecture
+  approval and accepted ADR recording are complete.
 - Milestone 5 remains BLOCKED_BY_PREVIOUS_MILESTONE.
 
-## Milestone 3 Closure Summary
+## Architecture summary
 
-Milestone 3 CODEX Core and Slice 1 schema foundation are fully approved, verified, and closed. All review findings (H-1 through M-3 and final fix verification) are completely resolved and verified by Claude Independent Review.
+The proposed architecture defines `/game` handshake authentication,
+generation-fenced live sessions, a process-local bounded registry, a
+Socket.IO-backed `ActionDeliveryPort`, attempt-correlated receipt/result
+messages, SDK deduplication, liveness, backpressure, security limits, and
+sequential implementation/review slices. ADR-025 through ADR-030 remain
+proposed pending independent review.

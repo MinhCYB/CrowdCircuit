@@ -8,7 +8,8 @@
 **Milestone 2 remediation:** COMPLETE
 **Milestone 3 architecture:** RESOLVED
 **Milestone 3 implementation:** APPROVED_AND_COMPLETE
-**Milestone 4:** READY_FOR_ARCHITECTURE
+**Milestone 4 architecture:** READY_FOR_INDEPENDENT_REVIEW
+**Milestone 4 implementation:** BLOCKED_BY_ARCHITECTURE_REVIEW
 **Milestone 5:** BLOCKED_BY_PREVIOUS_MILESTONE
 **Phase D:** untouched
 
@@ -257,7 +258,7 @@ budgets, bounded state, declarations, and Phase B regressions.
 
 ## Milestone 3 — Durable Action Gateway lifecycle
 
-**Status:** IN_PROGRESS (Slice 1 and CODEX core APPROVED_AND_COMPLETE; administrative closure pending)
+**Status:** APPROVED_AND_COMPLETE
 **Primary owner:** CODEX / GEMINI  
 **Roadmap:** transport-independent core of `BE-07B`–`BE-07D`
 
@@ -318,7 +319,8 @@ idempotency, retry/TTL, reconciliation, failure isolation, and artifacts.
 
 ## Milestone 4 — Authenticated game-session delivery and SDK vertical slice
 
-**Status:** BLOCKED_BY_PREVIOUS_MILESTONE  
+**Architecture status:** READY_FOR_INDEPENDENT_REVIEW
+**Implementation status:** BLOCKED_BY_ARCHITECTURE_REVIEW
 **Primary owner:** CODEX  
 **Roadmap:** `BE-07A`–`BE-07D`, `BE-08A`–`BE-08C`
 
