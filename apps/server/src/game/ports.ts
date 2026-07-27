@@ -4,6 +4,8 @@
  * Zero Socket.IO runtime or persistence dependencies.
  */
 
+import type { GameProtocolErrorCode } from "@crowdcircuit/contracts";
+
 export type ServerRuntimeGeneration = string;
 export type ConnectionGeneration = number;
 
@@ -44,7 +46,7 @@ export type GameRegistrationOutcome =
     }
   | {
       readonly status: "rejected";
-      readonly errorCode: string;
+      readonly errorCode: GameProtocolErrorCode;
       readonly reason: string;
     };
 

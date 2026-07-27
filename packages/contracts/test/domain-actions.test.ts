@@ -76,6 +76,74 @@ describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
       expect(() => SessionGenerationSchema.parse(false as unknown as number)).toThrow();
     });
 
+    it("validates durationMs in GameActionCompletedResultSchema across complete matrix", () => {
+      const baseCompleted = {
+        type: "game.action.result",
+        specVersion: "0.1",
+        actionId: "act_101",
+        attemptNumber: 1,
+        sessionGeneration: 1,
+        status: "completed",
+      };
+
+      expect(
+        GameActionCompletedResultSchema.parse({
+          ...baseCompleted,
+          durationMs: 0,
+        }).durationMs
+      ).toBe(0);
+
+      expect(
+        GameActionCompletedResultSchema.parse({
+          ...baseCompleted,
+          durationMs: Number.MAX_SAFE_INTEGER,
+        }).durationMs
+      ).toBe(Number.MAX_SAFE_INTEGER);
+
+      expect(() =>
+        GameActionCompletedResultSchema.parse({
+          ...baseCompleted,
+          durationMs: Number.MAX_SAFE_INTEGER + 1,
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameActionCompletedResultSchema.parse({ ...baseCompleted, durationMs: -1 })
+      ).toThrow();
+
+      expect(() =>
+        GameActionCompletedResultSchema.parse({ ...baseCompleted, durationMs: 100.5 })
+      ).toThrow();
+
+      expect(() =>
+        GameActionCompletedResultSchema.parse({
+          ...baseCompleted,
+          durationMs: Number.NaN,
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameActionCompletedResultSchema.parse({
+          ...baseCompleted,
+          durationMs: Number.POSITIVE_INFINITY,
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameActionCompletedResultSchema.parse({
+          ...baseCompleted,
+          durationMs: Number.NEGATIVE_INFINITY,
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameActionCompletedResultSchema.parse({
+          ...baseCompleted,
+          durationMs: "150" as unknown as number,
+        })
+      ).toThrow();
+    });
+
     it("validates heartbeatIntervalMs in GameRegisteredMessageSchema across complete matrix", () => {
       const baseReg = {
         type: "game.registered",
@@ -581,6 +649,19 @@ describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
       expect(GameActionDeliveryMessageSchema.parse(delivery)).toEqual(delivery);
     });
 
+    it("rejects extra keys on game.action delivery message (strict)", () => {
+      expect(() =>
+        GameActionDeliveryMessageSchema.parse({
+          type: "game.action",
+          specVersion: "0.1",
+          attemptNumber: 1,
+          sessionGeneration: 1,
+          data: validEnvelope,
+          extraField: "bad",
+        })
+      ).toThrow();
+    });
+
     it("rejects game.action with missing attemptNumber/sessionGeneration or non-positive attemptNumber", () => {
       expect(() =>
         GameActionDeliveryMessageSchema.parse({
@@ -623,7 +704,7 @@ describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
       expect(GameActionReceivedMessageSchema.parse(receipt)).toEqual(receipt);
     });
 
-    it("rejects receipt with missing correlation fields, zero attemptNumber, or extra keys", () => {
+    it("rejects receipt with missing correlation fields or zero attemptNumber", () => {
       expect(() =>
         GameActionReceivedMessageSchema.parse({
           type: "game.action.received",
@@ -641,6 +722,20 @@ describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
           specVersion: "0.1",
           actionId: "act_101",
           receivedAt: "2026-07-23T04:00:00.250Z",
+        })
+      ).toThrow();
+    });
+
+    it("rejects extra keys on game.action.received receipt message (strict)", () => {
+      expect(() =>
+        GameActionReceivedMessageSchema.parse({
+          type: "game.action.received",
+          specVersion: "0.1",
+          actionId: "act_101",
+          attemptNumber: 1,
+          sessionGeneration: 1,
+          receivedAt: "2026-07-23T04:00:00.250Z",
+          extraField: "bad",
         })
       ).toThrow();
     });
@@ -822,6 +917,40 @@ describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
         GameActionCompletedResultSchema.parse({
           ...baseResult,
           details: { bad: new CustomClass() },
+        })
+      ).toThrow();
+    });
+
+    it("rejects extra keys on game.action.result completed result (strict)", () => {
+      expect(() =>
+        GameActionCompletedResultSchema.parse({
+          type: "game.action.result",
+          specVersion: "0.1",
+          actionId: "act_101",
+          attemptNumber: 1,
+          sessionGeneration: 1,
+          status: "completed",
+          durationMs: 150,
+          extraField: "bad",
+        })
+      ).toThrow();
+    });
+
+    it("rejects extra keys on game.action.result failed result (strict)", () => {
+      expect(() =>
+        GameActionFailedResultSchema.parse({
+          type: "game.action.result",
+          specVersion: "0.1",
+          actionId: "act_101",
+          attemptNumber: 1,
+          sessionGeneration: 1,
+          status: "failed",
+          error: {
+            code: "ENTITY_CAP_REACHED",
+            message: "Maximum zombies spawned",
+            retryable: false,
+          },
+          extraField: "bad",
         })
       ).toThrow();
     });

@@ -2,9 +2,10 @@
 
 **Milestone:** Phase C Milestone 4
 **Slice:** Slice 1 — Shared contracts and additive scaffolding
-**Baseline HEAD:** `e09bdf09bcce43a25a6f5369a1062623550ccf44` (`e09bdf0`)
+**Baseline HEAD (original implementation):** `e09bdf09bcce43a25a6f5369a1062623550ccf44` (`e09bdf0`)
+**Current HEAD (post-remediation):** `f02145948c1c7af8f74dfa61a73e083322b0c4f9` (`f021459`)
 **Primary Owner:** Gemini
-**Status:** READY_FOR_INDEPENDENT_REVIEW
+**Status:** REMEDIATION_COMPLETE_READY_FOR_RE_REVIEW
 
 ---
 
@@ -40,10 +41,10 @@ Slice 1 completes the shared contract update and additive scaffolding for Phase 
 
 ## Verification Summary
 
-- `@crowdcircuit/contracts`: Lint clean, typecheck clean, 175 tests pass, declarations test pass, build clean.
+- `@crowdcircuit/contracts`: Lint clean, typecheck clean, 185 tests pass, declarations test pass, build clean.
 - `@crowdcircuit/server`: Lint clean, typecheck clean, 96 tests pass, declarations test pass, build clean.
 - `@crowdcircuit/game-sdk-js`: Build clean, declarations test pass.
-- Repository-wide: 384/384 tests passing across 26 test suites, all 15 workspace packages build clean.
+- Repository-wide: 394/394 tests passing across 26 test suites, all 15 workspace packages build clean.
 - `git diff --check HEAD --`: Clean (0 whitespace/formatting errors).
 
 ---

@@ -1,9 +1,10 @@
-﻿# Phase C Milestone 4 Slice 1 â€” Self-Review
+# Phase C Milestone 4 Slice 1 — Self-Review
 
-**Baseline HEAD:** `e09bdf09bcce43a25a6f5369a1062623550ccf44` (`e09bdf0`)
-**Slice:** Slice 1 â€” Shared contracts and additive scaffolding
+**Baseline HEAD (original implementation):** `e09bdf09bcce43a25a6f5369a1062623550ccf44` (`e09bdf0`)
+**Current HEAD (post-remediation):** `f02145948c1c7af8f74dfa61a73e083322b0c4f9` (`f021459`)
+**Slice:** Slice 1 — Shared contracts and additive scaffolding
 **Primary Owner:** Gemini
-**Status:** READY_FOR_INDEPENDENT_REVIEW
+**Status:** REMEDIATION_COMPLETE_READY_FOR_RE_REVIEW
 
 ---
 
@@ -103,7 +104,7 @@ All prior historical test assertions in `packages/contracts/test/domain-actions.
 - **Result union discrimination & narrowing:** Re-tested via `GameActionResultMessageSchema` for `completed` and `failed` branches.
 - **Invalid status discriminator rejection:** Re-tested with `status: "pending"` on result union.
 - **Strict non-JSON details rejection:** Re-tested on `GameActionCompletedResultSchema` with 11 distinct non-JSON values (`undefined`, `BigInt`, `Symbol`, `function`, `Date`, `Map`, `Set`, `NaN`, `+Infinity`, `-Infinity`, `CustomClass`).
-- **Safe-integer bounds matrix:** Tested across `AttemptNumberSchema`, `SessionGenerationSchema`, and `heartbeatIntervalMs` with `Number.MAX_SAFE_INTEGER`, `MAX_SAFE_INTEGER + 1`, `NaN`, `Infinity`, `-Infinity`, fractional, zero, and negative values.
+- **Safe-integer bounds matrix:** Tested across `AttemptNumberSchema`, `SessionGenerationSchema`, `heartbeatIntervalMs`, and `durationMs` with `Number.MAX_SAFE_INTEGER`, `MAX_SAFE_INTEGER + 1`, `NaN`, `Infinity`, `-Infinity`, fractional, zero, and negative values.
 - **Zero test suppression:** 0 `.only`, 0 `.skip`, 0 commented assertions, 0 snapshot weakening.
 
 ---
@@ -113,7 +114,7 @@ All prior historical test assertions in `packages/contracts/test/domain-actions.
 - `@crowdcircuit/contracts`:
   - `pnpm lint`: PASS (0 warnings, 0 errors)
   - `pnpm typecheck`: PASS
-  - `pnpm test`: PASS (176/176 tests passing)
+  - `pnpm test`: PASS (185/185 tests passing)
   - `pnpm test:declarations`: PASS
   - `pnpm build`: PASS
 - `@crowdcircuit/server`:
@@ -128,7 +129,7 @@ All prior historical test assertions in `packages/contracts/test/domain-actions.
 - Repository-wide:
   - `pnpm lint`: PASS
   - `pnpm typecheck`: PASS
-  - `pnpm test`: PASS (385/385 tests passing)
+  - `pnpm test`: PASS (394/394 tests passing)
   - `pnpm build`: PASS (15 packages + dashboard build clean)
 - `git diff --check HEAD --`: PASS (0 errors/warnings)
 
@@ -136,4 +137,19 @@ All prior historical test assertions in `packages/contracts/test/domain-actions.
 
 ## 10. Final Verdict
 
-**MILESTONE_4_SLICE_1_READY_FOR_INDEPENDENT_REVIEW**
+**MILESTONE_4_SLICE_1_REMEDIATION_COMPLETE_READY_FOR_RE_REVIEW**
+
+---
+
+## 11. Independent-Review Remediation Evidence
+
+Verdact from independent review: **REQUEST_CHANGES**
+Remediation HEAD: `f02145948c1c7af8f74dfa61a73e083322b0c4f9` (`f021459`)
+
+| Finding | Severity | File(s) Changed | Remediation |
+|---|---|---|---|
+| M-1 — deleted `durationMs` numeric-boundary regression coverage | Major | `packages/contracts/test/domain-actions.test.ts` | Restored complete `durationMs` safe-integer matrix (0, MAX_SAFE_INTEGER accept; MAX_SAFE_INTEGER+1, -1, 0.5, NaN, +Infinity, -Infinity, string reject) as a standalone `"Numeric Correlation Primitives"` test case. |
+| L-1 — receipt test title claims extra-key coverage without asserting it | Low | `packages/contracts/test/domain-actions.test.ts` | Split original single test into two: `"rejects receipt with missing correlation fields or zero attemptNumber"` (original content) and a new `"rejects extra keys on game.action.received receipt message (strict)"` test with explicit extra-key assertion. |
+| L-2 — missing explicit strict extra-key tests for delivery, completed-result, and failed-result | Low | `packages/contracts/test/domain-actions.test.ts` | Added three new tests: `"rejects extra keys on game.action delivery message (strict)"`, `"rejects extra keys on game.action.result completed result (strict)"`, `"rejects extra keys on game.action.result failed result (strict)"`. |
+| L-3 — stale contracts test counts in self-review and handoff | Low | `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-01-SELF-REVIEW.md`, `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-01.md` | Updated: contracts 185/185, server 96/96, repo-wide 394/394. |
+| L-4 — `GameRegistrationOutcome.errorCode` typed as broad `string` | Low | `apps/server/src/game/ports.ts`, `apps/server/test/declaration-consumer.ts` | Imported `GameProtocolErrorCode` from `@crowdcircuit/contracts`; narrowed `errorCode` field from `string` to `GameProtocolErrorCode`. Added compile-time `@ts-expect-error` proof in `declaration-consumer.ts`. |

@@ -231,6 +231,17 @@ const regOutcome: GameRegistrationOutcome = {
   heartbeatIntervalMs: 10000,
 };
 
+// @ts-expect-error errorCode must be a valid GameProtocolErrorCode, not a broad string
+const rejectedWithBadCode: GameRegistrationOutcome["errorCode" & keyof Extract<GameRegistrationOutcome, { status: "rejected" }>] = "COMPLETELY_MADE_UP_CODE";
+void rejectedWithBadCode;
+
+const rejectedOutcome: GameRegistrationOutcome = {
+  status: "rejected",
+  errorCode: "GAME_NOT_FOUND",
+  reason: "Game not found",
+};
+void rejectedOutcome;
+
 const sessionSnap: RegisteredGameSessionSnapshot = {
   clientId: "client-1",
   gameId: "zombie-survival",
