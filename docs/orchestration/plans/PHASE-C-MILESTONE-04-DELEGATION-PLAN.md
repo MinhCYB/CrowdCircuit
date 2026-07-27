@@ -1,8 +1,8 @@
 # Phase C Milestone 4 — Delegation Plan
 
 **Date:** 2026-07-27
-**Architecture status:** READY_FOR_INDEPENDENT_RE_REVIEW
-**Implementation status:** BLOCKED_BY_ARCHITECTURE_REVIEW
+**Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
+**Implementation status:** Ready to begin Slice 1
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -16,14 +16,14 @@ an agent to stage, commit, or push.
 
 Owner: Claude independent reviewer.
 
-Review:
+Status: APPROVED_AND_COMPLETE (Claude Independent Review 02: APPROVE).
 
+Review evidence:
 - `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-REVIEW-01.md`
-- this delegation plan;
-- `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-ARCHITECTURE.md`.
+- `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-INDEPENDENT-REVIEW-02.md`
+- `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-ARCHITECTURE-CLOSURE.md`
 
-Stop on unresolved authentication, identity, generation fencing, receipt/result,
-or numeric-limit decisions. Only an approval may authorize Slice 1.
+All architecture decisions (ADR-025 through ADR-030) are ACCEPTED in `docs/execution/DECISIONS.md`. Implementation is authorized to proceed to Slice 1.
 
 Recommended user commit checkpoint: accepted architecture and ADRs.
 

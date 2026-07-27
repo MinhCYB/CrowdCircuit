@@ -5,19 +5,17 @@
 **Phase B commit:** `86f1a32` (`feat: complete Phase B event pipeline`)
 **Current phase:** Phase C — Game Vertical Slice
 **Phase C status:** IN_PROGRESS
-**Current milestone:** PHASE-C-MILESTONE-04 — ARCHITECTURE_REVIEW
+**Current milestone:** PHASE-C-MILESTONE-04 — IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Implementation: Ready to begin Slice 1)
 **Milestone 3 architecture status:** RESOLVED (ADR-019 through ADR-024 accepted)
-**Milestone 3 Slice 1 (GEMINI-01):** APPROVED_AND_COMPLETE
-**Milestone 3 Slice 2 (CODEX-CORE):** APPROVED_AND_COMPLETE
-**Milestone 3 Claude Independent Review 01:** REQUEST_CHANGES (historical)
-**Milestone 3 Remediation 01:** COMPLETE
-**Milestone 3 Claude Independent Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
-**Milestone 3 final fix verification:** APPROVE
-**Milestone 4 Claude Architecture Review 01:** REQUEST_CHANGES
-**Milestone 4 architecture remediation 01:** COMPLETE_PENDING_RE_REVIEW
-**Milestone 4 architecture:** READY_FOR_INDEPENDENT_RE_REVIEW
-**Milestone 4 implementation:** BLOCKED_BY_ARCHITECTURE_REVIEW
-**Working tree:** Documentation-only Milestone 4 architecture work
+**Milestone 3 status:** APPROVED_AND_COMPLETE
+**Milestone 4 architecture status:** RESOLVED (ADR-025 through ADR-030 accepted)
+**Milestone 4 Claude Architecture Review 01:** REQUEST_CHANGES (historical)
+**Milestone 4 architecture remediation 01:** COMPLETE
+**Milestone 4 Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
+**Milestone 4 final architecture fix verification:** APPROVE
+**Milestone 4 architecture:** APPROVED_AND_COMPLETE
+**Milestone 4 implementation:** Ready to begin `Slice 1 — Shared contracts and additive scaffolding`
+**Working tree:** Approved Milestone 4 architecture closure
 
 ## Runtime baseline
 
@@ -32,7 +30,7 @@
 1. Authentication and durable persistence prerequisites — DONE
 2. Mapping and action-budget capability — APPROVED_AND_COMPLETE
 3. Durable Action Gateway lifecycle — APPROVED_AND_COMPLETE
-4. Authenticated game-session delivery and SDK vertical slice — ARCHITECTURE READY_FOR_INDEPENDENT_RE_REVIEW; IMPLEMENTATION BLOCKED_BY_ARCHITECTURE_REVIEW
+4. Authenticated game-session delivery and SDK vertical slice — IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Implementation: Ready to begin Slice 1)
 5. Demo game, recovery, and Phase C acceptance — BLOCKED_BY_PREVIOUS_MILESTONE
 
 ## Phase C scope

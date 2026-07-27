@@ -8,10 +8,12 @@
 **Milestone 2 remediation:** COMPLETE
 **Milestone 3 architecture:** RESOLVED
 **Milestone 3 implementation:** APPROVED_AND_COMPLETE
-**Claude Architecture Review 01:** REQUEST_CHANGES
-**Architecture remediation 01:** COMPLETE_PENDING_RE_REVIEW
-**Milestone 4 architecture:** READY_FOR_INDEPENDENT_RE_REVIEW
-**Milestone 4 implementation:** BLOCKED_BY_ARCHITECTURE_REVIEW
+**Claude Architecture Review 01:** REQUEST_CHANGES (historical)
+**Architecture remediation 01:** COMPLETE
+**Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
+**Final Architecture Fix Verification:** APPROVE
+**Milestone 4 architecture:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
+**Milestone 4 implementation:** Ready to begin `Slice 1 — Shared contracts and additive scaffolding`
 **Milestone 5:** BLOCKED_BY_PREVIOUS_MILESTONE
 **Phase D:** untouched
 
@@ -321,10 +323,12 @@ idempotency, retry/TTL, reconciliation, failure isolation, and artifacts.
 
 ## Milestone 4 — Authenticated game-session delivery and SDK vertical slice
 
-**Claude Architecture Review 01:** REQUEST_CHANGES
-**Architecture remediation 01:** COMPLETE_PENDING_RE_REVIEW
-**Architecture status:** READY_FOR_INDEPENDENT_RE_REVIEW
-**Implementation status:** BLOCKED_BY_ARCHITECTURE_REVIEW
+**Claude Architecture Review 01:** REQUEST_CHANGES (historical)
+**Architecture remediation 01:** COMPLETE
+**Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
+**Final Architecture Fix Verification:** APPROVE
+**Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
+**Implementation status:** Ready to begin `Slice 1 — Shared contracts and additive scaffolding`
 **Primary owner:** CODEX  
 **Roadmap:** `BE-07A`–`BE-07D`, `BE-08A`–`BE-08C`
 

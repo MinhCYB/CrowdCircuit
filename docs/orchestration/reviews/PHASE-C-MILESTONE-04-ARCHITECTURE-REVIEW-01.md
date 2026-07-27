@@ -4,9 +4,11 @@
 **Task:** PHASE-C-MILESTONE-04-ARCHITECTURE
 **Branch:** `review/phase-c`
 **Baseline:** `a50859f42a5918f0bdd63de0e4cd55531bec4341`
-**Claude Architecture Review 01:** REQUEST_CHANGES
-**Remediation 01:** COMPLETE_PENDING_RE_REVIEW
-**Status:** READY_FOR_INDEPENDENT_RE_REVIEW
+**Claude Architecture Review 01:** REQUEST_CHANGES (historical)
+**Remediation 01:** COMPLETE
+**Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
+**Final Architecture Fix Verification:** APPROVE
+**Status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
 
 ## 1. Context and baseline
 
@@ -82,8 +84,7 @@ persistence, mapping, or shared domain repositories.
 
 ## 5. Proposed ADRs
 
-These identifiers are provisional and remain `PROPOSED` until independent
-architecture approval. No entry is appended to `DECISIONS.md` in this task.
+ADR-025 through ADR-030 are independently approved and ACCEPTED in `docs/execution/DECISIONS.md`.
 
 - **ADR-025 — `/game` namespace and handshake authentication.**
 - **ADR-026 — Live game-session identity, registration, and replacement.**
@@ -647,7 +648,7 @@ implementation.
 
 ## 25. Final architecture verdict
 
-**MILESTONE_4_ARCHITECTURE_REMEDIATION_READY_FOR_RE_REVIEW**
+**APPROVED_AND_COMPLETE** (Final Verdict: APPROVE; ADR-025 through ADR-030 ACCEPTED)
 
 The current repository can implement this design without weakening Milestone
 3, adding durable session state, or making a hidden product decision.

@@ -646,3 +646,192 @@ Milestone 3 needs clear rules for action TTL, deferred expiry, delivery ordering
 ### Affected packages
 
 - `apps/server`
+
+---
+
+## ADR-025 — /game Namespace, Handshake Authentication, Wire Mapping, Taxonomy, Redaction, and Observability
+
+**Date:** 2026-07-27
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-04 / M4-D1
+**Acceptance Evidence:** Approved in `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-REVIEW-01.md` and `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-INDEPENDENT-REVIEW-02.md` at commit `df22ec931ef4cadca5e67619d51924838085d90c`.
+
+### Context
+
+Milestone 4 connects the transport-neutral `ActionGateway` to authenticated Socket.IO game clients. A clear namespace, authentication mechanism, wire error taxonomy, credential redaction policy, and observability model are required.
+
+### Decision
+
+- Socket.IO transport terminates at the `/game` namespace.
+- Authentication is handshake-only via `socket.handshake.auth.token` containing an opaque game-role session token. Query-string tokens, registration-body tokens, cookies, and HTTP authorization headers are strictly rejected for `/game`.
+- Namespace middleware owns pre-authorization checks: missing/empty tokens map to `AUTH_REQUIRED`, query credentials map to `QUERY_TOKEN_FORBIDDEN`, and origin policy violations map to `ORIGIN_FORBIDDEN`.
+- `auth-core` error codes map to stable wire error codes: `INVALID_CREDENTIAL` → `AUTH_INVALID`, `CREDENTIAL_EXPIRED` → `AUTH_EXPIRED`, `CREDENTIAL_REVOKED` → `AUTH_REVOKED`, `FORBIDDEN` → `AUTH_FORBIDDEN`.
+- Client-visible errors MUST use stable enumerated wire codes. Raw `AuthError` messages, raw tokens, socket internals, SQL, stack traces, raw payloads, and internal exceptions MUST NOT cross the wire.
+- Raw credentials and tokens MUST NOT be logged. Short token fingerprints MAY be logged for authentication correlation but MUST NOT be returned to clients or used as durable identity.
+- Structured diagnostics MUST correlate, when applicable, `actionId`, attempt number, authenticated `clientId`, `gameId` (where applicable), `gameInstanceId`, session generation, connection generation, server runtime generation, event type, and reason/failure code. High-cardinality values MUST remain structured log fields and MUST NOT become unbounded metric labels. Process-local session counts are operational gauges, not durable action or session truth.
+
+### Consequences
+
+- Transport security is enforced before connection registration. Credentials are protected against URL/log leakage.
+
+### Rejected Alternatives
+
+- Token in `game.register` payload: rejected because handlers would exist before authentication.
+- Query-string token: rejected due to server/proxy log leakage.
+
+### Affected Packages
+
+- `apps/server`, `@crowdcircuit/contracts`
+
+---
+
+## ADR-026 — Live Game-Session Identity, Registration, and Replacement
+
+**Date:** 2026-07-27
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-04 / M4-D2
+**Acceptance Evidence:** Approved in `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-REVIEW-01.md` and `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-INDEPENDENT-REVIEW-02.md` at commit `df22ec931ef4cadca5e67619d51924838085d90c`.
+
+### Context
+
+Game clients need an explicit session identity model, registration handshake, and deterministic socket replacement policy on reconnect.
+
+### Decision
+
+- A live destination is uniquely identified by `clientId` (from auth session) + `gameId` (validated registration claim) + `gameInstanceId` (nonempty registration instanceId) + `serverRuntimeGeneration` + `connectionGeneration`. `socket.id` is metadata, never an authorization identity.
+- Registration occurs via `game.register` within a strict 5000 ms deadline after handshake authentication.
+- A client MAY register up to 4 distinct instances per `clientId`.
+- One `(gameId, gameInstanceId)` tuple has exactly one active socket entry in the process-local registry.
+- Reconnecting the same `(gameId, gameInstanceId)` from the same authenticated `clientId` atomically replaces the prior socket and increments `connectionGeneration`. The old socket is disconnected with `SESSION_REPLACED`.
+- An attempt by a different `clientId` to register an occupied `(gameId, gameInstanceId)` tuple is rejected with `INSTANCE_OWNED_BY_OTHER_CLIENT`; no replacement occurs.
+- Disconnect callbacks from stale connection generations cannot mutate or remove newer connection generations.
+
+### Consequences
+
+- Connection replacement is fenced, immediate, and atomic without ambiguous race conditions.
+
+### Rejected Alternatives
+
+- Multiple active sockets per game instance: rejected because delivery target selection and receipt authorization become ambiguous.
+
+### Affected Packages
+
+- `apps/server`, `@crowdcircuit/contracts`
+
+---
+
+## ADR-027 — Socket.IO Delivery Adapter, Generation Fencing, and Deterministic Null-Instance Selection
+
+**Date:** 2026-07-27
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-04 / M4-D3
+**Acceptance Evidence:** Approved in `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-REVIEW-01.md` and `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-INDEPENDENT-REVIEW-02.md` at commit `df22ec931ef4cadca5e67619d51924838085d90c`.
+
+### Context
+
+The Milestone 3 `ActionGateway` relies on `ActionDeliveryPort` to resolve a live destination and send a prepared delivery. The Socket.IO delivery adapter must route deterministically and fence against stale destinations.
+
+### Decision
+
+- `SocketIoActionDeliveryAdapter` implements `ActionDeliveryPort`.
+- Resolution with an explicit non-null `gameInstanceId` MUST select only that live instance and MUST NOT fall back to another instance.
+- Resolution with null `gameInstanceId` means “any eligible live instance for this authenticated action client and game.” Candidates across distinct live instances are ordered by `gameInstanceId` ascending. `connectionGeneration` descending is a defensive secondary ordering key only.
+- Under the registry uniqueness invariant, two eligible current entries with the same `gameInstanceId` MUST NOT exist. If such a duplicate for the same `gameInstanceId` is observed, selection MUST fail closed and emit an internal invariant-violation signal rather than silently choosing one. The defensive secondary ordering key does not authorize duplicate live sessions.
+- This ordering is deterministic routing, not load balancing.
+- The resolved destination remains runtime-generation and connection-generation fenced through `send`. Disappearance or replacement of the resolved entry before `send` returns `transport_error` without mutating durable state.
+
+### Consequences
+
+- Delivery resolution is generation-fenced across connection races without leaking Socket.IO types into persistence layers.
+
+### Affected Packages
+
+- `apps/server`
+
+---
+
+## ADR-028 — Attempt-Correlated Receipt/Result Protocol, Reconnect-Safe Receipt Rule, and Idempotency
+
+**Date:** 2026-07-27
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-04 / M4-D4
+**Acceptance Evidence:** Approved in `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-REVIEW-01.md` and `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-INDEPENDENT-REVIEW-02.md` at commit `df22ec931ef4cadca5e67619d51924838085d90c`.
+
+### Context
+
+Action receipts (`game.action.received`) and results (`game.action.result`) must be attempt-correlated and idempotent. Reconnecting clients must be able to acknowledge locally enqueued actions across replacement.
+
+### Decision
+
+- `game.action`, `game.action.received`, and `game.action.result` carry explicit `attemptNumber` and `sessionGeneration` correlation fields.
+- A receipt for an older durable attempt MAY be accepted only from the current valid session generation when the durable attempt is bound to the same authenticated client, game, and game instance. A receipt from a stale session generation or another client/game instance MUST be rejected.
+- This exception tolerates client replacement without losing a valid receipt for an action already locally enqueued in the client SDK. It is safe because `actionId` and attempt number form an unguessable correlation tuple, and client/game/instance identity binding is enforced.
+- Results remain stricter: a gameplay result MUST satisfy the current-session and exact durable action/attempt/client/game-instance bindings. The receipt exception MUST NOT weaken result authorization.
+- Duplicate valid receipts and identical terminal results are idempotent. Conflicting terminal results return `RESULT_CONFLICT` with zero durable mutation. Late results after terminal/expired/reconciliation state return `ACTION_NOT_ACCEPTING_RESULT`.
+
+### Consequences
+
+- Reconnect duplicate action delivery is safely acknowledged without triggering duplicate gameplay or losing durable state synchronization.
+
+### Affected Packages
+
+- `apps/server`, `@crowdcircuit/contracts`
+
+---
+
+## ADR-029 — Game-Session Liveness, Bounds, and Security Limits
+
+**Date:** 2026-07-27
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-04 / M4-D5
+**Acceptance Evidence:** Approved in `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-REVIEW-01.md` and `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-INDEPENDENT-REVIEW-02.md` at commit `df22ec931ef4cadca5e67619d51924838085d90c`.
+
+### Context
+
+Resource exhaustion, unauthenticated connections, and hung event loops must be prevented by explicit operational bounds.
+
+### Decision
+
+- Session liveness requires both Socket.IO transport ping/pong (10s interval / 20s timeout) and custom SDK `game.heartbeat` (10s interval / 30s stale threshold).
+- Background liveness sweep runs every 5 seconds, processing at most 128 stale entries per sweep.
+- Transport payload limit (`maxHttpBufferSize`): 64 KiB (65,536 bytes).
+- Server capacity limits: maximum 256 active registered sessions per server runtime; maximum 4 active sessions per `clientId`. Excess connections fail closed with `SESSION_CAPACITY` without evicting live sessions.
+- Rate limiters: heartbeat (2/s, burst 4); receipt/result (20/s, burst 40); registration (1 per connection, max 4 invalid attempts before disconnect); invalid/unknown messages (5 per 10s before disconnect).
+
+### Consequences
+
+- All memory allocations, event loop tasks, and socket connections are bounded and fail closed under contention.
+
+### Affected Packages
+
+- `apps/server`
+
+---
+
+## ADR-030 — SDK Enqueue-Before-Receipt and Bounded Action Deduplication
+
+**Date:** 2026-07-27
+**Status:** Accepted
+**Task:** PHASE-C-MILESTONE-04 / M4-D6
+**Acceptance Evidence:** Approved in `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-REVIEW-01.md` and `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-INDEPENDENT-REVIEW-02.md` at commit `df22ec931ef4cadca5e67619d51924838085d90c`.
+
+### Context
+
+The `@crowdcircuit/game-sdk-js` client library must process delivered actions reliably, guarantee local enqueue before sending receipt, and handle duplicates safely.
+
+### Decision
+
+- The SDK sends `game.action.received` ONLY AFTER validating the payload schema and successfully inserting the action into its bounded local execution queue.
+- Duplicate action deliveries received by the same live SDK object MUST NOT re-run gameplay handlers, but MUST re-emit receipt ACK or return cached result details to the server.
+- SDK execution concurrency limit: 32 concurrent handlers.
+- SDK pending local action queue limit: 256 entries.
+- SDK deduplication and result cache limit: 2048 action IDs, retained for 30 minutes with deterministic LRU eviction. Active entries are never evicted.
+- If the SDK local queue is full, it rejects new enqueue without emitting receipt, allowing server-side durable retry/TTL policies to remain authoritative.
+
+### Consequences
+
+- At-least-once transport delivery is handled idempotently in the client SDK without duplicate gameplay execution.
+
+### Affected Packages
+
+- `packages/game-sdk-js`

@@ -2,10 +2,12 @@
 
 **Date:** 2026-07-27
 **Baseline commit:** `d4092f4`
-**Claude Architecture Review 01:** REQUEST_CHANGES
-**Remediation status:** COMPLETE_PENDING_RE_REVIEW
-**Architecture status:** READY_FOR_INDEPENDENT_RE_REVIEW
-**Implementation status:** BLOCKED_BY_ARCHITECTURE_REVIEW
+**Claude Architecture Review 01:** REQUEST_CHANGES (historical)
+**Remediation status:** COMPLETE
+**Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
+**Final Architecture Fix Verification:** APPROVE
+**Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
+**Implementation status:** Ready to begin Slice 1 per approved delegation plan
 
 ## Findings remediated
 
@@ -79,10 +81,12 @@ bounds/heartbeat timing. Any requested change returns to architecture review.
 
 - Phase C: IN_PROGRESS
 - Milestone 3: APPROVED_AND_COMPLETE
-- Milestone 4 architecture: READY_FOR_INDEPENDENT_RE_REVIEW
-- Claude Architecture Review 01: REQUEST_CHANGES
-- Architecture remediation 01: COMPLETE_PENDING_RE_REVIEW
-- Milestone 4 implementation: BLOCKED_BY_ARCHITECTURE_REVIEW
+- Claude Architecture Review 01: REQUEST_CHANGES (historical)
+- Architecture remediation 01: COMPLETE
+- Claude Architecture Re-Review 02: APPROVE_WITH_SMALL_FIX (historical)
+- Final Architecture Fix Verification: APPROVE
+- Milestone 4 architecture: APPROVED_AND_COMPLETE (decision state: RESOLVED)
+- Milestone 4 implementation: ready to begin `Slice 1 — Shared contracts and additive scaffolding` per approved delegation plan
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
 

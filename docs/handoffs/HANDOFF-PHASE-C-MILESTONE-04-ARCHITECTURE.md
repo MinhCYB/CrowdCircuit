@@ -2,9 +2,11 @@
 
 **Date:** 2026-07-27
 **Baseline commit:** `a50859f42a5918f0bdd63de0e4cd55531bec4341`
-**Claude Architecture Review 01:** REQUEST_CHANGES
-**Architecture remediation 01:** COMPLETE_PENDING_RE_REVIEW
-**Status:** READY_FOR_INDEPENDENT_RE_REVIEW
+**Claude Architecture Review 01:** REQUEST_CHANGES (historical)
+**Architecture remediation 01:** COMPLETE
+**Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
+**Final Architecture Fix Verification:** APPROVE
+**Status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
 
 ## Decisions made
 
@@ -26,17 +28,13 @@
 - Numeric liveness, rate, buffer, registry, SDK queue, concurrency, and dedupe
   limits are selected in the architecture review.
 
-## Proposed ADRs
+## Accepted ADRs
 
-ADR-025 through ADR-030 are proposed in the architecture review. They are not
-accepted and were not appended to `docs/execution/DECISIONS.md`.
+ADR-025 through ADR-030 are accepted and appended to `docs/execution/DECISIONS.md`.
 
 ## Unresolved questions
 
-No blocking product question remains. ADR-027 now fixes null-instance
-destination selection. Independent re-review must approve or amend the
-contract corrections, selected bounds, and proposed ADR-025 through ADR-030
-before implementation.
+No blocking product question remains. All architecture findings from independent review and re-review are resolved and approved.
 
 ## Expected implementation files
 
@@ -51,7 +49,7 @@ No persistence migration or schema change is expected.
 
 ## Slices and gates
 
-1. Claude architecture review.
+1. Claude architecture review — APPROVED.
 2. Gemini additive contracts/scaffolding; Claude review.
 3. CODEX server auth/registry/adapter; Claude review.
 4. CODEX receipt/result integration; Claude review.
@@ -74,9 +72,11 @@ push without a separate instruction.
 
 - Phase C: IN_PROGRESS.
 - Milestone 3: APPROVED_AND_COMPLETE.
-- Claude Architecture Review 01: REQUEST_CHANGES.
-- Architecture remediation 01: COMPLETE_PENDING_RE_REVIEW.
-- Milestone 4 architecture: READY_FOR_INDEPENDENT_RE_REVIEW.
-- Milestone 4 implementation: BLOCKED_BY_ARCHITECTURE_REVIEW.
+- Claude Architecture Review 01: REQUEST_CHANGES (historical).
+- Architecture remediation 01: COMPLETE.
+- Claude Architecture Re-Review 02: APPROVE_WITH_SMALL_FIX (historical).
+- Final Architecture Fix Verification: APPROVE.
+- Milestone 4 architecture: APPROVED_AND_COMPLETE (decision state: RESOLVED).
+- Milestone 4 implementation: ready to begin `Slice 1 — Shared contracts and additive scaffolding` per approved delegation plan.
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE.
 - Phase D: untouched.
