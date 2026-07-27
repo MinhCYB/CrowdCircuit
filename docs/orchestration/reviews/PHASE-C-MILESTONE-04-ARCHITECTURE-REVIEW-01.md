@@ -115,22 +115,25 @@ to `AUTH_FORBIDDEN`, not `AUTH_INVALID`.
   authentication correlation, but MUST NOT be returned to clients or used as
   durable identity.
 - Structured diagnostics MUST correlate, when applicable, `actionId`, attempt
-  number, authenticated `clientId`, `gameId`, `gameInstanceId`, session
-  generation, connection generation, and runtime generation. High-cardinality
-  values MUST remain structured log fields and MUST NOT become unbounded metric
-  labels. Process-local session counts are operational gauges, not durable
-  action or session truth.
+  number, authenticated `clientId`, `gameId` (where applicable), `gameInstanceId`,
+  session generation, connection generation, server runtime generation, event type,
+  and reason/failure code. High-cardinality values MUST remain structured log
+  fields and MUST NOT become unbounded metric labels. Process-local session
+  counts are operational gauges, not durable action or session truth.
 
 ### ADR-027 proposed decision — destination selection and fencing
 
 - Resolution with an explicit non-null `gameInstanceId` MUST select only that
   live instance and MUST NOT fall back to another instance.
 - Resolution with null `gameInstanceId` means “any eligible live instance for
-  this authenticated action client and game.” It MUST select by
-  `gameInstanceId` ascending, then by connection generation descending.
-  Registry uniqueness permits only one live entry per
-  `(gameId, gameInstanceId)`, so an equal instance-ID tie is impossible; if a
-  transient internal duplicate is observed, resolution MUST fail closed.
+  this authenticated action client and game.” Candidates across distinct live
+  instances are ordered by `gameInstanceId` ascending. Connection generation
+  descending is a defensive secondary ordering key only.
+- Under the registry uniqueness invariant, two eligible current entries with
+  the same `gameInstanceId` MUST NOT exist. If such a duplicate for the same
+  `gameInstanceId` is observed, selection MUST fail closed and emit an internal
+  invariant-violation signal rather than silently choosing one. The defensive
+  secondary ordering key does not authorize duplicate live sessions.
 - This ordering is deterministic routing, not load balancing. The selected
   destination remains runtime- and connection-generation fenced through
   `send`; disappearance or replacement after resolution MUST fail the send.
@@ -301,10 +304,14 @@ destination; in-flight/received actions follow ADR-021 reconciliation.
 1. Select only a registered, authenticated, non-expired, live session matching
    `envelope.gameId`.
 2. If `envelope.gameInstanceId` is non-null, require that exact instance.
-3. Otherwise invoke ADR-027's null-instance rule: choose any eligible live
-   instance for the authenticated action client and game by `gameInstanceId`
-   ascending, then connection generation descending. This is deterministic
-   routing, not load balancing.
+3. Otherwise invoke ADR-027's null-instance rule: choose an eligible live
+   instance for the authenticated action client and game by ordering distinct
+   instances by `gameInstanceId` ascending, using connection generation descending
+   only as a defensive secondary key. Under registry uniqueness, two eligible entries
+   with the same `gameInstanceId` MUST NOT exist; if such a duplicate is observed,
+   selection MUST fail closed and emit an internal invariant-violation signal rather
+   than silently choosing one. An explicit non-null target never falls back to another
+   instance. This is deterministic routing, not load balancing.
 4. Return a transport-neutral destination extended during implementation with
    an opaque `destinationGeneration` string/number. Do not return a socket.
 5. Return `no_destination` when no eligible entry exists.
@@ -486,8 +493,8 @@ Structured events record:
 - heartbeat expiry, rate limit, and capacity rejection.
 
 Counters are bounded aggregate metrics. Payload bodies, action params, tokens,
-and raw errors are not logged. Correlation uses action ID, attempt number, and
-server-generated connection correlation ID.
+and raw errors are not logged. Correlation uses action ID, attempt number, event type,
+reason/failure code, and server-generated connection correlation ID.
 
 ## 18. Important sequences
 
