@@ -2,7 +2,9 @@
 
 **Date:** 2026-07-27
 **Baseline commit:** `a50859f42a5918f0bdd63de0e4cd55531bec4341`
-**Status:** READY_FOR_INDEPENDENT_REVIEW
+**Claude Architecture Review 01:** REQUEST_CHANGES
+**Architecture remediation 01:** COMPLETE_PENDING_RE_REVIEW
+**Status:** READY_FOR_INDEPENDENT_RE_REVIEW
 
 ## Decisions made
 
@@ -31,9 +33,10 @@ accepted and were not appended to `docs/execution/DECISIONS.md`.
 
 ## Unresolved questions
 
-No blocking product question remains. Independent review must approve or amend
-the contract corrections, selected bounds, and null-instance destination
-selection before implementation.
+No blocking product question remains. ADR-027 now fixes null-instance
+destination selection. Independent re-review must approve or amend the
+contract corrections, selected bounds, and proposed ADR-025 through ADR-030
+before implementation.
 
 ## Expected implementation files
 
@@ -71,7 +74,9 @@ push without a separate instruction.
 
 - Phase C: IN_PROGRESS.
 - Milestone 3: APPROVED_AND_COMPLETE.
-- Milestone 4 architecture: READY_FOR_INDEPENDENT_REVIEW.
+- Claude Architecture Review 01: REQUEST_CHANGES.
+- Architecture remediation 01: COMPLETE_PENDING_RE_REVIEW.
+- Milestone 4 architecture: READY_FOR_INDEPENDENT_RE_REVIEW.
 - Milestone 4 implementation: BLOCKED_BY_ARCHITECTURE_REVIEW.
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE.
 - Phase D: untouched.

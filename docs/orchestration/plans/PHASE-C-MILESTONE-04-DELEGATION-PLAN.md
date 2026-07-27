@@ -1,7 +1,7 @@
 # Phase C Milestone 4 — Delegation Plan
 
 **Date:** 2026-07-27
-**Architecture status:** READY_FOR_INDEPENDENT_REVIEW
+**Architecture status:** READY_FOR_INDEPENDENT_RE_REVIEW
 **Implementation status:** BLOCKED_BY_ARCHITECTURE_REVIEW
 **Primary implementation owner:** CODEX
 
@@ -43,6 +43,7 @@ Deliver:
 
 - handshake-auth-compatible registration contract;
 - versioned registered/error/action/receipt/result correlation fields;
+- stable wire auth/error schemas and declaration/public-contract tests;
 - typed server registry/adapter ports;
 - declaration consumers and schema fixtures.
 
@@ -54,35 +55,55 @@ direction, and zero lifecycle implementation.
 
 Recommended user commit checkpoint: reviewed additive contract slice.
 
-## Slice 2 — Server authentication, registry, and adapter core
+## Slice 2 — Server authentication and registry
 
 Owner: CODEX.
 
 Exclusive files:
 
-- `apps/server/src/game/**`;
-- `apps/server/src/delivery/**` only where the approved adapter boundary
-  requires it;
+- `apps/server/src/game/auth/**` and `apps/server/src/game/registry/**`;
 - server composition and focused tests.
 
 Deliver:
 
 - `/game` namespace middleware;
-- origin/query/token validation;
+- origin/query/token validation, including missing-token versus auth-core
+  invalid/expired/revoked/forbidden mapping;
 - registration and generation-fenced registry;
 - heartbeat/rate/capacity enforcement;
-- `SocketIoActionDeliveryAdapter`;
 - shutdown cleanup;
-- real Socket.IO multi-client tests.
+- pure registry unit tests and focused real Socket.IO auth/registration tests.
 
 Do not edit SDK implementation files during this slice.
 
-Review gate: Claude focuses on auth, stale-session fencing, resolve/send race,
-backpressure, cleanup, and absence of durable mutation in the adapter.
+Review gate: Claude focuses on auth mapping, registry bounds, stale-session
+fencing, cleanup, and file ownership.
 
 Recommended user commit checkpoint: reviewed server transport slice.
 
-## Slice 3 — Receipt/result integration
+## Slice 3 — Delivery adapter
+
+Owner: CODEX.
+
+Exclusive files:
+
+- `apps/server/src/delivery/socket-io/**`;
+- adapter-focused tests not owned by another slice.
+
+Deliver:
+
+- deterministic ADR-027 null-instance selection;
+- explicit-instance no-fallback behavior;
+- destination generation fencing;
+- disappearance and replacement between resolve and send;
+- backpressure and emit-failure behavior with no durable mutation.
+
+Review gate: Claude verifies deterministic routing, resolve/send race
+coverage, and adapter isolation.
+
+Recommended user commit checkpoint: reviewed delivery adapter slice.
+
+## Slice 4 — Receipt/result integration
 
 Owner: CODEX.
 
@@ -95,7 +116,9 @@ Exclusive files:
 Deliver:
 
 - current-generation and durable-attempt binding validation;
-- idempotent receipt and result handling;
+- ADR-028 stale-attempt receipt acceptance from the current replacement
+  generation, stale-session rejection, cross-client/game-instance rejection,
+  and duplicate receipt/result idempotency;
 - conflicting/late result rejection;
 - retry/TTL/restart integration evidence.
 
@@ -106,7 +129,7 @@ Review gate: Claude verifies Milestone 3 remains authoritative.
 
 Recommended user commit checkpoint: reviewed inbound lifecycle slice.
 
-## Slice 4 — JavaScript SDK
+## Slice 5 — JavaScript SDK
 
 Owner: CODEX. Gemini may add frozen fixtures and declaration-negative tests
 only after the core SDK implementation is complete.
@@ -130,7 +153,7 @@ game/demo behavior.
 
 Recommended user commit checkpoint: reviewed SDK slice.
 
-## Slice 5 — Milestone integration and closure
+## Slice 6 — Milestone integration and closure
 
 Owner: CODEX.
 
@@ -138,7 +161,11 @@ Deliver:
 
 - real pair → authenticate → register → durable action → emit → receipt →
   completion smoke;
-- malformed/auth/reconnect/restart/backpressure acceptance matrix;
+- malformed and oversized payloads; registration, invalid-message, and
+  receipt/result rate exhaustion; session/SDK capacity exhaustion; real
+  Socket.IO server/client tests; restart/reconnect; multiple instances per
+  client; repository integration; fake-clock; and multi-client race/concurrency
+  acceptance;
 - full affected-package and repository verification;
 - self-review and handoff.
 

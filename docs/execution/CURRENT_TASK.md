@@ -2,7 +2,7 @@
 
 **Task ID:** PHASE-C-MILESTONE-04-ARCHITECTURE
 **Parent Task:** Phase C — Game Vertical Slice
-**Status:** READY_FOR_INDEPENDENT_REVIEW
+**Status:** READY_FOR_INDEPENDENT_RE_REVIEW
 **Primary owner:** CODEX
 **Priority:** P0
 
@@ -17,7 +17,9 @@ Socket.IO game clients and the JavaScript SDK.
 - Phase C: IN_PROGRESS
 - Milestone 3: APPROVED_AND_COMPLETE
 - Milestone 3 architecture: RESOLVED (ADR-019 through ADR-024 accepted)
-- Milestone 4 architecture: READY_FOR_INDEPENDENT_REVIEW
+- Milestone 4 architecture: READY_FOR_INDEPENDENT_RE_REVIEW
+- Claude Architecture Review 01: REQUEST_CHANGES
+- Architecture remediation 01: COMPLETE_PENDING_RE_REVIEW
 - Milestone 4 implementation: BLOCKED_BY_ARCHITECTURE_REVIEW
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched

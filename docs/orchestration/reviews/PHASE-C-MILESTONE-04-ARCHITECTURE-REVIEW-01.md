@@ -4,7 +4,9 @@
 **Task:** PHASE-C-MILESTONE-04-ARCHITECTURE
 **Branch:** `review/phase-c`
 **Baseline:** `a50859f42a5918f0bdd63de0e4cd55531bec4341`
-**Status:** READY_FOR_INDEPENDENT_REVIEW
+**Claude Architecture Review 01:** REQUEST_CHANGES
+**Remediation 01:** COMPLETE_PENDING_RE_REVIEW
+**Status:** READY_FOR_INDEPENDENT_RE_REVIEW
 
 ## 1. Context and baseline
 
@@ -90,6 +92,70 @@ architecture approval. No entry is appended to `DECISIONS.md` in this task.
 - **ADR-029 — Game-session liveness, bounds, and security limits.**
 - **ADR-030 — SDK enqueue-before-receipt and bounded action deduplication.**
 
+### ADR-025 proposed decision — authentication, wire errors, and observability
+
+| Credential condition | Detection / auth-core code | Stable wire code |
+|---|---|---|
+| missing or empty handshake token | middleware, before `authorizeSession` | `AUTH_REQUIRED` |
+| malformed or wrong token | `INVALID_CREDENTIAL` | `AUTH_INVALID` |
+| expired credential | `CREDENTIAL_EXPIRED` | `AUTH_EXPIRED` |
+| revoked credential | `CREDENTIAL_REVOKED` | `AUTH_REVOKED` |
+| forbidden role or scope | `FORBIDDEN` | `AUTH_FORBIDDEN` |
+| any query credential | middleware, before `authorizeSession`; `QUERY_TOKEN_FORBIDDEN` if the auth-core guard is reached | `QUERY_TOKEN_FORBIDDEN` |
+
+Namespace middleware MUST own the two pre-authorization checks shown above.
+Origin-policy `FORBIDDEN` maps to `ORIGIN_FORBIDDEN` because origin
+authorization is a distinct middleware step. Unsupported roles/scopes MUST map
+to `AUTH_FORBIDDEN`, not `AUTH_INVALID`.
+- Client-visible errors MUST use stable enumerated wire codes. Internal
+  categories MAY be more detailed, but raw `AuthError` messages, raw tokens,
+  socket internals, SQL, stack traces, raw payloads, and internal exceptions
+  MUST NOT cross the wire.
+- Tokens MUST NOT be logged. A short token fingerprint MAY be logged for
+  authentication correlation, but MUST NOT be returned to clients or used as
+  durable identity.
+- Structured diagnostics MUST correlate, when applicable, `actionId`, attempt
+  number, authenticated `clientId`, `gameId`, `gameInstanceId`, session
+  generation, connection generation, and runtime generation. High-cardinality
+  values MUST remain structured log fields and MUST NOT become unbounded metric
+  labels. Process-local session counts are operational gauges, not durable
+  action or session truth.
+
+### ADR-027 proposed decision — destination selection and fencing
+
+- Resolution with an explicit non-null `gameInstanceId` MUST select only that
+  live instance and MUST NOT fall back to another instance.
+- Resolution with null `gameInstanceId` means “any eligible live instance for
+  this authenticated action client and game.” It MUST select by
+  `gameInstanceId` ascending, then by connection generation descending.
+  Registry uniqueness permits only one live entry per
+  `(gameId, gameInstanceId)`, so an equal instance-ID tie is impossible; if a
+  transient internal duplicate is observed, resolution MUST fail closed.
+- This ordering is deterministic routing, not load balancing. The selected
+  destination remains runtime- and connection-generation fenced through
+  `send`; disappearance or replacement after resolution MUST fail the send.
+
+### ADR-028 proposed decision — cross-generation receipt security
+
+- A receipt for an older durable attempt MAY be accepted only from the current
+  valid session generation when the durable attempt is bound to the same
+  authenticated client, game, and game instance. A receipt from a stale
+  session generation or another client/game instance MUST be rejected.
+- This exception tolerates reconnect/replacement without losing a valid
+  receipt for an action already locally enqueued. It is safe only because
+  `actionId` and attempt identifiers form a high-entropy, unguessable
+  correlation tuple; only the client that received the action is assumed to
+  possess that tuple; and current authenticated client/game-instance/session
+  binding is still checked. Duplicate valid receipts remain idempotent.
+- Correlation identifiers MUST NOT be exposed through public telemetry, logs,
+  errors, or other clients. Any future exposure, predictable identifier
+  generation, shared-instance credential model, weakened identity binding, or
+  multi-recipient delivery would invalidate this security assumption and MUST
+  trigger revision of ADR-028.
+- Results remain stricter: a result MUST satisfy the current-session and exact
+  durable action/attempt/client/game-instance bindings. The receipt exception
+  MUST NOT weaken result authorization.
+
 ## 6. Namespace and event contract
 
 Namespace: `/game`.
@@ -160,9 +226,10 @@ Authentication is per connection. Registration cannot replace it. The client
 may claim `gameId` and `instanceId`, but never `clientId`, role, runtime ID,
 session generation, or connection generation. Those are server-derived.
 
-Auth failures use `AUTH_REQUIRED`, `AUTH_INVALID`, `AUTH_EXPIRED`,
-`AUTH_REVOKED`, `AUTH_FORBIDDEN`, `QUERY_TOKEN_FORBIDDEN`, or
-`ORIGIN_FORBIDDEN`. Raw auth-core messages and tokens are not emitted.
+Auth failures use the normative ADR-025 mapping above. Missing-token and query
+credential detection occur in middleware before `authorizeSession`; middleware
+MUST NOT infer a missing token from generic `INVALID_CREDENTIAL`. Raw auth-core
+messages and tokens are not emitted.
 
 ## 8. Session identity model
 
@@ -234,8 +301,10 @@ destination; in-flight/received actions follow ADR-021 reconciliation.
 1. Select only a registered, authenticated, non-expired, live session matching
    `envelope.gameId`.
 2. If `envelope.gameInstanceId` is non-null, require that exact instance.
-3. Otherwise select deterministically by `gameInstanceId ASC`, then connection
-   generation DESC. Milestone 4 has no active-game switching.
+3. Otherwise invoke ADR-027's null-instance rule: choose any eligible live
+   instance for the authenticated action client and game by `gameInstanceId`
+   ascending, then connection generation descending. This is deterministic
+   routing, not load balancing.
 4. Return a transport-neutral destination extended during implementation with
    an opaque `destinationGeneration` string/number. Do not return a socket.
 5. Return `no_destination` when no eligible entry exists.
@@ -278,9 +347,11 @@ Server validation:
 For the first valid receipt, call `ActionGateway.markReceived` using the
 trusted server clock; client `receivedAt` is diagnostic only. Duplicate valid
 receipts return no mutation. A receipt from an older durable attempt is
-accepted only if it comes from the current session generation and that attempt
-was bound to the same instance: it still proves the action was locally
-enqueued. A stale socket/session generation is always rejected.
+accepted only under ADR-028's current-generation, authenticated
+client/game/instance binding and high-entropy correlation assumptions: it
+still proves the action was locally enqueued across replacement. A stale
+socket/session generation and a receipt from another client/game instance are
+always rejected. Duplicate receipt handling remains idempotent.
 
 ### Result
 
@@ -469,31 +540,41 @@ registry/auth sessions disappear
 → no automatic prior-runtime gameplay replay
 ```
 
-## 19. Test strategy
+## 19. Test strategy and acceptance matrix
 
-Real Socket.IO server/client tests are mandatory for handshake auth, origin and
-query rejection, registration, replacement, stale disconnect, namespace
-isolation, destination disappearance, actual emit, receipt/result flow,
-multiple independent clients, heartbeat timeout, and shutdown.
+Every row is a Milestone 4 acceptance obligation; none MAY be omitted because
+another row provides surrounding coverage.
 
-Deterministic registry/adapter fakes test generation fencing, ordering,
-capacity, rate limits, resolve/send races, and cleanup with injected clocks.
+| Required category | Required style | Failure property that MUST be proved |
+|---|---|---|
+| duplicate registration | real Socket.IO integration + registry unit | A socket cannot change identity or create a second registration; it receives `ALREADY_REGISTERED` with no registry mutation. |
+| duplicate receipt idempotency | repository integration + real Socket.IO integration | Repeating the same valid receipt causes at most one durable transition and does not corrupt retry state. |
+| duplicate result idempotency | repository integration + real Socket.IO integration | Repeating an identical terminal result performs no second mutation, while a conflicting result is rejected. |
+| stale-attempt receipt | repository integration + adapter integration | An older attempt receipt is accepted only under ADR-028's current-generation and exact identity binding. |
+| stale-attempt result | repository integration | A result with a non-authorized attempt cannot mutate durable truth; result authorization remains stricter than receipt tolerance. |
+| cross-client spoof rejection | multi-client race/concurrency + real Socket.IO integration | A client or game instance that did not receive the bound attempt cannot acknowledge or complete it. |
+| multiple game instances per client | real Socket.IO integration + registry unit | Up to the configured per-client bound remain independently addressable and explicit instance routing never falls back. |
+| capacity exhaustion | registry unit + real Socket.IO integration | Global, per-client, and per-instance limits fail closed without eviction or partial registration. |
+| registration-rate exhaustion | fake-clock + real Socket.IO integration | Excess registration attempts are rejected/disconnected at the exact configured boundary without registry mutation. |
+| invalid-message-rate exhaustion | fake-clock + real Socket.IO integration | Malformed/unknown-message limits disconnect at the exact boundary and do not mutate action state. |
+| receipt/result-rate exhaustion | fake-clock + real Socket.IO integration | Excess lifecycle messages are rate-limited before durable mutation. |
+| malformed payloads | real Socket.IO integration + adapter unit/integration | Strict schemas reject missing, extra, wrong-type, and unsupported-version fields before business logic. |
+| oversized payloads | real Socket.IO integration | Payloads above `maxHttpBufferSize` are rejected by transport and never reach durable mutation. |
+| destination disappears after resolve | adapter unit/integration + multi-client race/concurrency | Send revalidation returns `transport_error` and emits nothing when the resolved entry is removed. |
+| destination is replaced after resolve | adapter unit/integration + multi-client race/concurrency | The old generation cannot receive the action and the adapter does not silently retarget the send. |
+| real Socket.IO server/client integration | real Socket.IO integration | Handshake auth, origin/query rejection, registration, namespace isolation, replacement, delivery, receipt/result, heartbeat, reconnect, and shutdown work through the actual server/client stack. |
+| pure registry unit tests | registry unit | Register, replace, resolve, validate-current, heartbeat, remove-if-current, ordering, bounds, and cleanup obey generation fencing without Socket.IO. |
+| adapter tests | adapter unit/integration | Resolution ordering, send revalidation, backpressure, disappearance, replacement, and emit failure never mutate persistence. |
+| fake-clock tests | fake-clock | Registration deadlines, heartbeat expiry, rate windows, cleanup, retry/TTL interaction, and SDK cache expiry are exact and contain no wall-clock dependence. |
+| repository integration tests | repository integration with real SQLite | Commit precedes observed delivery; receipt stops retry; idempotency, TTL, and restart reconciliation preserve Milestone 3 truth. |
+| race/concurrency tests | multi-client race/concurrency | Simultaneous registration/replacement, disconnect, spoof attempts, and resolve/send changes have one deterministic fenced outcome. |
+| public contracts | declaration/public-contract | Shared schemas and server/SDK package-root APIs accept valid correlation fields and reject invalid versions, identities, codes, and handler signatures without leaking Socket.IO types. |
 
-Real SQLite integration tests combine Socket.IO with Milestone 3 to prove
-durable commit precedes observed client delivery, receipt stops retry, stale
-messages cannot mutate, TTL wins, and restart reconciliation is unchanged.
-
-SDK tests use fake sockets and clocks for validation, enqueue-before-receipt,
-handler concurrency, duplicate delivery, repeated receipt, cached result,
-queue/capacity limits, reconnect listener cleanup, and disposal.
-
+SDK fake-socket tests MUST additionally prove enqueue-before-receipt, handler
+concurrency, duplicate delivery without duplicate gameplay, repeated receipt,
+cached result, bounded queues/caches, reconnect listener cleanup, and disposal.
 Node worker threads remain required only for persistence races inherited from
-Milestone 3; the process-local registry is tested with independent real clients,
-not workers.
-
-Declaration tests cover all new shared schemas, server adapter/registry public
-types, and SDK package-root APIs, including negative version, identity, and
-handler signatures.
+Milestone 3; process-local registry concurrency uses independent real clients.
 
 ## 20. Public API and export boundary
 
@@ -553,14 +634,13 @@ No product-blocking question remains. Independent review must confirm:
    `GameRegisterMessage`.
 2. Addition of attempt/session-generation fields to lifecycle messages.
 3. The selected numeric bounds and heartbeat timing.
-4. Deterministic instance selection when the action envelope has null instance.
 
 Any requested change to these items returns to architecture review before
 implementation.
 
 ## 25. Final architecture verdict
 
-**MILESTONE_4_ARCHITECTURE_READY_FOR_INDEPENDENT_REVIEW**
+**MILESTONE_4_ARCHITECTURE_REMEDIATION_READY_FOR_RE_REVIEW**
 
 The current repository can implement this design without weakening Milestone
 3, adding durable session state, or making a hidden product decision.
