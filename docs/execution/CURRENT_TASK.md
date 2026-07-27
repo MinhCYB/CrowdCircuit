@@ -28,7 +28,7 @@ Milestone 3 covers deterministic `actionId` derivation, durable idempotency clai
 
 1. `docs/orchestration/plans/PHASE-C-MILESTONE-PLAN.md`
 2. `docs/orchestration/plans/PHASE-C-MILESTONE-03-DELEGATION-PLAN.md`
-3. `docs/orchestration/reviews/PHASE-C-MILESTONE-03-CODEX-CORE-INDEPENDENT-REVIEW-01.md`
+3. `docs/orchestration/reviews/PHASE-C-MILESTONE-03-CODEX-CORE-GEMINI-PRECOMMIT-AUDIT-01.md`
 4. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-03-CODEX-CORE-REMEDIATION-01.md`
 5. ADR-019 through ADR-024 in `docs/execution/DECISIONS.md`
 
