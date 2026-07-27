@@ -6,9 +6,14 @@ import type {
 } from "../events/envelope.js";
 import type { GameActionEnvelope } from "../actions/envelope.js";
 import type {
+  GameRegisterMessage,
+  GameRegisteredMessage,
+  GameHeartbeatMessage,
+  BaseGameActionDeliveryMessage,
   GameActionReceivedMessage,
   GameActionCompletedResult,
   GameActionFailedResult,
+  GameProtocolErrorMessage,
 } from "../actions/lifecycle.js";
 import type { VoiceIntent } from "../voice/intent.js";
 import type {
@@ -152,11 +157,57 @@ export const CANONICAL_GAME_ACTION_ENVELOPE = deepFreeze({
 } as const satisfies GameActionEnvelope<{ spawnCount: number }>);
 
 /**
+ * Immutable canonical fixture for game.register message.
+ */
+export const CANONICAL_GAME_REGISTER_MESSAGE = deepFreeze({
+  type: "game.register",
+  specVersion: "0.1",
+  gameId: "zombie-survival",
+  instanceId: "inst_canonical_001",
+  sdkVersion: "0.1.0",
+} as const satisfies GameRegisterMessage);
+
+/**
+ * Immutable canonical fixture for game.registered response message.
+ */
+export const CANONICAL_GAME_REGISTERED_MESSAGE = deepFreeze({
+  type: "game.registered",
+  specVersion: "0.1",
+  clientId: "client_canonical_001",
+  gameId: "zombie-survival",
+  gameInstanceId: "inst_canonical_001",
+  sessionGeneration: 1,
+  heartbeatIntervalMs: 10000,
+} as const satisfies GameRegisteredMessage);
+
+/**
+ * Immutable canonical fixture for game.heartbeat message.
+ */
+export const CANONICAL_GAME_HEARTBEAT_MESSAGE = deepFreeze({
+  type: "game.heartbeat",
+  specVersion: "0.1",
+} as const satisfies GameHeartbeatMessage);
+
+/**
+ * Immutable canonical fixture for game.action delivery message.
+ */
+export const CANONICAL_GAME_ACTION_DELIVERY_MESSAGE = deepFreeze({
+  type: "game.action",
+  specVersion: "0.1",
+  attemptNumber: 1,
+  sessionGeneration: 1,
+  data: CANONICAL_GAME_ACTION_ENVELOPE,
+} as const satisfies BaseGameActionDeliveryMessage);
+
+/**
  * Immutable canonical fixture for game.action.received receipt message.
  */
 export const CANONICAL_GAME_ACTION_RECEIVED_MESSAGE = deepFreeze({
   type: "game.action.received",
+  specVersion: "0.1",
   actionId: "act_canonical_001",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   receivedAt: "2026-07-23T12:00:04.100Z",
 } as const satisfies GameActionReceivedMessage);
 
@@ -165,7 +216,10 @@ export const CANONICAL_GAME_ACTION_RECEIVED_MESSAGE = deepFreeze({
  */
 export const CANONICAL_GAME_ACTION_COMPLETED_RESULT_MESSAGE = deepFreeze({
   type: "game.action.result",
+  specVersion: "0.1",
   actionId: "act_canonical_001",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   status: "completed",
   durationMs: 50,
   details: { spawned: 5 },
@@ -176,7 +230,10 @@ export const CANONICAL_GAME_ACTION_COMPLETED_RESULT_MESSAGE = deepFreeze({
  */
 export const CANONICAL_GAME_ACTION_FAILED_RESULT_MESSAGE = deepFreeze({
   type: "game.action.result",
+  specVersion: "0.1",
   actionId: "act_canonical_001",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   status: "failed",
   error: {
     code: "SPAWN_LIMIT_EXCEEDED",
@@ -184,6 +241,29 @@ export const CANONICAL_GAME_ACTION_FAILED_RESULT_MESSAGE = deepFreeze({
     retryable: false,
   },
 } as const satisfies GameActionFailedResult);
+
+/**
+ * Immutable canonical fixture for game.error protocol message with actionId.
+ */
+export const CANONICAL_GAME_PROTOCOL_ERROR_WITH_ACTION_ID = deepFreeze({
+  type: "game.error",
+  specVersion: "0.1",
+  code: "ACTION_NOT_ACCEPTING_RESULT",
+  retryable: false,
+  correlationId: "corr_canonical_001",
+  actionId: "act_canonical_001",
+} as const satisfies GameProtocolErrorMessage);
+
+/**
+ * Immutable canonical fixture for game.error protocol message without actionId.
+ */
+export const CANONICAL_GAME_PROTOCOL_ERROR_WITHOUT_ACTION_ID = deepFreeze({
+  type: "game.error",
+  specVersion: "0.1",
+  code: "AUTH_INVALID",
+  retryable: false,
+  correlationId: "corr_canonical_001",
+} as const satisfies GameProtocolErrorMessage);
 
 /**
  * Immutable canonical fixture for VoiceIntent.

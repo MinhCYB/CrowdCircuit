@@ -31,6 +31,8 @@ Recommended user commit checkpoint: accepted architecture and ADRs.
 
 Owner: Gemini, under a frozen prompt.
 
+Status: READY_FOR_INDEPENDENT_REVIEW.
+
 Exclusive files:
 
 - `packages/contracts/src/actions/**`

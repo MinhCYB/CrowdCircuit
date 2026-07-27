@@ -10,6 +10,10 @@ import {
   GameActionFailedResultSchema,
   GameActionResultMessageSchema,
   GameActionErrorSchema,
+  GameProtocolErrorCodeSchema,
+  GameProtocolErrorMessageSchema,
+  AttemptNumberSchema,
+  SessionGenerationSchema,
 } from "../src/index.js";
 
 describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
@@ -38,6 +42,96 @@ describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
     ttlMs: 10000,
     createdAt: "2026-07-23T04:00:00.000Z",
   };
+
+  describe("Numeric Correlation Primitives", () => {
+    it("validates attemptNumber as positive safe integer across complete matrix", () => {
+      expect(AttemptNumberSchema.parse(1)).toBe(1);
+      expect(AttemptNumberSchema.parse(100)).toBe(100);
+      expect(AttemptNumberSchema.parse(Number.MAX_SAFE_INTEGER)).toBe(Number.MAX_SAFE_INTEGER);
+
+      expect(() => AttemptNumberSchema.parse(Number.MAX_SAFE_INTEGER + 1)).toThrow();
+      expect(() => AttemptNumberSchema.parse(0)).toThrow();
+      expect(() => AttemptNumberSchema.parse(-1)).toThrow();
+      expect(() => AttemptNumberSchema.parse(1.5)).toThrow();
+      expect(() => AttemptNumberSchema.parse(Number.NaN)).toThrow();
+      expect(() => AttemptNumberSchema.parse(Number.POSITIVE_INFINITY)).toThrow();
+      expect(() => AttemptNumberSchema.parse(Number.NEGATIVE_INFINITY)).toThrow();
+      expect(() => AttemptNumberSchema.parse("1" as unknown as number)).toThrow();
+      expect(() => AttemptNumberSchema.parse(true as unknown as number)).toThrow();
+    });
+
+    it("validates sessionGeneration as non-negative safe integer across complete matrix", () => {
+      expect(SessionGenerationSchema.parse(0)).toBe(0);
+      expect(SessionGenerationSchema.parse(1)).toBe(1);
+      expect(SessionGenerationSchema.parse(42)).toBe(42);
+      expect(SessionGenerationSchema.parse(Number.MAX_SAFE_INTEGER)).toBe(Number.MAX_SAFE_INTEGER);
+
+      expect(() => SessionGenerationSchema.parse(Number.MAX_SAFE_INTEGER + 1)).toThrow();
+      expect(() => SessionGenerationSchema.parse(-1)).toThrow();
+      expect(() => SessionGenerationSchema.parse(0.5)).toThrow();
+      expect(() => SessionGenerationSchema.parse(Number.NaN)).toThrow();
+      expect(() => SessionGenerationSchema.parse(Number.POSITIVE_INFINITY)).toThrow();
+      expect(() => SessionGenerationSchema.parse(Number.NEGATIVE_INFINITY)).toThrow();
+      expect(() => SessionGenerationSchema.parse("0" as unknown as number)).toThrow();
+      expect(() => SessionGenerationSchema.parse(false as unknown as number)).toThrow();
+    });
+
+    it("validates heartbeatIntervalMs in GameRegisteredMessageSchema across complete matrix", () => {
+      const baseReg = {
+        type: "game.registered",
+        specVersion: "0.1",
+        clientId: "cli_100",
+        gameId: "zombie-survival",
+        gameInstanceId: "inst_999",
+        sessionGeneration: 1,
+      };
+
+      expect(
+        GameRegisteredMessageSchema.parse({
+          ...baseReg,
+          heartbeatIntervalMs: Number.MAX_SAFE_INTEGER,
+        }).heartbeatIntervalMs
+      ).toBe(Number.MAX_SAFE_INTEGER);
+
+      expect(() =>
+        GameRegisteredMessageSchema.parse({
+          ...baseReg,
+          heartbeatIntervalMs: Number.MAX_SAFE_INTEGER + 1,
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameRegisteredMessageSchema.parse({ ...baseReg, heartbeatIntervalMs: 0 })
+      ).toThrow();
+      expect(() =>
+        GameRegisteredMessageSchema.parse({ ...baseReg, heartbeatIntervalMs: -100 })
+      ).toThrow();
+      expect(() =>
+        GameRegisteredMessageSchema.parse({ ...baseReg, heartbeatIntervalMs: 100.5 })
+      ).toThrow();
+      expect(() =>
+        GameRegisteredMessageSchema.parse({ ...baseReg, heartbeatIntervalMs: Number.NaN })
+      ).toThrow();
+      expect(() =>
+        GameRegisteredMessageSchema.parse({
+          ...baseReg,
+          heartbeatIntervalMs: Number.POSITIVE_INFINITY,
+        })
+      ).toThrow();
+      expect(() =>
+        GameRegisteredMessageSchema.parse({
+          ...baseReg,
+          heartbeatIntervalMs: Number.NEGATIVE_INFINITY,
+        })
+      ).toThrow();
+      expect(() =>
+        GameRegisteredMessageSchema.parse({
+          ...baseReg,
+          heartbeatIntervalMs: "1000" as unknown as number,
+        })
+      ).toThrow();
+    });
+  });
 
   describe("GameActionEnvelopeSchema", () => {
     it("parses valid complete GameActionEnvelope", () => {
@@ -351,188 +445,168 @@ describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
   });
 
   describe("Registration, Registered, and Heartbeat Messages", () => {
-    it("parses valid game.register message", () => {
+    it("parses valid game.register message without token", () => {
       const msg = {
         type: "game.register",
+        specVersion: "0.1",
+        gameId: "zombie-survival",
+        instanceId: "inst_999",
+        sdkVersion: "0.1.0",
+      };
+      expect(GameRegisterMessageSchema.parse(msg)).toEqual(msg);
+    });
+
+    it("strictly rejects game.register message containing a token field", () => {
+      const msgWithToken = {
+        type: "game.register",
+        specVersion: "0.1",
         gameId: "zombie-survival",
         instanceId: "inst_999",
         sdkVersion: "0.1.0",
         token: "opaque-token-123",
       };
-      expect(GameRegisterMessageSchema.parse(msg)).toEqual(msg);
+      expect(() => GameRegisterMessageSchema.parse(msgWithToken)).toThrow();
     });
 
-    it("rejects game.register with empty string fields (gameId, instanceId, sdkVersion, token)", () => {
+    it("rejects game.register with empty string fields or missing specVersion", () => {
       expect(() =>
         GameRegisterMessageSchema.parse({
           type: "game.register",
+          specVersion: "0.1",
           gameId: "",
           instanceId: "inst",
           sdkVersion: "0.1",
-          token: "tok",
         })
       ).toThrow();
       expect(() =>
         GameRegisterMessageSchema.parse({
           type: "game.register",
+          specVersion: "0.1",
           gameId: "g",
           instanceId: "",
           sdkVersion: "0.1",
-          token: "tok",
         })
       ).toThrow();
       expect(() =>
         GameRegisterMessageSchema.parse({
           type: "game.register",
+          specVersion: "0.1",
           gameId: "g",
           instanceId: "inst",
           sdkVersion: "",
-          token: "tok",
         })
       ).toThrow();
       expect(() =>
         GameRegisterMessageSchema.parse({
           type: "game.register",
+          specVersion: "0.2",
           gameId: "g",
           instanceId: "inst",
           sdkVersion: "0.1",
-          token: "",
         })
       ).toThrow();
     });
 
-    it("rejects game.register with missing required fields or extra keys", () => {
-      expect(() =>
-        GameRegisterMessageSchema.parse({
-          type: "game.register",
-          gameId: "g",
-          instanceId: "inst",
-          sdkVersion: "0.1",
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameRegisterMessageSchema.parse({
-          type: "game.register",
-          gameId: "g",
-          instanceId: "inst",
-          sdkVersion: "0.1",
-          token: "tok",
-          extra: 1,
-        })
-      ).toThrow();
-    });
-
-    it("parses valid game.registered message", () => {
+    it("parses valid game.registered message with all required fields", () => {
       const msg = {
         type: "game.registered",
+        specVersion: "0.1",
+        clientId: "cli_100",
+        gameId: "zombie-survival",
+        gameInstanceId: "inst_999",
+        sessionGeneration: 1,
         heartbeatIntervalMs: 5000,
       };
       expect(GameRegisteredMessageSchema.parse(msg)).toEqual(msg);
     });
 
-    it("rejects invalid heartbeatIntervalMs (zero, negative, fractional, NaN, positive infinity, negative infinity)", () => {
+    it("rejects game.registered with missing fields, negative sessionGeneration, or invalid heartbeatIntervalMs", () => {
       expect(() =>
         GameRegisteredMessageSchema.parse({
           type: "game.registered",
+          specVersion: "0.1",
+          clientId: "cli_100",
+          gameId: "zombie-survival",
+          gameInstanceId: "inst_999",
+          sessionGeneration: -1,
+          heartbeatIntervalMs: 5000,
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameRegisteredMessageSchema.parse({
+          type: "game.registered",
+          specVersion: "0.1",
+          clientId: "cli_100",
+          gameId: "zombie-survival",
+          gameInstanceId: "inst_999",
+          sessionGeneration: 1,
           heartbeatIntervalMs: 0,
         })
       ).toThrow();
-      expect(() =>
-        GameRegisteredMessageSchema.parse({
-          type: "game.registered",
-          heartbeatIntervalMs: -1000,
-        })
-      ).toThrow();
-      expect(() =>
-        GameRegisteredMessageSchema.parse({
-          type: "game.registered",
-          heartbeatIntervalMs: 5000.5,
-        })
-      ).toThrow();
-      expect(() =>
-        GameRegisteredMessageSchema.parse({
-          type: "game.registered",
-          heartbeatIntervalMs: Number.NaN,
-        })
-      ).toThrow();
-      expect(() =>
-        GameRegisteredMessageSchema.parse({
-          type: "game.registered",
-          heartbeatIntervalMs: Number.POSITIVE_INFINITY,
-        })
-      ).toThrow();
-      expect(() =>
-        GameRegisteredMessageSchema.parse({
-          type: "game.registered",
-          heartbeatIntervalMs: Number.NEGATIVE_INFINITY,
-        })
-      ).toThrow();
     });
 
-    it("rejects game.registered with missing fields or extra keys", () => {
-      expect(() =>
-        GameRegisteredMessageSchema.parse({
-          type: "game.registered",
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameRegisteredMessageSchema.parse({
-          type: "game.registered",
-          heartbeatIntervalMs: 5000,
-          extra: 1,
-        })
-      ).toThrow();
-    });
-
-    it("parses valid minimal game.heartbeat message", () => {
-      const msg = { type: "game.heartbeat" };
+    it("parses valid minimal game.heartbeat message with specVersion", () => {
+      const msg = { type: "game.heartbeat", specVersion: "0.1" };
       expect(GameHeartbeatMessageSchema.parse(msg)).toEqual(msg);
     });
 
-    it("rejects missing fields, extra keys, or wrong type on game.heartbeat", () => {
+    it("rejects missing specVersion, extra keys, or wrong type on game.heartbeat", () => {
       expect(() => GameHeartbeatMessageSchema.parse({})).toThrow();
       expect(() =>
         GameHeartbeatMessageSchema.parse({
           type: "game.heartbeat",
+          specVersion: "0.1",
           timestamp: 12345,
         })
       ).toThrow();
       expect(() =>
         GameHeartbeatMessageSchema.parse({
           type: "game.ping",
+          specVersion: "0.1",
         })
       ).toThrow();
     });
   });
 
   describe("Action Delivery and Receipt Messages", () => {
-    it("parses valid game.action delivery message", () => {
+    it("parses valid game.action delivery message with attemptNumber and sessionGeneration", () => {
       const delivery = {
         type: "game.action",
+        specVersion: "0.1",
+        attemptNumber: 1,
+        sessionGeneration: 1,
         data: validEnvelope,
       };
       expect(GameActionDeliveryMessageSchema.parse(delivery)).toEqual(delivery);
     });
 
-    it("rejects game.action with missing fields, extra keys, or invalid data", () => {
+    it("rejects game.action with missing attemptNumber/sessionGeneration or non-positive attemptNumber", () => {
       expect(() =>
         GameActionDeliveryMessageSchema.parse({
           type: "game.action",
-        })
-      ).toThrow();
-      expect(() =>
-        GameActionDeliveryMessageSchema.parse({
-          type: "game.action",
-          data: { ...validEnvelope, actionId: "" },
-        })
-      ).toThrow();
-      expect(() =>
-        GameActionDeliveryMessageSchema.parse({
-          type: "game.action",
+          specVersion: "0.1",
+          attemptNumber: 0,
+          sessionGeneration: 1,
           data: validEnvelope,
-          extraKey: 1,
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameActionDeliveryMessageSchema.parse({
+          type: "game.action",
+          specVersion: "0.1",
+          attemptNumber: 1,
+          sessionGeneration: -1,
+          data: validEnvelope,
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameActionDeliveryMessageSchema.parse({
+          type: "game.action",
+          specVersion: "0.1",
+          data: validEnvelope,
         })
       ).toThrow();
     });
@@ -540,17 +614,23 @@ describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
     it("parses valid game.action.received receipt message", () => {
       const receipt = {
         type: "game.action.received",
+        specVersion: "0.1",
         actionId: "act_101",
+        attemptNumber: 1,
+        sessionGeneration: 1,
         receivedAt: "2026-07-23T04:00:00.250Z",
       };
       expect(GameActionReceivedMessageSchema.parse(receipt)).toEqual(receipt);
     });
 
-    it("rejects receipt with empty actionId, missing fields, or extra keys", () => {
+    it("rejects receipt with missing correlation fields, zero attemptNumber, or extra keys", () => {
       expect(() =>
         GameActionReceivedMessageSchema.parse({
           type: "game.action.received",
-          actionId: "",
+          specVersion: "0.1",
+          actionId: "act_101",
+          attemptNumber: 0,
+          sessionGeneration: 1,
           receivedAt: "2026-07-23T04:00:00.250Z",
         })
       ).toThrow();
@@ -558,264 +638,63 @@ describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
       expect(() =>
         GameActionReceivedMessageSchema.parse({
           type: "game.action.received",
-          actionId: "act_101",
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameActionReceivedMessageSchema.parse({
-          type: "game.action.received",
+          specVersion: "0.1",
           actionId: "act_101",
           receivedAt: "2026-07-23T04:00:00.250Z",
-          extraKey: "bad",
-        })
-      ).toThrow();
-    });
-
-    it("rejects receipt containing completion/result fields or invalid timestamp", () => {
-      expect(() =>
-        GameActionReceivedMessageSchema.parse({
-          type: "game.action.received",
-          actionId: "act_101",
-          receivedAt: "2026-07-23T04:00:00.250Z",
-          status: "completed", // Result field not allowed on receipt!
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameActionReceivedMessageSchema.parse({
-          type: "game.action.received",
-          actionId: "act_101",
-          receivedAt: "invalid-iso",
         })
       ).toThrow();
     });
   });
 
   describe("Action Result Union (completed / failed)", () => {
-    it("parses valid completed result with zero or positive durationMs and optional details", () => {
-      const zeroDuration = {
+    it("parses valid completed result with specVersion, attemptNumber, sessionGeneration", () => {
+      const completed = {
         type: "game.action.result",
+        specVersion: "0.1",
         actionId: "act_101",
+        attemptNumber: 1,
+        sessionGeneration: 1,
         status: "completed",
-        durationMs: 0,
+        durationMs: 150,
+        details: { spawnedEntities: 5 },
       };
-      expect(GameActionCompletedResultSchema.parse(zeroDuration)).toEqual(
-        zeroDuration
-      );
-
-      const withDetails = {
-        type: "game.action.result",
-        actionId: "act_101",
-        status: "completed",
-        durationMs: 1450,
-        details: { spawnedEntities: 5, wave: 2 },
-      };
-      expect(GameActionCompletedResultSchema.parse(withDetails)).toEqual(
-        withDetails
-      );
+      expect(GameActionCompletedResultSchema.parse(completed)).toEqual(completed);
     });
 
-    it("rejects empty actionId on completed result", () => {
-      expect(() =>
-        GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "",
-          status: "completed",
-          durationMs: 100,
-        })
-      ).toThrow();
-    });
-
-    it("rejects invalid durationMs on completed result (negative, fractional, NaN, positive infinity, negative infinity)", () => {
-      expect(() =>
-        GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: -50,
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 120.5,
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: Number.NaN,
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: Number.POSITIVE_INFINITY,
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: Number.NEGATIVE_INFINITY,
-        })
-      ).toThrow();
-    });
-
-    it("rejects completed result with missing fields or extra keys", () => {
-      expect(() =>
-        GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          status: "completed",
-          durationMs: 100,
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
-          extraKey: 123,
-        })
-      ).toThrow();
-    });
-
-    it("rejects completed result containing failed-only fields (error)", () => {
-      expect(() =>
-        GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
-          error: { code: "ERR", message: "fail", retryable: false },
-        })
-      ).toThrow();
-    });
-
-    it("parses valid failed result with complete error object", () => {
+    it("parses valid failed result with specVersion, attemptNumber, sessionGeneration", () => {
       const failed = {
         type: "game.action.result",
+        specVersion: "0.1",
         actionId: "act_101",
+        attemptNumber: 1,
+        sessionGeneration: 1,
         status: "failed",
         error: {
           code: "ENTITY_CAP_REACHED",
-          message: "Maximum zombies spawned for active wave",
+          message: "Maximum zombies spawned",
           retryable: false,
         },
       };
       expect(GameActionFailedResultSchema.parse(failed)).toEqual(failed);
     });
 
-    it("rejects empty actionId on failed result", () => {
-      expect(() =>
-        GameActionFailedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "",
-          status: "failed",
-          error: { code: "ERR", message: "msg", retryable: false },
-        })
-      ).toThrow();
-    });
-
-    it("rejects failed result with invalid error object, empty strings, missing fields, or extra keys", () => {
-      expect(() =>
-        GameActionFailedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "failed",
-          error: { code: "", message: "msg", retryable: false },
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameActionFailedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "failed",
-          error: { code: "ERR", message: "", retryable: false },
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameActionFailedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "failed",
-          error: { code: "ERR", message: "msg", retryable: "no" as unknown as boolean },
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameActionFailedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "failed",
-        })
-      ).toThrow();
-
-      expect(() =>
-        GameActionFailedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "failed",
-          error: { code: "ERR", message: "msg", retryable: false },
-          extraKey: 1,
-        })
-      ).toThrow();
-    });
-
-    it("rejects GameActionErrorSchema with missing fields or extra keys", () => {
-      expect(() =>
-        GameActionErrorSchema.parse({ code: "ERR", message: "msg" })
-      ).toThrow();
-
-      expect(() =>
-        GameActionErrorSchema.parse({
-          code: "ERR",
-          message: "msg",
-          retryable: false,
-          extraKey: 1,
-        })
-      ).toThrow();
-    });
-
-    it("rejects failed result containing completed-only fields (durationMs)", () => {
-      expect(() =>
-        GameActionFailedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "failed",
-          durationMs: 100,
-          error: { code: "ERR", message: "msg", retryable: false },
-        })
-      ).toThrow();
-    });
-
     it("parses and discriminates result union correctly", () => {
       const completedInput = {
         type: "game.action.result",
+        specVersion: "0.1",
         actionId: "act_101",
+        attemptNumber: 1,
+        sessionGeneration: 1,
         status: "completed",
         durationMs: 250,
       };
 
       const failedInput = {
         type: "game.action.result",
+        specVersion: "0.1",
         actionId: "act_102",
+        attemptNumber: 1,
+        sessionGeneration: 1,
         status: "failed",
         error: { code: "TIMEOUT", message: "Action timed out", retryable: true },
       };
@@ -841,119 +720,99 @@ describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
       expect(() =>
         GameActionResultMessageSchema.parse({
           type: "game.action.result",
+          specVersion: "0.1",
           actionId: "act_101",
+          attemptNumber: 1,
+          sessionGeneration: 1,
           status: "pending",
         })
       ).toThrow();
     });
 
     it("rejects non-JSON details on completed result (undefined, BigInt, Symbol, function, Date, Map, Set, NaN, Infinities, Class)", () => {
+      const baseResult = {
+        type: "game.action.result",
+        specVersion: "0.1",
+        actionId: "act_101",
+        attemptNumber: 1,
+        sessionGeneration: 1,
+        status: "completed",
+        durationMs: 100,
+      };
+
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
+          ...baseResult,
           details: { bad: undefined },
         })
       ).toThrow();
 
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
+          ...baseResult,
           details: { bad: [undefined] },
         })
       ).toThrow();
 
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
+          ...baseResult,
           details: { bad: BigInt(10) },
         })
       ).toThrow();
 
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
+          ...baseResult,
           details: { bad: Symbol("test") },
         })
       ).toThrow();
 
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
+          ...baseResult,
           details: { bad: () => 123 },
         })
       ).toThrow();
 
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
+          ...baseResult,
           details: { bad: new Date() },
         })
       ).toThrow();
 
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
+          ...baseResult,
           details: { bad: new Map() },
         })
       ).toThrow();
 
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
+          ...baseResult,
           details: { bad: new Set() },
         })
       ).toThrow();
 
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
+          ...baseResult,
           details: { bad: Number.NaN },
         })
       ).toThrow();
 
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
+          ...baseResult,
           details: { bad: Number.POSITIVE_INFINITY },
         })
       ).toThrow();
 
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          type: "game.action.result",
-          actionId: "act_101",
-          status: "completed",
-          durationMs: 100,
+          ...baseResult,
           details: { bad: Number.NEGATIVE_INFINITY },
         })
       ).toThrow();
@@ -961,8 +820,187 @@ describe("FOUND-02D GameActionEnvelope and Action Lifecycle Schemas", () => {
       class CustomClass {}
       expect(() =>
         GameActionCompletedResultSchema.parse({
-          ...validEnvelope,
+          ...baseResult,
           details: { bad: new CustomClass() },
+        })
+      ).toThrow();
+    });
+
+    it("rejects result messages missing attemptNumber or sessionGeneration", () => {
+      expect(() =>
+        GameActionResultMessageSchema.parse({
+          type: "game.action.result",
+          specVersion: "0.1",
+          actionId: "act_101",
+          status: "completed",
+          durationMs: 100,
+        })
+      ).toThrow();
+    });
+  });
+
+  describe("Stable Wire Protocol Error Messages (game.error)", () => {
+    const acceptedCodes = [
+      "AUTH_REQUIRED",
+      "AUTH_INVALID",
+      "AUTH_EXPIRED",
+      "AUTH_REVOKED",
+      "AUTH_FORBIDDEN",
+      "QUERY_TOKEN_FORBIDDEN",
+      "ORIGIN_FORBIDDEN",
+      "REGISTRATION_REQUIRED",
+      "REGISTRATION_TIMEOUT",
+      "INVALID_REGISTRATION",
+      "UNSUPPORTED_PROTOCOL",
+      "UNSUPPORTED_SDK",
+      "GAME_NOT_FOUND",
+      "ALREADY_REGISTERED",
+      "INSTANCE_OWNED_BY_OTHER_CLIENT",
+      "SESSION_CAPACITY",
+      "INVALID_MESSAGE",
+      "RATE_LIMITED",
+      "SESSION_STALE",
+      "SESSION_REPLACED",
+      "ACTION_NOT_FOUND",
+      "ACTION_BINDING_MISMATCH",
+      "ATTEMPT_NOT_FOUND",
+      "ACTION_NOT_ACCEPTING_RECEIPT",
+      "ACTION_NOT_ACCEPTING_RESULT",
+      "RESULT_CONFLICT",
+      "INTERNAL_ERROR",
+    ] as const;
+
+    it("validates GameActionErrorSchema strict shape", () => {
+      const err = { code: "ERR", message: "msg", retryable: false };
+      expect(GameActionErrorSchema.parse(err)).toEqual(err);
+      expect(() => GameActionErrorSchema.parse({ code: "ERR" })).toThrow();
+    });
+
+    it("parses every accepted protocol error code in GameProtocolErrorCodeSchema", () => {
+      for (const code of acceptedCodes) {
+        expect(GameProtocolErrorCodeSchema.parse(code)).toBe(code);
+      }
+      expect(acceptedCodes).toHaveLength(27);
+    });
+
+    it("parses valid game.error message with actionId", () => {
+      const err = {
+        type: "game.error",
+        specVersion: "0.1",
+        code: "ACTION_NOT_ACCEPTING_RESULT",
+        retryable: false,
+        correlationId: "corr_123",
+        actionId: "act_101",
+      };
+      expect(GameProtocolErrorMessageSchema.parse(err)).toEqual(err);
+    });
+
+    it("parses valid game.error message without actionId", () => {
+      const err = {
+        type: "game.error",
+        specVersion: "0.1",
+        code: "AUTH_INVALID",
+        retryable: false,
+        correlationId: "corr_456",
+      };
+      expect(GameProtocolErrorMessageSchema.parse(err)).toEqual(err);
+    });
+
+    it("rejects unknown error codes or forbidden raw fields (stack, message, token, rawError, details, socketId)", () => {
+      expect(() =>
+        GameProtocolErrorMessageSchema.parse({
+          type: "game.error",
+          specVersion: "0.1",
+          code: "UNKNOWN_ERR_CODE",
+          retryable: false,
+          correlationId: "corr_1",
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameProtocolErrorMessageSchema.parse({
+          type: "game.error",
+          specVersion: "0.1",
+          code: "INTERNAL_ERROR",
+          retryable: false,
+          correlationId: "corr_1",
+          stack: "Error: raw stack trace",
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameProtocolErrorMessageSchema.parse({
+          type: "game.error",
+          specVersion: "0.1",
+          code: "AUTH_INVALID",
+          retryable: false,
+          correlationId: "corr_1",
+          token: "secret",
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameProtocolErrorMessageSchema.parse({
+          type: "game.error",
+          specVersion: "0.1",
+          code: "AUTH_INVALID",
+          retryable: false,
+          correlationId: "corr_1",
+          message: "raw error message",
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameProtocolErrorMessageSchema.parse({
+          type: "game.error",
+          specVersion: "0.1",
+          code: "AUTH_INVALID",
+          retryable: false,
+          correlationId: "corr_1",
+          details: { secret: true },
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameProtocolErrorMessageSchema.parse({
+          type: "game.error",
+          specVersion: "0.1",
+          code: "AUTH_INVALID",
+          retryable: false,
+          correlationId: "corr_1",
+          socketId: "soc_123",
+        })
+      ).toThrow();
+    });
+
+    it("rejects game.error with empty or missing correlationId/actionId", () => {
+      expect(() =>
+        GameProtocolErrorMessageSchema.parse({
+          type: "game.error",
+          specVersion: "0.1",
+          code: "AUTH_INVALID",
+          retryable: false,
+          correlationId: "",
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameProtocolErrorMessageSchema.parse({
+          type: "game.error",
+          specVersion: "0.1",
+          code: "AUTH_INVALID",
+          retryable: false,
+        })
+      ).toThrow();
+
+      expect(() =>
+        GameProtocolErrorMessageSchema.parse({
+          type: "game.error",
+          specVersion: "0.1",
+          code: "AUTH_INVALID",
+          retryable: false,
+          correlationId: "corr_1",
+          actionId: "",
         })
       ).toThrow();
     });

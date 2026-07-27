@@ -9,6 +9,7 @@ export * from "./persistence/index.js";
 export * from "./delivery/port.js";
 export * from "./delivery/action-id.js";
 export * from "./delivery/gateway.js";
+export * from "./game/index.js";
 export { createAuthRuntime, type AuthRuntime } from "./auth/index.js";
 
 const HOST = process.env["HOST"] ?? "127.0.0.1";

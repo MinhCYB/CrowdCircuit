@@ -328,7 +328,7 @@ idempotency, retry/TTL, reconciliation, failure isolation, and artifacts.
 **Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
 **Final Architecture Fix Verification:** APPROVE
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** Ready to begin `Slice 1 — Shared contracts and additive scaffolding`
+**Implementation status:** IN_PROGRESS (Slice 1: READY_FOR_INDEPENDENT_REVIEW)
 **Primary owner:** CODEX  
 **Roadmap:** `BE-07A`–`BE-07D`, `BE-08A`–`BE-08C`
 

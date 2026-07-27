@@ -6,9 +6,15 @@ import {
   CANONICAL_ENGAGEMENT_LIKE_EVENT,
   CANONICAL_SOCIAL_FOLLOW_EVENT,
   CANONICAL_GAME_ACTION_ENVELOPE,
+  CANONICAL_GAME_REGISTER_MESSAGE,
+  CANONICAL_GAME_REGISTERED_MESSAGE,
+  CANONICAL_GAME_HEARTBEAT_MESSAGE,
+  CANONICAL_GAME_ACTION_DELIVERY_MESSAGE,
   CANONICAL_GAME_ACTION_RECEIVED_MESSAGE,
   CANONICAL_GAME_ACTION_COMPLETED_RESULT_MESSAGE,
   CANONICAL_GAME_ACTION_FAILED_RESULT_MESSAGE,
+  CANONICAL_GAME_PROTOCOL_ERROR_WITH_ACTION_ID,
+  CANONICAL_GAME_PROTOCOL_ERROR_WITHOUT_ACTION_ID,
   CANONICAL_VOICE_INTENT,
   CANONICAL_VOICE_PLAY_MESSAGE,
   CANONICAL_VOICE_PLAYBACK_STARTED_MESSAGE,
@@ -22,8 +28,13 @@ import {
   SocialFollowEventSchema,
   LiveEventEnvelopeSchema,
   GameActionEnvelopeSchema,
+  GameRegisterMessageSchema,
+  GameRegisteredMessageSchema,
+  GameHeartbeatMessageSchema,
+  GameActionDeliveryMessageSchema,
   GameActionReceivedMessageSchema,
   GameActionResultMessageSchema,
+  GameProtocolErrorMessageSchema,
   VoiceIntentSchema,
   VoicePlayMessageSchema,
   VoicePlaybackStartedMessageSchema,
@@ -79,6 +90,30 @@ describe("FOUND-02F Canonical Fixtures and Cross-Contract Integration", () => {
       expect(parsed).toEqual(CANONICAL_GAME_ACTION_ENVELOPE);
     });
 
+    it("parses CANONICAL_GAME_REGISTER_MESSAGE with GameRegisterMessageSchema", () => {
+      const parsed = GameRegisterMessageSchema.parse(CANONICAL_GAME_REGISTER_MESSAGE);
+      expect(parsed.type).toBe("game.register");
+      expect(parsed).toEqual(CANONICAL_GAME_REGISTER_MESSAGE);
+    });
+
+    it("parses CANONICAL_GAME_REGISTERED_MESSAGE with GameRegisteredMessageSchema", () => {
+      const parsed = GameRegisteredMessageSchema.parse(CANONICAL_GAME_REGISTERED_MESSAGE);
+      expect(parsed.type).toBe("game.registered");
+      expect(parsed).toEqual(CANONICAL_GAME_REGISTERED_MESSAGE);
+    });
+
+    it("parses CANONICAL_GAME_HEARTBEAT_MESSAGE with GameHeartbeatMessageSchema", () => {
+      const parsed = GameHeartbeatMessageSchema.parse(CANONICAL_GAME_HEARTBEAT_MESSAGE);
+      expect(parsed.type).toBe("game.heartbeat");
+      expect(parsed).toEqual(CANONICAL_GAME_HEARTBEAT_MESSAGE);
+    });
+
+    it("parses CANONICAL_GAME_ACTION_DELIVERY_MESSAGE with GameActionDeliveryMessageSchema", () => {
+      const parsed = GameActionDeliveryMessageSchema.parse(CANONICAL_GAME_ACTION_DELIVERY_MESSAGE);
+      expect(parsed.type).toBe("game.action");
+      expect(parsed).toEqual(CANONICAL_GAME_ACTION_DELIVERY_MESSAGE);
+    });
+
     it("parses CANONICAL_GAME_ACTION_RECEIVED_MESSAGE with GameActionReceivedMessageSchema", () => {
       const parsed = GameActionReceivedMessageSchema.parse(CANONICAL_GAME_ACTION_RECEIVED_MESSAGE);
       expect(parsed.type).toBe("game.action.received");
@@ -95,6 +130,18 @@ describe("FOUND-02F Canonical Fixtures and Cross-Contract Integration", () => {
 
       expect(parsedCompleted.status).toBe("completed");
       expect(parsedFailed.status).toBe("failed");
+    });
+
+    it("parses CANONICAL_GAME_PROTOCOL_ERROR_WITH_ACTION_ID and CANONICAL_GAME_PROTOCOL_ERROR_WITHOUT_ACTION_ID", () => {
+      const parsedWithActionId = GameProtocolErrorMessageSchema.parse(
+        CANONICAL_GAME_PROTOCOL_ERROR_WITH_ACTION_ID
+      );
+      const parsedWithoutActionId = GameProtocolErrorMessageSchema.parse(
+        CANONICAL_GAME_PROTOCOL_ERROR_WITHOUT_ACTION_ID
+      );
+
+      expect(parsedWithActionId.code).toBe("ACTION_NOT_ACCEPTING_RESULT");
+      expect(parsedWithoutActionId.code).toBe("AUTH_INVALID");
     });
 
     it("parses CANONICAL_VOICE_INTENT with VoiceIntentSchema", () => {
@@ -468,7 +515,10 @@ describe("FOUND-02F Canonical Fixtures and Cross-Contract Integration", () => {
       expect(() =>
         GameActionResultMessageSchema.parse({
           type: "game.action.result",
+          specVersion: "0.1",
           actionId: "act_1",
+          attemptNumber: 1,
+          sessionGeneration: 1,
           status: "completed",
           durationMs: 50,
           details: { bad: Symbol("test") as unknown as string },

@@ -12,10 +12,13 @@
     }
   },
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "test:declarations": "tsc -p test/tsconfig.declarations.json"
   },
   "devDependencies": {
     "@crowdcircuit/contracts": "workspace:*"
   },
-  "files": ["dist"]
+  "files": [
+    "dist"
+  ]
 }

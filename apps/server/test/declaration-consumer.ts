@@ -7,15 +7,25 @@ import {
   SqliteDurableActionRepository,
   type ActionDeliveryOutcome,
   type ActionDeliveryPort,
+  type AuthenticatedClientIdentity,
   type BudgetAdmissionSnapshot,
   type CreateDurableAction,
   type DeliveryDestination,
   type DeliveryResolution,
+  type DestinationGeneration,
   type DurableActionRecord,
   type DurableActionRepository,
   type DurableActionStatus,
+  type GameRegistrationInput,
+  type GameRegistrationOutcome,
+  type GameSessionIdentity,
+  type GameSessionLifecyclePort,
+  type GameSessionRegistryReadPort,
   type PreparedActionDelivery,
+  type RegisteredGameSessionSnapshot,
   type SendAuthorization,
+  type SessionLookupQuery,
+  type SessionLookupResult,
 } from "@crowdcircuit/server";
 import type {
   BudgetAdmissionRequest,
@@ -157,9 +167,11 @@ const nonJsonSnapshot: BudgetAdmissionSnapshot = {
 
 // Transport Port declaration assertions
 declare const envelope: GameActionEnvelope;
+const genFence: DestinationGeneration = "gen-1";
 const validDestination: DeliveryDestination = {
   clientId: "g",
   gameInstanceId: "inst-1",
+  destinationGeneration: genFence,
 };
 
 const preparedDelivery: PreparedActionDelivery = {
@@ -195,6 +207,63 @@ declare const port: ActionDeliveryPort;
 port.resolveDestination(envelope);
 port.send(preparedDelivery);
 
+// Game Session Registry & Lifecycle Port assertions
+const clientIdent: AuthenticatedClientIdentity = {
+  clientId: "client-1",
+  authenticatedAt: 1000,
+};
+
+const sessionIdent: GameSessionIdentity = {
+  clientId: "client-1",
+  gameId: "zombie-survival",
+  gameInstanceId: "inst-1",
+};
+
+const regInput: GameRegistrationInput = {
+  gameId: "zombie-survival",
+  instanceId: "inst-1",
+  sdkVersion: "0.1.0",
+};
+
+const regOutcome: GameRegistrationOutcome = {
+  status: "registered",
+  sessionGeneration: 1,
+  heartbeatIntervalMs: 10000,
+};
+
+const sessionSnap: RegisteredGameSessionSnapshot = {
+  clientId: "client-1",
+  gameId: "zombie-survival",
+  gameInstanceId: "inst-1",
+  serverRuntimeGeneration: "srv-gen-1",
+  connectionGeneration: 1,
+  registeredAt: 1000,
+  lastHeartbeatAt: 1000,
+  sdkVersion: "0.1.0",
+};
+
+const lookupQuery: SessionLookupQuery = {
+  clientId: "client-1",
+  gameId: "zombie-survival",
+  gameInstanceId: "inst-1",
+};
+
+const lookupRes: SessionLookupResult = {
+  status: "found",
+  session: sessionSnap,
+};
+
+declare const registryReadPort: GameSessionRegistryReadPort;
+declare const registryLifecyclePort: GameSessionLifecyclePort;
+
+void registryReadPort.getSession("client-1", "zombie-survival", "inst-1");
+void registryReadPort.listSessionsForClient("client-1");
+void registryReadPort.getActiveSessionCount();
+void registryReadPort.lookupDestination(lookupQuery);
+void registryLifecyclePort.registerSession(clientIdent, regInput);
+void registryLifecyclePort.recordHeartbeat(sessionIdent, 1);
+void registryLifecyclePort.removeIfCurrent(sessionIdent, 1, "test");
+
 // @ts-expect-error FakeActionDeliveryPort is not exported from production package surfaces
 import { FakeActionDeliveryPort } from "@crowdcircuit/server";
 
@@ -219,3 +288,10 @@ void outcomeSent;
 void invalidOutcome;
 void socketIoOutcome;
 void FakeActionDeliveryPort;
+void clientIdent;
+void sessionIdent;
+void regInput;
+void regOutcome;
+void sessionSnap;
+void lookupQuery;
+void lookupRes;

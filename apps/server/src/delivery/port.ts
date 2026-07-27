@@ -1,8 +1,11 @@
 import type { GameActionEnvelope } from "@crowdcircuit/contracts";
 
+export type DestinationGeneration = string;
+
 export interface DeliveryDestination {
   readonly clientId: string;
   readonly gameInstanceId: string | null;
+  readonly destinationGeneration: DestinationGeneration;
 }
 
 export type DeliveryResolution =

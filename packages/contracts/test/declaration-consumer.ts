@@ -62,6 +62,7 @@ import {
   type GameRegisterMessage,
   type GameRegisteredMessage,
   type GameHeartbeatMessage,
+  type BaseGameActionDeliveryMessage,
   type GameActionDeliveryMessage,
   type GameActionMessage,
   type GameActionReceivedMessage,
@@ -70,6 +71,10 @@ import {
   type GameActionResultMessage,
   type GameActionResult,
   type GameActionError,
+  type GameProtocolErrorCode,
+  type GameProtocolErrorMessage,
+  type ClientToServerEvents,
+  type ServerToClientEvents,
   type VoiceIntent,
   type VoiceIntentKind,
   type VoiceIntentVariables,
@@ -897,52 +902,80 @@ const actionNullActorAvatarUrl: GameActionEnvelope = {
 // 19. Registration, Registered, and Heartbeat declaration types
 const regMsg: GameRegisterMessage = {
   type: "game.register",
+  specVersion: "0.1",
   gameId: "zombie-survival",
   instanceId: "inst_1",
   sdkVersion: "0.1",
+};
+
+const regMsgWithToken: GameRegisterMessage = {
+  type: "game.register",
+  specVersion: "0.1",
+  gameId: "zombie-survival",
+  instanceId: "inst_1",
+  sdkVersion: "0.1",
+  // @ts-expect-error - token is removed from GameRegisterMessage
   token: "secret",
 };
 
 const regResp: GameRegisteredMessage = {
   type: "game.registered",
+  specVersion: "0.1",
+  clientId: "client_1",
+  gameId: "zombie-survival",
+  gameInstanceId: "inst_1",
+  sessionGeneration: 1,
   heartbeatIntervalMs: 5000,
 };
 
 const hbMsg: GameHeartbeatMessage = {
   type: "game.heartbeat",
+  specVersion: "0.1",
 };
 
 const invalidRegType: GameRegisterMessage = {
   // @ts-expect-error - Wrong type discriminator rejected
   type: "game.registered",
+  specVersion: "0.1",
   gameId: "zombie",
   instanceId: "inst",
   sdkVersion: "0.1",
-  token: "tok",
 };
 
 // 20. Action delivery wrapper declaration types
 const deliveryMsg: GameActionDeliveryMessage<{ spawnCount: number }> = {
   type: "game.action",
+  specVersion: "0.1",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   data: validActionEnvelope,
 };
 
 const invalidDeliveryType: GameActionDeliveryMessage = {
   // @ts-expect-error - Wrong delivery wrapper discriminator rejected
   type: "game.action.received",
+  specVersion: "0.1",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   data: validActionEnvelope,
 };
 
 // 21. Action receipt declaration types
 const receiptMsg: GameActionReceivedMessage = {
   type: "game.action.received",
+  specVersion: "0.1",
   actionId: "act_001",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   receivedAt: "2026-07-23T04:00:00.250Z",
 };
 
 const invalidReceiptWithResultFields: GameActionReceivedMessage = {
   type: "game.action.received",
+  specVersion: "0.1",
   actionId: "act_001",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   receivedAt: "2026-07-23T04:00:00.250Z",
   // @ts-expect-error - Receipt does not accept completion/result fields
   status: "completed",
@@ -951,7 +984,10 @@ const invalidReceiptWithResultFields: GameActionReceivedMessage = {
 // 22. Action result union declaration types & narrowing
 const completedResult: GameActionCompletedResult = {
   type: "game.action.result",
+  specVersion: "0.1",
   actionId: "act_001",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   status: "completed",
   durationMs: 1250,
   details: { wave: 1 },
@@ -959,7 +995,10 @@ const completedResult: GameActionCompletedResult = {
 
 const failedResult: GameActionFailedResult = {
   type: "game.action.result",
+  specVersion: "0.1",
   actionId: "act_001",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   status: "failed",
   error: {
     code: "CAP_EXCEEDED",
@@ -981,7 +1020,10 @@ function processActionResult(res: GameActionResultMessage): string {
 // Completed result rejects failed-only fields
 const invalidCompletedWithFailedFields: GameActionCompletedResult = {
   type: "game.action.result",
+  specVersion: "0.1",
   actionId: "act_001",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   status: "completed",
   durationMs: 1000,
   // @ts-expect-error - Completed result rejects error field
@@ -991,7 +1033,10 @@ const invalidCompletedWithFailedFields: GameActionCompletedResult = {
 // Failed result rejects completed-only fields
 const invalidFailedWithCompletedFields: GameActionFailedResult = {
   type: "game.action.result",
+  specVersion: "0.1",
   actionId: "act_001",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   status: "failed",
   // @ts-expect-error - Failed result rejects durationMs field
   durationMs: 1000,
@@ -1023,12 +1068,47 @@ const validEnvOutput: EnvelopeOutput = validEnvInput;
 
 const validResInput: ResultUnionInput = {
   type: "game.action.result",
+  specVersion: "0.1",
   actionId: "act_1",
+  attemptNumber: 1,
+  sessionGeneration: 1,
   status: "completed",
   durationMs: 100,
 };
 
 const validResOutput: ResultUnionOutput = validResInput;
+
+// Protocol Error and Typed Event Map declaration checks
+const protocolErrCode: GameProtocolErrorCode = "AUTH_INVALID";
+const protocolErrMessage: GameProtocolErrorMessage = {
+  type: "game.error",
+  specVersion: "0.1",
+  code: protocolErrCode,
+  retryable: false,
+  correlationId: "corr_001",
+  actionId: "act_001",
+};
+
+declare const clientEvents: ClientToServerEvents;
+declare const serverEvents: ServerToClientEvents;
+const cReg: GameRegisterMessage = clientEvents["game.register"];
+const cHb: GameHeartbeatMessage = clientEvents["game.heartbeat"];
+const cRec: GameActionReceivedMessage = clientEvents["game.action.received"];
+const cRes: GameActionResultMessage = clientEvents["game.action.result"];
+
+const sReg: GameRegisteredMessage = serverEvents["game.registered"];
+const sAct: BaseGameActionDeliveryMessage = serverEvents["game.action"];
+const sErr: GameProtocolErrorMessage = serverEvents["game.error"];
+
+void cReg;
+void cHb;
+void cRec;
+void cRes;
+void sReg;
+void sAct;
+void sErr;
+void protocolErrMessage;
+void regMsgWithToken;
 
 type _ActorAlias = GameActionActor;
 type _TriggerAlias = GameActionTrigger;

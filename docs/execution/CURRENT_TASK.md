@@ -1,46 +1,40 @@
 # Current Task
 
-**Task ID:** PHASE-C-MILESTONE-04-ARCHITECTURE-CLOSURE
-**Parent Task:** Phase C — Game Vertical Slice
-**Status:** APPROVED_AND_COMPLETE
-**Primary owner:** CODEX
+**Task ID:** PHASE-C-MILESTONE-04-SLICE-01
+**Parent Task:** Phase C — Game Vertical Slice (Milestone 4)
+**Status:** READY_FOR_INDEPENDENT_REVIEW
+**Primary owner:** Gemini
 **Priority:** P0
 
 ## Objective
 
-Finalize Phase C Milestone 4 Architecture closure following final independent approval by Claude and recording of accepted ADR-025 through ADR-030.
-
-Milestone 4 connects the approved Milestone 3 `ActionGateway` to authenticated Socket.IO game clients and the JavaScript SDK.
+Complete Slice 1 (Shared contracts and additive scaffolding) for Phase C Milestone 4.
 
 ## State
 
 - Phase C: IN_PROGRESS
 - Milestone 3: APPROVED_AND_COMPLETE
 - Milestone 4 architecture: APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-- Milestone 4 architecture decision state: RESOLVED
-- Claude Architecture Review 01: REQUEST_CHANGES (historical)
-- Architecture remediation 01: COMPLETE
-- Claude Architecture Re-Review 02: APPROVE_WITH_SMALL_FIX (historical)
-- Final Architecture Fix Verification: APPROVE
-- Milestone 4 implementation: ready to begin `Slice 1 — Shared contracts and additive scaffolding`
+- Milestone 4 implementation: IN_PROGRESS
+- Slice 1 (Shared contracts & additive scaffolding): READY_FOR_INDEPENDENT_REVIEW
+- Slice 2 (Game-session auth, registration & registry core): BLOCKED_BY_PREVIOUS_SLICE_REVIEW
+- Slice 3 through Slice 6: BLOCKED
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
 
 ## Required reading
 
-1. `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-REVIEW-01.md`
-2. `docs/orchestration/reviews/PHASE-C-MILESTONE-04-ARCHITECTURE-INDEPENDENT-REVIEW-02.md`
+1. `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-01-SELF-REVIEW.md`
+2. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-01.md`
 3. `docs/orchestration/plans/PHASE-C-MILESTONE-04-DELEGATION-PLAN.md`
 4. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-ARCHITECTURE-CLOSURE.md`
-5. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-03-CLOSURE.md`
-6. ADR-025 through ADR-030 in `docs/execution/DECISIONS.md`
 
 ## Hard boundaries
 
-- Do not implement transport, Socket.IO, SDK, demo game, voice, or Phase D outside the approved delegation plan sequence.
-- Implementation MUST proceed sequentially starting from `Slice 1 — Shared contracts and additive scaffolding`.
+- Slice 1 contains zero runtime networking, Socket.IO server setup, auth middleware, session registry logic, or SDK execution loops.
+- Do not begin Slice 2, Slice 3, Slice 4, Slice 5, Slice 6, Milestone 5, or Phase D.
 - Milestone 5 remains BLOCKED_BY_PREVIOUS_MILESTONE.
 
-## Architecture Closure Summary
+## Slice 1 Summary
 
-Phase C Milestone 4 Architecture is fully approved and closed. ADR-025 through ADR-030 are ACCEPTED in `docs/execution/DECISIONS.md`. Implementation is authorized to begin with Slice 1 per the approved delegation plan.
+Shared protocol contracts in `@crowdcircuit/contracts`, canonical fixtures, numeric correlation primitives, 27 wire error codes, transport-neutral server session/registry port abstractions in `apps/server`, and public type scaffolding in `@crowdcircuit/game-sdk-js` are completed and verified (384/384 repository tests passing).
