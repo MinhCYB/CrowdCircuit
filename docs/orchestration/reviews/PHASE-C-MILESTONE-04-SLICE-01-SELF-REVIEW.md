@@ -1,10 +1,11 @@
 # Phase C Milestone 4 Slice 1 — Self-Review
 
 **Baseline HEAD (original implementation):** `e09bdf09bcce43a25a6f5369a1062623550ccf44` (`e09bdf0`)
-**Current HEAD (post-remediation):** `f02145948c1c7af8f74dfa61a73e083322b0c4f9` (`f021459`)
+**Implementation commit:** `f02145948c1c7af8f74dfa61a73e083322b0c4f9` (`f021459`)
+**Remediation commit:** `3809337e900b02ade7a47176b823b7d4868151e7` (`3809337`)
 **Slice:** Slice 1 — Shared contracts and additive scaffolding
 **Primary Owner:** Gemini
-**Status:** REMEDIATION_COMPLETE_READY_FOR_RE_REVIEW
+**Status:** APPROVED_AND_COMPLETE
 
 ---
 
@@ -153,3 +154,24 @@ Remediation HEAD: `f02145948c1c7af8f74dfa61a73e083322b0c4f9` (`f021459`)
 | L-2 — missing explicit strict extra-key tests for delivery, completed-result, and failed-result | Low | `packages/contracts/test/domain-actions.test.ts` | Added three new tests: `"rejects extra keys on game.action delivery message (strict)"`, `"rejects extra keys on game.action.result completed result (strict)"`, `"rejects extra keys on game.action.result failed result (strict)"`. |
 | L-3 — stale contracts test counts in self-review and handoff | Low | `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-01-SELF-REVIEW.md`, `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-01.md` | Updated: contracts 185/185, server 96/96, repo-wide 394/394. |
 | L-4 — `GameRegistrationOutcome.errorCode` typed as broad `string` | Low | `apps/server/src/game/ports.ts`, `apps/server/test/declaration-consumer.ts` | Imported `GameProtocolErrorCode` from `@crowdcircuit/contracts`; narrowed `errorCode` field from `string` to `GameProtocolErrorCode`. Added compile-time `@ts-expect-error` proof in `declaration-consumer.ts`. |
+
+---
+
+## 12. Final Independent Re-Review and Closure
+
+**Final independent re-review:** `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-01-INDEPENDENT-REVIEW-02.md`
+
+**Final verdict:** APPROVE
+
+**Closure handoff:** `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-01-CLOSURE.md`
+
+**Historical review chain:**
+
+| Step | Commit | Verdict |
+|---|---|---|
+| Self-review (Gemini) | `f02145948c1c7af8f74dfa61a73e083322b0c4f9` | READY_FOR_INDEPENDENT_REVIEW |
+| Independent review 01 (Claude) | `f02145948c1c7af8f74dfa61a73e083322b0c4f9` | REQUEST_CHANGES |
+| Remediation (Gemini) | `3809337e900b02ade7a47176b823b7d4868151e7` | REMEDIATION_COMPLETE |
+| Independent re-review 02 (Claude) | `3809337e900b02ade7a47176b823b7d4868151e7` | **APPROVE** |
+
+**Slice 1 final status:** APPROVED_AND_COMPLETE

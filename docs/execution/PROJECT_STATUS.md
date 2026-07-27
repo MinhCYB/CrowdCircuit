@@ -1,19 +1,19 @@
 # Project Status
 
-**Last updated:** 2026-07-27
+**Last updated:** 2026-07-28
 **Last completed phase:** Phase B — Event Pipeline
 **Phase B commit:** `86f1a32` (`feat: complete Phase B event pipeline`)
 **Current phase:** Phase C — Game Vertical Slice
 **Phase C status:** IN_PROGRESS
-**Current milestone:** PHASE-C-MILESTONE-04 — IN_PROGRESS (Slice 1: READY_FOR_INDEPENDENT_REVIEW)
+**Current milestone:** PHASE-C-MILESTONE-04 — IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: READY_TO_BEGIN)
 **Milestone 3 architecture status:** RESOLVED (ADR-019 through ADR-024 accepted)
 **Milestone 3 status:** APPROVED_AND_COMPLETE
 **Milestone 4 architecture status:** RESOLVED (ADR-025 through ADR-030 accepted)
 **Milestone 4 architecture:** APPROVED_AND_COMPLETE
 **Milestone 4 implementation:** IN_PROGRESS
-**Milestone 4 Slice 1 (Shared contracts & scaffolding):** READY_FOR_INDEPENDENT_REVIEW
-**Milestone 4 Slice 2 (Auth, registration & registry core):** BLOCKED_BY_PREVIOUS_SLICE_REVIEW
-**Working tree:** Slice 1 completed shared contracts and scaffolding
+**Milestone 4 Slice 1 (Shared contracts & scaffolding):** APPROVED_AND_COMPLETE (final commit: `3809337e900b02ade7a47176b823b7d4868151e7`)
+**Milestone 4 Slice 2 (Server authentication and registry):** READY_TO_BEGIN
+**Working tree:** Clean (HEAD: `3809337e900b02ade7a47176b823b7d4868151e7`)
 
 ## Runtime baseline
 
@@ -28,7 +28,7 @@
 1. Authentication and durable persistence prerequisites — DONE
 2. Mapping and action-budget capability — APPROVED_AND_COMPLETE
 3. Durable Action Gateway lifecycle — APPROVED_AND_COMPLETE
-4. Authenticated game-session delivery and SDK vertical slice — IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slice 1: READY_FOR_INDEPENDENT_REVIEW)
+4. Authenticated game-session delivery and SDK vertical slice — IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slice 1: APPROVED_AND_COMPLETE; Slice 2: READY_TO_BEGIN)
 5. Demo game, recovery, and Phase C acceptance — BLOCKED_BY_PREVIOUS_MILESTONE
 
 ## Phase C scope

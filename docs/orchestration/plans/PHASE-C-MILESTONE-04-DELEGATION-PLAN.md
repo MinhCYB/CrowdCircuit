@@ -1,8 +1,8 @@
 # Phase C Milestone 4 — Delegation Plan
 
-**Date:** 2026-07-27
+**Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** Ready to begin Slice 1
+**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: READY_TO_BEGIN)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -31,35 +31,23 @@ Recommended user commit checkpoint: accepted architecture and ADRs.
 
 Owner: Gemini, under a frozen prompt.
 
-Status: READY_FOR_INDEPENDENT_REVIEW.
+Status: APPROVED_AND_COMPLETE (Claude Independent Re-Review 02: APPROVE).
 
-Exclusive files:
+Review evidence:
+- `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-01-SELF-REVIEW.md`
+- `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-01.md`
+- `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-01-INDEPENDENT-REVIEW-02.md`
+- `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-01-CLOSURE.md`
 
-- `packages/contracts/src/actions/**`
-- contract fixtures/tests/declarations;
-- additive server registry/adapter interfaces with no behavior;
-- additive SDK public type scaffolding;
-- package manifests/lockfile only for approved Socket.IO dependencies.
-
-Deliver:
-
-- handshake-auth-compatible registration contract;
-- versioned registered/error/action/receipt/result correlation fields;
-- stable wire auth/error schemas and declaration/public-contract tests;
-- typed server registry/adapter ports;
-- declaration consumers and schema fixtures.
-
-Must not implement authentication middleware, registry mutation, delivery,
-receipt/result controllers, SDK networking, durable writes, or timers.
-
-Review gate: Claude verifies exact wire schemas, package boundaries, dependency
-direction, and zero lifecycle implementation.
+All review findings (M-1, L-1, L-2, L-3, L-4) RESOLVED. Final commit: `3809337e900b02ade7a47176b823b7d4868151e7`.
 
 Recommended user commit checkpoint: reviewed additive contract slice.
 
 ## Slice 2 — Server authentication and registry
 
 Owner: CODEX.
+
+Status: READY_TO_BEGIN.
 
 Exclusive files:
 
