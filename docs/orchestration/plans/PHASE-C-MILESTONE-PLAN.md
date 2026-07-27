@@ -7,8 +7,9 @@
 **Milestone 2:** APPROVED_AND_COMPLETE
 **Milestone 2 remediation:** COMPLETE
 **Milestone 3 architecture:** RESOLVED
-**Milestone 3 implementation:** IN_PROGRESS (Slice 1 and CODEX core APPROVED_AND_COMPLETE; administrative closure pending)
-**Milestones 4–5:** BLOCKED_BY_PREVIOUS_MILESTONE
+**Milestone 3 implementation:** APPROVED_AND_COMPLETE
+**Milestone 4:** READY_FOR_ARCHITECTURE
+**Milestone 5:** BLOCKED_BY_PREVIOUS_MILESTONE
 **Phase D:** untouched
 
 Deliver the first durable, authenticated, end-to-end game-action vertical

@@ -106,7 +106,7 @@ Gemini MUST NOT implement:
 
 ## Slice 2 Breakdown — Codex Core Orchestration & Concurrency Layer
 
-**Primary Owner**: CODEX (or Claude Code via explicit separate assignment if Codex remains unavailable)  
+**Primary Owner**: CODEX
 **Status**: APPROVED_AND_COMPLETE (independent verdict: APPROVE)
 **Scope Boundary**: Concurrency-sensitive production transactions, promotion, retry scheduler, TTL worker, restart reconciliation, and core orchestration.
 

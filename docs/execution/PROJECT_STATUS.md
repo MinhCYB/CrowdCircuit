@@ -5,13 +5,15 @@
 **Phase B commit:** `86f1a32` (`feat: complete Phase B event pipeline`)
 **Current phase:** Phase C — Game Vertical Slice
 **Phase C status:** IN_PROGRESS
-**Current milestone:** PHASE-C-MILESTONE-03 — IN_PROGRESS
+**Current milestone:** PHASE-C-MILESTONE-03 — APPROVED_AND_COMPLETE
 **Milestone 3 architecture status:** RESOLVED (ADR-019 through ADR-024 accepted)
-**Milestone 3 Slice 1 (GEMINI-01):** APPROVED_AND_COMPLETE (independent review: APPROVE_WITH_SMALL_FIX; approved small fix: CLOSED)
-**Milestone 3 Slice 2 (CODEX-CORE):** READY_FOR_INDEPENDENT_RE_REVIEW
-**Claude Independent Review 01:** REQUEST_CHANGES
-**Remediation status:** COMPLETE_PENDING_RE_REVIEW
-**Working tree:** Accumulated Phase C work including approved Milestone 1 & 2 and Milestone 3 core remediation
+**Milestone 3 Slice 1 (GEMINI-01):** APPROVED_AND_COMPLETE
+**Milestone 3 Slice 2 (CODEX-CORE):** APPROVED_AND_COMPLETE
+**Claude Independent Review 01:** REQUEST_CHANGES (historical)
+**Remediation 01:** COMPLETE
+**Claude Independent Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
+**Final fix verification:** APPROVE
+**Working tree:** Accumulated Phase C work through approved Milestone 3 closure
 
 ## Runtime baseline
 
@@ -25,8 +27,8 @@
 
 1. Authentication and durable persistence prerequisites — DONE
 2. Mapping and action-budget capability — APPROVED_AND_COMPLETE
-3. Durable Action Gateway lifecycle — IN_PROGRESS (Slice 1 APPROVED_AND_COMPLETE; CODEX core READY_FOR_INDEPENDENT_RE_REVIEW)
-4. Authenticated game-session delivery and SDK vertical slice — BLOCKED_BY_PREVIOUS_MILESTONE
+3. Durable Action Gateway lifecycle — APPROVED_AND_COMPLETE
+4. Authenticated game-session delivery and SDK vertical slice — READY_FOR_ARCHITECTURE
 5. Demo game, recovery, and Phase C acceptance — BLOCKED_BY_PREVIOUS_MILESTONE
 
 ## Phase C scope

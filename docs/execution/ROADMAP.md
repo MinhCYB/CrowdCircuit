@@ -83,8 +83,8 @@ Phase C work.
 |---|---|---|
 | PHASE-C-MILESTONE-01 | Authentication and durable persistence prerequisites | DONE |
 | PHASE-C-MILESTONE-02 | Mapping and action-budget capability | APPROVED_AND_COMPLETE |
-| PHASE-C-MILESTONE-03 | Durable Action Gateway lifecycle | IN_PROGRESS (Slice 1 and CODEX core APPROVED_AND_COMPLETE; closure pending) |
-| PHASE-C-MILESTONE-04 | Authenticated game-session delivery and SDK vertical slice | BLOCKED_BY_PREVIOUS_MILESTONE |
+| PHASE-C-MILESTONE-03 | Durable Action Gateway lifecycle | APPROVED_AND_COMPLETE |
+| PHASE-C-MILESTONE-04 | Authenticated game-session delivery and SDK vertical slice | READY_FOR_ARCHITECTURE |
 | PHASE-C-MILESTONE-05 | Demo game, recovery, and Phase C acceptance | BLOCKED_BY_PREVIOUS_MILESTONE |
 
 | ID | Task | Status | Depends on |
@@ -229,7 +229,7 @@ Required:
 
 **Current orchestration unit:** `Phase C — Game Vertical Slice`
 
-**Current milestone:** `PHASE-C-MILESTONE-03 — READY_FOR_INDEPENDENT_RE_REVIEW`
+**Current milestone:** `PHASE-C-MILESTONE-03 — APPROVED_AND_COMPLETE` (Milestone 4: READY_FOR_ARCHITECTURE)
 
 **Plan:** `docs/orchestration/plans/PHASE-C-MILESTONE-PLAN.md`
 
