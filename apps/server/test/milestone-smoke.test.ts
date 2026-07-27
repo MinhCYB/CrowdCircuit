@@ -48,7 +48,7 @@ describe("Phase C Milestone 1 integration smoke", () => {
       {
         actionId: "action-smoke",
         previousStatus: "pending",
-        status: "aborted_restart",
+        status: "pending",
       },
     ]);
     expect(secondRuntime.listAttempts("action-smoke")).toEqual([]);

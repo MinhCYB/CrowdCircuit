@@ -8,7 +8,7 @@ export interface Migration {
   readonly sql: string;
 }
 
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export const MIGRATIONS: readonly Migration[] = [
   {
@@ -161,6 +161,14 @@ CREATE INDEX action_logs_retry_schedule_idx
   ON action_logs(status, next_attempt_at);
 ALTER TABLE action_send_authorizations ADD COLUMN game_instance_id TEXT;
 ALTER TABLE action_attempts ADD COLUMN game_instance_id TEXT;
+`,
+  },
+  {
+    version: 4,
+    id: "phase-c-deferred-candidate-completeness",
+    sql: `
+ALTER TABLE mapping_budget_deferred_candidates ADD COLUMN event_type TEXT NOT NULL DEFAULT 'unknown';
+ALTER TABLE mapping_budget_deferred_candidates ADD COLUMN user_budget_key TEXT NOT NULL DEFAULT 'anonymous';
 `,
   },
 ];

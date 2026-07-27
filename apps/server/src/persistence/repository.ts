@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import { createHash, randomBytes } from "node:crypto";
-import { JsonValueSchema, type JsonValue } from "@crowdcircuit/contracts";
+import { GameActionActorSchema, JsonValueSchema, type JsonValue } from "@crowdcircuit/contracts";
 import type {
   BudgetAdmissionRequest,
   BudgetAdmissionResult,
@@ -8,7 +8,8 @@ import type {
 } from "@crowdcircuit/mapping-engine";
 import { z } from "zod";
 import { migrateDatabase } from "./migrations.js";
-import { admitMappingBudget } from "./budget.js";
+import { admitMappingBudget, admitMappingBudgetInTransaction } from "./budget.js";
+import { computeActionId } from "../delivery/action-id.js";
 import {
   issueSendAuthorization,
   readSendAuthorization,
@@ -25,6 +26,10 @@ import {
   type DurableActionRecord,
   type DurableActionRepository,
   type DurableCreateResult,
+  type PendingCreateResult,
+  type DeferredCandidateRecord,
+  type DeferredPromotionResult,
+  type EnqueueDeferredCandidate,
   type ReconciliationResult,
   type NonterminalActionStatus,
   type RetentionPolicy,
@@ -33,6 +38,8 @@ import {
 } from "./types.js";
 
 const StatusSchema = z.enum(ACTION_STATUSES);
+const MAX_DEFERRED_CANDIDATES_PER_GAME = 4_096;
+const DEFERRED_CLEANUP_SWEEP_LIMIT = 128;
 const RowSchema = z.object({
   action_id: z.string(),
   idempotency_key: z.string(),
@@ -144,6 +151,94 @@ function parseRecord(raw: unknown): DurableActionRecord {
     version: row.data.version,
     nextAttemptAt: row.data.next_attempt_at ?? null,
   };
+}
+
+function parseDeferredRecord(raw: unknown): DeferredCandidateRecord {
+  const row = z.object({
+    idempotency_seed: z.string().min(1),
+    game_profile_id: z.string().min(1),
+    game_id: z.string().min(1),
+    rule_id: z.string().min(1),
+    event_id: z.string().min(1),
+    event_type: z.string().min(1),
+    candidate_ordinal: z.number().int().nonnegative(),
+    action_type: z.string().min(1),
+    params_json: z.string(),
+    actor_json: z.string().nullable(),
+    user_budget_key: z.string().min(1),
+    priority: z.number().int(),
+    action_priority: z.number().int(),
+    candidate_ttl_ms: z.number().int().positive(),
+    deferred_expires_at: z.number().int().nonnegative(),
+    created_at: z.number().int().nonnegative(),
+    admission_snapshot_json: z.string(),
+    status: z.enum(["queued", "promoted", "expired"]),
+    owning_runtime_id: z.string().min(1),
+    promoted_action_id: z.string().nullable(),
+    promoted_at: z.number().int().nonnegative().nullable(),
+  }).safeParse(raw);
+  if (!row.success) {
+    throw new PersistenceError("SCHEMA_INCOMPATIBLE", "Stored deferred candidate is invalid");
+  }
+  try {
+    const params = JsonValueSchema.parse(JSON.parse(row.data.params_json));
+    const actor = row.data.actor_json === null
+      ? null
+      : GameActionActorSchema.parse(JSON.parse(row.data.actor_json));
+    const snapshot = z.object({
+      gameProfileId: z.string().min(1),
+      ruleId: z.string().min(1),
+      userBudgetKey: z.string().min(1),
+      userLimit: z.object({ limitPerMinute: z.number().int().positive() }).strict(),
+      cooldownMs: z.number().int().nonnegative(),
+      ruleLimit: z.object({ limitPerMinute: z.number().int().positive() }).strict(),
+      globalToken: z.object({
+        maxPerSecond: z.number().finite().positive(),
+        burst: z.number().finite().positive(),
+      }).strict(),
+      capacityConfig: z.object({
+        maxUserBuckets: z.number().int().positive(),
+        inactiveRetentionMs: z.number().int().min(60_000),
+        sweepLimit: z.number().int().positive(),
+      }).strict(),
+    }).strict().parse(JSON.parse(row.data.admission_snapshot_json));
+    return {
+      candidate: {
+        idempotencySeed: row.data.idempotency_seed,
+        seedInput: {
+          seedFormatVersion: 1,
+          gameProfileId: row.data.game_profile_id,
+          ruleId: row.data.rule_id,
+          eventId: row.data.event_id,
+          candidateOrdinal: row.data.candidate_ordinal,
+          actionType: row.data.action_type,
+          params,
+        },
+        gameProfileId: row.data.game_profile_id,
+        gameId: row.data.game_id,
+        ruleId: row.data.rule_id,
+        eventId: row.data.event_id,
+        eventType: row.data.event_type,
+        candidateOrdinal: row.data.candidate_ordinal,
+        actionType: row.data.action_type,
+        params,
+        actor,
+        userBudgetKey: row.data.user_budget_key,
+        priority: row.data.priority,
+        actionPriority: row.data.action_priority,
+        ttlMs: row.data.candidate_ttl_ms,
+      },
+      deferredExpiresAt: row.data.deferred_expires_at,
+      createdAt: row.data.created_at,
+      admissionSnapshot: snapshot,
+      status: row.data.status,
+      owningRuntimeId: row.data.owning_runtime_id,
+      promotedActionId: row.data.promoted_action_id,
+      promotedAt: row.data.promoted_at,
+    };
+  } catch {
+    throw new PersistenceError("SCHEMA_INCOMPATIBLE", "Stored deferred candidate is invalid");
+  }
 }
 
 function validateCreate(input: CreateDurableAction): void {
@@ -291,6 +386,38 @@ export class SqliteDurableActionRepository
     );
   }
 
+  createPending(input: CreateDurableAction): PendingCreateResult {
+    validateCreate(input);
+    try {
+      this.#database.exec("BEGIN IMMEDIATE");
+      this.#requireActiveOwner(true);
+      const existingById = this.#findById(input.actionId);
+      const existingByKey = this.#findByIdempotencyKey(input.idempotencyKey);
+      const existing = existingById ?? existingByKey;
+      if (existing !== null) {
+        if (!this.#sameCanonicalCreate(existing, input)) {
+          throw new PersistenceError(
+            existingById !== null ? "DUPLICATE_ACTION" : "IDEMPOTENCY_CONFLICT",
+            "Existing durable action conflicts with the canonical request",
+          );
+        }
+        this.#database.exec("COMMIT");
+        return { created: false, record: existing, reason: "already_exists" };
+      }
+      this.#insertPendingAction(input);
+      this.#commitTransaction("create");
+      return { created: true, record: this.require(input.actionId) };
+    } catch (error) {
+      try {
+        this.#database.exec("ROLLBACK");
+      } catch {
+        // Preserve the authoritative typed failure.
+      }
+      if (error instanceof PersistenceError) throw error;
+      throw new PersistenceError("DATABASE_UNAVAILABLE", "Durable action write failed");
+    }
+  }
+
   createBeforeFirstSend(input: CreateDurableAction): DurableCreateResult {
     validateCreate(input);
     try {
@@ -405,6 +532,42 @@ export class SqliteDurableActionRepository
       }
       if (error instanceof PersistenceError) throw error;
       throw new PersistenceError("ALREADY_AUTHORIZED", "Retry is already authorized");
+    }
+  }
+
+  authorizePending(
+    actionId: string,
+    expectedVersion: number,
+    runtimeId: string,
+    gameInstanceId: string | null,
+  ): SendAuthorization {
+    try {
+      this.#database.exec("BEGIN IMMEDIATE");
+      this.#requireActiveOwner(true);
+      const current = this.require(actionId);
+      if (
+        current.status !== "pending" ||
+        current.version !== expectedVersion ||
+        current.runtimeId !== runtimeId
+      ) {
+        throw new PersistenceError("STALE_TRANSITION", "Initial authorization is stale");
+      }
+      const details = this.#newAuthorizationDetails(
+        current,
+        1,
+        normalizeGameInstanceId(gameInstanceId),
+      );
+      this.#insertAuthorization(details);
+      this.#commitTransaction("attempt");
+      return issueSendAuthorization(details);
+    } catch (error) {
+      try {
+        this.#database.exec("ROLLBACK");
+      } catch {
+        // Preserve the typed authorization failure.
+      }
+      if (error instanceof PersistenceError) throw error;
+      throw new PersistenceError("ALREADY_AUTHORIZED", "Initial send is already authorized");
     }
   }
 
@@ -820,6 +983,267 @@ export class SqliteDurableActionRepository
       .map(parseRecord);
   }
 
+  enqueueDeferredCandidate(input: EnqueueDeferredCandidate): DeferredCandidateRecord {
+    const { candidate, admissionSnapshot } = input;
+    nonempty(input.runtimeId, "Runtime ID");
+    timestamp(input.createdAt, "Deferred creation timestamp");
+    timestamp(input.deferredExpiresAt, "Deferred expiry timestamp");
+    if (input.deferredExpiresAt < input.createdAt) {
+      throw new PersistenceError("INVALID_INPUT", "Deferred expiry is invalid");
+    }
+    if (
+      admissionSnapshot.gameProfileId !== candidate.gameProfileId ||
+      admissionSnapshot.ruleId !== candidate.ruleId ||
+      admissionSnapshot.userBudgetKey !== candidate.userBudgetKey
+    ) {
+      throw new PersistenceError("INVALID_INPUT", "Admission snapshot identity is invalid");
+    }
+    try {
+      this.#database.exec("BEGIN IMMEDIATE");
+      this.#requireActiveOwner(true);
+      const existing = this.#findDeferredCandidate(candidate.idempotencySeed);
+      if (existing !== null) {
+        if (
+          JSON.stringify(existing.candidate) !== JSON.stringify(candidate) ||
+          JSON.stringify(existing.admissionSnapshot) !== JSON.stringify(admissionSnapshot) ||
+          existing.deferredExpiresAt !== input.deferredExpiresAt
+        ) {
+          throw new PersistenceError("IDEMPOTENCY_CONFLICT", "Deferred candidate conflicts");
+        }
+        this.#database.exec("COMMIT");
+        return existing;
+      }
+      this.#database.prepare(
+        `UPDATE mapping_budget_deferred_candidates SET status = 'expired'
+         WHERE idempotency_seed IN (
+           SELECT idempotency_seed FROM mapping_budget_deferred_candidates
+           WHERE status = 'queued' AND deferred_expires_at <= ?
+           ORDER BY deferred_expires_at ASC, idempotency_seed ASC LIMIT ?
+         )`,
+      ).run(input.createdAt, DEFERRED_CLEANUP_SWEEP_LIMIT);
+      const activeCount = this.#database.prepare(
+        `SELECT COUNT(*) AS count FROM mapping_budget_deferred_candidates
+         WHERE game_id = ? AND status = 'queued'`,
+      ).get(candidate.gameId);
+      const activeCountValue = Reflect.get(activeCount ?? {}, "count");
+      if (typeof activeCountValue !== "number") {
+        throw new PersistenceError("SCHEMA_INCOMPATIBLE", "Deferred capacity state is invalid");
+      }
+      if (activeCountValue >= MAX_DEFERRED_CANDIDATES_PER_GAME) {
+        throw new PersistenceError(
+          "DEFERRED_CAPACITY_EXHAUSTED",
+          "Deferred candidate capacity is exhausted",
+        );
+      }
+      this.#database.prepare(
+        `INSERT INTO mapping_budget_deferred_candidates (
+          idempotency_seed, game_profile_id, game_id, rule_id, event_id, event_type,
+          candidate_ordinal, action_type, params_json, actor_json, user_budget_key,
+          priority, action_priority, candidate_ttl_ms, deferred_expires_at, created_at,
+          admission_snapshot_json, status, owning_runtime_id, promoted_action_id, promoted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?, NULL, NULL)`,
+      ).run(
+        candidate.idempotencySeed, candidate.gameProfileId, candidate.gameId,
+        candidate.ruleId, candidate.eventId, candidate.eventType,
+        candidate.candidateOrdinal, candidate.actionType, JSON.stringify(candidate.params),
+        candidate.actor === null ? null : JSON.stringify(candidate.actor),
+        candidate.userBudgetKey, candidate.priority, candidate.actionPriority,
+        candidate.ttlMs, input.deferredExpiresAt, input.createdAt,
+        JSON.stringify(admissionSnapshot), input.runtimeId,
+      );
+      this.#database.exec("COMMIT");
+      const inserted = this.#findDeferredCandidate(candidate.idempotencySeed);
+      if (inserted === null) {
+        throw new PersistenceError("DATABASE_UNAVAILABLE", "Deferred candidate was not created");
+      }
+      return inserted;
+    } catch (error) {
+      try { this.#database.exec("ROLLBACK"); } catch { /* preserve failure */ }
+      if (error instanceof PersistenceError) throw error;
+      throw new PersistenceError("DATABASE_UNAVAILABLE", "Deferred candidate write failed");
+    }
+  }
+
+  findDeferredCandidate(idempotencySeed: string): DeferredCandidateRecord | null {
+    nonempty(idempotencySeed, "Idempotency seed");
+    return this.#findDeferredCandidate(idempotencySeed);
+  }
+
+  promoteDeferredCandidate(idempotencySeed: string, now: number): DeferredPromotionResult {
+    nonempty(idempotencySeed, "Idempotency seed");
+    timestamp(now, "Promotion timestamp");
+    try {
+      this.#database.exec("BEGIN IMMEDIATE");
+      this.#requireActiveOwner(true);
+      const deferred = this.#findDeferredCandidate(idempotencySeed);
+      if (deferred === null) {
+        this.#database.exec("COMMIT");
+        return { status: "not_found" };
+      }
+      if (deferred.status === "expired" || now >= deferred.deferredExpiresAt) {
+        if (deferred.status === "queued") {
+          this.#database.prepare(
+            "UPDATE mapping_budget_deferred_candidates SET status = 'expired' WHERE idempotency_seed = ? AND status = 'queued'",
+          ).run(idempotencySeed);
+        }
+        this.#database.exec("COMMIT");
+        return { status: "expired" };
+      }
+      if (deferred.status === "promoted") {
+        const record = deferred.promotedActionId === null
+          ? null
+          : this.#findById(deferred.promotedActionId);
+        if (record === null) {
+          throw new PersistenceError("SCHEMA_INCOMPATIBLE", "Promoted action is missing");
+        }
+        this.#database.exec("COMMIT");
+        return { status: "already_promoted", record };
+      }
+      const snapshot = deferred.admissionSnapshot;
+      const admission = admitMappingBudgetInTransaction(
+        this.#database,
+        {
+          candidate: deferred.candidate,
+          now,
+          userLimitPerMinute: snapshot.userLimit.limitPerMinute,
+          ruleLimitPerMinute: snapshot.ruleLimit.limitPerMinute,
+          cooldownMs: snapshot.cooldownMs,
+          globalBudget: {
+            maxPerSecond: snapshot.globalToken.maxPerSecond,
+            burst: snapshot.globalToken.burst,
+            overflowPolicy: "reject_newest",
+            deferredTtlMs: null,
+          },
+          capacity: snapshot.capacityConfig,
+        },
+        () => this.#requireActiveOwner(true),
+      );
+      if (!admission.admitted) {
+        this.#database.exec("ROLLBACK");
+        return { status: "not_admitted", reason: admission.reason };
+      }
+      const actionId = computeActionId(idempotencySeed);
+      const create: CreateDurableAction = {
+        actionId,
+        idempotencyKey: idempotencySeed,
+        eventId: deferred.candidate.eventId,
+        mappingId: deferred.candidate.ruleId,
+        gameId: deferred.candidate.gameId,
+        actionType: deferred.candidate.actionType,
+        params: deferred.candidate.params,
+        priority: deferred.candidate.actionPriority,
+        ttlMs: deferred.candidate.ttlMs,
+        createdAt: now,
+        expiresAt: now + deferred.candidate.ttlMs,
+        runtimeId: deferred.owningRuntimeId,
+        nextAttemptAt: now,
+      };
+      const existing = this.#findById(actionId) ?? this.#findByIdempotencyKey(idempotencySeed);
+      if (existing === null) {
+        this.#insertPendingAction(create);
+      } else if (!this.#sameCanonicalCreate(existing, create)) {
+        throw new PersistenceError("IDEMPOTENCY_CONFLICT", "Promoted action conflicts");
+      }
+      const record = existing ?? this.#findById(actionId);
+      if (record === null) {
+        throw new PersistenceError("DATABASE_UNAVAILABLE", "Promoted action was not created");
+      }
+      const changed = this.#database.prepare(
+        `UPDATE mapping_budget_deferred_candidates
+         SET status = 'promoted', promoted_action_id = ?, promoted_at = ?
+         WHERE idempotency_seed = ? AND status = 'queued'`,
+      ).run(record.actionId, now, idempotencySeed);
+      if (changed.changes !== 1) {
+        throw new PersistenceError("STALE_TRANSITION", "Deferred promotion changed");
+      }
+      this.#transactionFault?.("budget", "before_commit");
+      this.#requireActiveOwner(true);
+      this.#database.exec("COMMIT");
+      return { status: "promoted", record: this.require(record.actionId) };
+    } catch (error) {
+      try { this.#database.exec("ROLLBACK"); } catch { /* preserve failure */ }
+      if (error instanceof PersistenceError) throw error;
+      throw new PersistenceError("DATABASE_UNAVAILABLE", "Deferred promotion failed");
+    }
+  }
+
+  listDeliverable(now: number, limit: number): readonly DurableActionRecord[] {
+    timestamp(now, "Delivery timestamp");
+    if (!Number.isSafeInteger(limit) || limit <= 0) {
+      throw new PersistenceError("INVALID_INPUT", "Delivery limit is invalid");
+    }
+    return this.#database.prepare(
+      `SELECT * FROM action_logs
+       WHERE status IN ('pending', 'in_flight') AND expires_at > ?
+       AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
+       ORDER BY priority DESC, created_at ASC, action_id ASC LIMIT ?`,
+    ).all(now, now, limit).map(parseRecord);
+  }
+
+  scheduleNextAttempt(
+    actionId: string,
+    expectedVersion: number,
+    at: number,
+    nextAttemptAt: number,
+    failureCode: string,
+  ): DurableActionRecord {
+    timestamp(at, "Schedule timestamp");
+    timestamp(nextAttemptAt, "Next attempt timestamp");
+    nonempty(failureCode, "Failure code");
+    try {
+      this.#database.exec("BEGIN IMMEDIATE");
+      this.#requireActiveOwner(true);
+      const changed = this.#database.prepare(
+        `UPDATE action_logs SET next_attempt_at = ?, updated_at = ?,
+         failure_code = ?, version = version + 1
+         WHERE action_id = ? AND version = ? AND status IN ('pending', 'in_flight')`,
+      ).run(nextAttemptAt, at, failureCode, actionId, expectedVersion);
+      if (changed.changes !== 1) {
+        throw new PersistenceError("STALE_TRANSITION", "Retry schedule changed");
+      }
+      this.#database.exec("COMMIT");
+      return this.require(actionId);
+    } catch (error) {
+      try { this.#database.exec("ROLLBACK"); } catch { /* preserve failure */ }
+      if (error instanceof PersistenceError) throw error;
+      throw new PersistenceError("DATABASE_UNAVAILABLE", "Retry scheduling failed");
+    }
+  }
+
+  expireDue(now: number, sweepLimit: number): number {
+    timestamp(now, "Expiry timestamp");
+    if (!Number.isSafeInteger(sweepLimit) || sweepLimit <= 0) {
+      throw new PersistenceError("INVALID_INPUT", "Sweep limit is invalid");
+    }
+    try {
+      this.#database.exec("BEGIN IMMEDIATE");
+      this.#requireActiveOwner(true);
+      const actions = this.#database.prepare(
+        `UPDATE action_logs SET status = 'expired', updated_at = ?,
+         failure_code = 'ttl_expired', version = version + 1
+         WHERE action_id IN (
+           SELECT action_id FROM action_logs
+           WHERE status IN ('pending', 'in_flight', 'received') AND expires_at <= ?
+           ORDER BY expires_at ASC, action_id ASC LIMIT ?
+         )`,
+      ).run(now, now, sweepLimit).changes;
+      const deferred = this.#database.prepare(
+        `UPDATE mapping_budget_deferred_candidates SET status = 'expired'
+         WHERE idempotency_seed IN (
+           SELECT idempotency_seed FROM mapping_budget_deferred_candidates
+           WHERE status = 'queued' AND deferred_expires_at <= ?
+           ORDER BY deferred_expires_at ASC, idempotency_seed ASC LIMIT ?
+         )`,
+      ).run(now, sweepLimit).changes;
+      this.#database.exec("COMMIT");
+      return Number(actions) + Number(deferred);
+    } catch (error) {
+      try { this.#database.exec("ROLLBACK"); } catch { /* preserve failure */ }
+      if (error instanceof PersistenceError) throw error;
+      throw new PersistenceError("DATABASE_UNAVAILABLE", "Expiry sweep failed");
+    }
+  }
+
   reconcilePreviousRuntime(runtimeId: string, now: number): readonly ReconciliationResult[] {
     nonempty(runtimeId, "Runtime ID");
     timestamp(now, "Reconciliation timestamp");
@@ -840,14 +1264,18 @@ export class SqliteDurableActionRepository
         now >= action.expiresAt
           ? "expired"
           : action.status === "pending"
-            ? "aborted_restart"
-            : "delivery_unknown_restart";
+            ? "pending"
+            : action.status === "received"
+              ? "received"
+              : "delivery_unknown_restart";
       const reason =
         next === "expired"
           ? "expired_during_restart"
-          : next === "aborted_restart"
-            ? "not_sent_before_restart"
-            : "delivery_state_unknown_after_restart";
+          : next === "pending"
+            ? "pending_reassigned_after_restart"
+            : next === "received"
+              ? "received_reassigned_after_restart"
+              : "delivery_state_unknown_after_restart";
       classifications.push({ action, previousStatus: action.status, next, reason });
     }
     try {
@@ -856,13 +1284,14 @@ export class SqliteDurableActionRepository
       for (const classification of classifications) {
         const changed = this.#database
           .prepare(
-            `UPDATE action_logs SET status = ?, updated_at = ?,
+            `UPDATE action_logs SET status = ?, updated_at = ?, runtime_id = ?,
              reconciliation_reason = ?, version = version + 1
              WHERE action_id = ? AND version = ? AND status = ?`,
           )
           .run(
             classification.next,
             now,
+            runtimeId,
             classification.reason,
             classification.action.actionId,
             classification.action.version,
@@ -878,6 +1307,15 @@ export class SqliteDurableActionRepository
           )
           .run(now, classification.action.actionId);
       }
+      this.#database.prepare(
+        `UPDATE mapping_budget_deferred_candidates
+         SET owning_runtime_id = ?
+         WHERE status = 'queued' AND owning_runtime_id <> ? AND deferred_expires_at > ?`,
+      ).run(runtimeId, runtimeId, now);
+      this.#database.prepare(
+        `UPDATE mapping_budget_deferred_candidates SET status = 'expired'
+         WHERE status = 'queued' AND deferred_expires_at <= ?`,
+      ).run(now);
       this.#database
         .prepare(
           `UPDATE runtime_ownership SET reconciled_at = ?
@@ -973,6 +1411,13 @@ export class SqliteDurableActionRepository
     return row === undefined ? null : parseRecord(row);
   }
 
+  #findDeferredCandidate(idempotencySeed: string): DeferredCandidateRecord | null {
+    const row = this.#database.prepare(
+      "SELECT * FROM mapping_budget_deferred_candidates WHERE idempotency_seed = ?",
+    ).get(idempotencySeed);
+    return row === undefined ? null : parseDeferredRecord(row);
+  }
+
   #sameCreate(record: DurableActionRecord, input: CreateDurableAction): boolean {
     const inputNextAttempt = input.nextAttemptAt ?? null;
     return (
@@ -990,6 +1435,38 @@ export class SqliteDurableActionRepository
       record.runtimeId === input.runtimeId &&
       record.nextAttemptAt === inputNextAttempt
     );
+  }
+
+  #sameCanonicalCreate(record: DurableActionRecord, input: CreateDurableAction): boolean {
+    return (
+      record.actionId === input.actionId &&
+      record.idempotencyKey === input.idempotencyKey &&
+      record.eventId === input.eventId &&
+      record.mappingId === input.mappingId &&
+      record.gameId === input.gameId &&
+      record.actionType === input.actionType &&
+      JSON.stringify(record.params) === JSON.stringify(input.params) &&
+      record.priority === input.priority &&
+      record.ttlMs === input.ttlMs
+    );
+  }
+
+  #insertPendingAction(input: CreateDurableAction): void {
+    this.#database
+      .prepare(
+        `INSERT INTO action_logs (
+          action_id, idempotency_key, event_id, mapping_id, game_id, action_type,
+          params_json, status, priority, ttl_ms, retry_count, created_at, updated_at,
+          expires_at, received_at, completed_at, failure_code, result_json,
+          reconciliation_reason, runtime_id, version, next_attempt_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, 0, ?, ?, ?, NULL, NULL, NULL, NULL, NULL, ?, 1, ?)`,
+      )
+      .run(
+        input.actionId, input.idempotencyKey, input.eventId, input.mappingId,
+        input.gameId, input.actionType, JSON.stringify(input.params), input.priority,
+        input.ttlMs, input.createdAt, input.createdAt, input.expiresAt,
+        input.runtimeId, input.nextAttemptAt ?? null,
+      );
   }
 
   #newAuthorizationDetails(

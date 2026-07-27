@@ -1,5 +1,9 @@
 import type { GameActionEnvelope, JsonValue } from "@crowdcircuit/contracts";
 import {
+  ActionGateway,
+  ActionLifecycleWorker,
+  computeActionId,
+  MAX_SEND_ATTEMPTS,
   SqliteDurableActionRepository,
   type ActionDeliveryOutcome,
   type ActionDeliveryPort,
@@ -22,6 +26,10 @@ const budgetRepository: DurableBudgetRepository =
   SqliteDurableActionRepository.open({ filename: ":memory:" });
 declare const budgetRequest: BudgetAdmissionRequest;
 budgetRepository.admit(budgetRequest);
+const derivedActionId: string = computeActionId("seed");
+const maximumAttempts: 3 = MAX_SEND_ATTEMPTS;
+void derivedActionId;
+void maximumAttempts;
 
 // @ts-expect-error final action identity is not accepted by budget admission
 budgetRequest.candidate.actionId = "action";
@@ -46,6 +54,11 @@ const input: CreateDurableAction = {
 const repository: DurableActionRepository = SqliteDurableActionRepository.open({
   filename: ":memory:",
 });
+declare const deliveryPort: ActionDeliveryPort;
+const gateway = new ActionGateway(repository, deliveryPort, { now: () => 0 }, "runtime");
+const lifecycleWorker = new ActionLifecycleWorker(repository, { now: () => 0 });
+void gateway;
+void lifecycleWorker;
 const createRes = repository.createBeforeFirstSend(input);
 if (createRes.created) {
   const authorizedAttempt = repository.recordAttempt(

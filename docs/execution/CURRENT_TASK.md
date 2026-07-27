@@ -2,7 +2,7 @@
 
 **Task ID:** PHASE-C-MILESTONE-03-SLICE-02
 **Parent Task:** Phase C — Game Vertical Slice
-**Status:** READY_FOR_IMPLEMENTATION
+**Status:** APPROVED_AND_COMPLETE
 **Primary owner:** CODEX
 **Priority:** P0
 
@@ -27,7 +27,7 @@ restart reconciliation, and transport-neutral delivery port boundaries.
 - Milestone 2: APPROVED_AND_COMPLETE (`BE-05A`–`BE-06B` complete)
 - Milestone 3 architecture: RESOLVED (ADR-019 through ADR-024 accepted)
 - Milestone 3 Slice 1 (GEMINI-01): APPROVED_AND_COMPLETE (independent review: APPROVE_WITH_SMALL_FIX; approved small fix: CLOSED)
-- Milestone 3 Slice 2 (CODEX-CORE): READY_FOR_IMPLEMENTATION
+- Milestone 3 Slice 2 (CODEX-CORE): APPROVED_AND_COMPLETE (independent verdict: APPROVE)
 - Milestones 4–5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
 
@@ -51,21 +51,13 @@ restart reconciliation, and transport-neutral delivery port boundaries.
 
 ## Core implementation state
 
-The CODEX-owned production core is implemented in the uncommitted working tree:
-
-- strict mapping/profile/manifest schemas and package-name declarations;
-- deterministic operators, specificity, ordering, match modes, templates,
-  candidate output, and ADR-013 identity;
-- schema version 2 durable cooldown, sliding-window, anonymous/user, and
-  per-game token-bucket state;
-- runtime-owner-fenced atomic admission with rollback, restart preservation,
-  clock-rollback rejection, bounded capacity, and deterministic cleanup;
-- typed accepted, rejected, dropped, and deferred boundary results;
-- no queue, transport, final `actionId`, or Milestone 3 implementation.
-
-The frozen additive task is
-`docs/orchestration/prompts/PHASE-C-MILESTONE-02-GEMINI-01.md`.
-Milestone 2 is not yet `DONE` or `READY_FOR_FOCUSED_REVIEW`.
+The CODEX-owned Milestone 3 core is implemented and verified in the
+uncommitted working tree. It includes deterministic final action identity,
+durable deferred storage and atomic full budget re-admission promotion,
+destination-first persist-before-send delivery, bounded retry/TTL processing,
+restart reconciliation, concurrency/failure-injection tests, declarations,
+self-review, handoff, and an independent `APPROVE` verdict. Full Milestone 3
+administrative closure remains pending.
 
 ## Milestone 1 closure
 

@@ -61,15 +61,43 @@ export function admitMappingBudget(
   requireActiveOwner: () => void,
   transactionFault: (() => void) | null,
 ): BudgetAdmissionResult {
+  try {
+    database.exec("BEGIN IMMEDIATE");
+    const result = admitMappingBudgetInTransaction(database, input, requireActiveOwner);
+    if (!result.admitted) {
+      rollback(database);
+      return result;
+    }
+    transactionFault?.();
+    requireActiveOwner();
+    database.exec("COMMIT");
+    return result;
+  } catch (error) {
+    rollback(database);
+    if (
+      error instanceof PersistenceError &&
+      error.code !== "RUNTIME_SUPERSEDED" &&
+      error.code !== "DATABASE_UNAVAILABLE"
+    ) {
+      throw error;
+    }
+    return { admitted: false, reason: "PERSISTENCE_UNAVAILABLE" };
+  }
+}
+
+/** @internal Executes complete admission inside a caller-owned write transaction. */
+export function admitMappingBudgetInTransaction(
+  database: DatabaseSync,
+  input: BudgetAdmissionRequest,
+  requireActiveOwner: () => void,
+): BudgetAdmissionResult {
   validate(input);
   const profileId = input.candidate.gameProfileId;
   const ruleId = input.candidate.ruleId;
   const userKey = input.candidate.userBudgetKey;
   const windowStart = input.now - 60_000;
   const inactiveBefore = input.now - input.capacity.inactiveRetentionMs;
-  try {
-    database.exec("BEGIN IMMEDIATE");
-    requireActiveOwner();
+  requireActiveOwner();
 
     const profile = database
       .prepare("SELECT last_observed_at FROM mapping_budget_profiles WHERE profile_id = ?")
@@ -79,7 +107,6 @@ export function admitMappingBudget(
       throw new PersistenceError("SCHEMA_INCOMPATIBLE", "Budget clock state is invalid");
     }
     if (lastObserved !== undefined && input.now < lastObserved) {
-      rollback(database);
       return { admitted: false, reason: "CLOCK_ROLLBACK" };
     }
 
@@ -109,7 +136,6 @@ export function admitMappingBudget(
         throw new PersistenceError("SCHEMA_INCOMPATIBLE", "Budget capacity state is invalid");
       }
       if (activeCount >= input.capacity.maxUserBuckets) {
-        rollback(database);
         return { admitted: false, reason: "CAPACITY_EXHAUSTED" };
       }
     }
@@ -127,7 +153,6 @@ export function admitMappingBudget(
       throw new PersistenceError("SCHEMA_INCOMPATIBLE", "User budget state is invalid");
     }
     if (userCount >= input.userLimitPerMinute) {
-      rollback(database);
       return { admitted: false, reason: "USER_LIMIT" };
     }
 
@@ -142,7 +167,6 @@ export function admitMappingBudget(
       throw new PersistenceError("SCHEMA_INCOMPATIBLE", "Cooldown state is invalid");
     }
     if (lastAccepted !== undefined && input.now - lastAccepted < input.cooldownMs) {
-      rollback(database);
       return { admitted: false, reason: "RULE_COOLDOWN" };
     }
 
@@ -159,7 +183,6 @@ export function admitMappingBudget(
       throw new PersistenceError("SCHEMA_INCOMPATIBLE", "Rule budget state is invalid");
     }
     if (ruleCount >= input.ruleLimitPerMinute) {
-      rollback(database);
       return { admitted: false, reason: "RULE_LIMIT" };
     }
 
@@ -172,7 +195,6 @@ export function admitMappingBudget(
       throw new PersistenceError("SCHEMA_INCOMPATIBLE", "Token bucket state is invalid");
     }
     if (refilledAt !== undefined && input.now < refilledAt) {
-      rollback(database);
       return { admitted: false, reason: "CLOCK_ROLLBACK" };
     }
     const tokens =
@@ -184,7 +206,6 @@ export function admitMappingBudget(
               ((input.now - refilledAt) / 1000) * input.globalBudget.maxPerSecond,
           );
     if (tokens < 1) {
-      rollback(database);
       return { admitted: false, reason: "GLOBAL_LIMIT" };
     }
 
@@ -270,19 +291,5 @@ export function admitMappingBudget(
       )
       .run(profileId, windowStart);
 
-    transactionFault?.();
-    requireActiveOwner();
-    database.exec("COMMIT");
-    return { admitted: true };
-  } catch (error) {
-    rollback(database);
-    if (
-      error instanceof PersistenceError &&
-      error.code !== "RUNTIME_SUPERSEDED" &&
-      error.code !== "DATABASE_UNAVAILABLE"
-    ) {
-      throw error;
-    }
-    return { admitted: false, reason: "PERSISTENCE_UNAVAILABLE" };
-  }
+  return { admitted: true };
 }

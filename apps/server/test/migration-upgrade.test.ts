@@ -18,7 +18,7 @@ afterEach(() => {
   }
 });
 
-describe("Real Schema v1 to v2 to v3 Upgrade Regression", () => {
+describe("Real Schema v1 through v4 Upgrade Regression", () => {
   it("migrates v1 database to v2 then to v3 safely and maintains idempotency and data integrity", () => {
     const filename = temporaryDatabase();
 
@@ -179,7 +179,7 @@ describe("Real Schema v1 to v2 to v3 Upgrade Regression", () => {
     // Step 8 & 9: Reopen with full migration manifest (including v3)
     const dbV3 = new DatabaseSync(filename);
     const appliedV3 = migrateDatabase(dbV3, MIGRATIONS);
-    expect(appliedV3).toBe(3);
+    expect(appliedV3).toBe(4);
 
     // Step 10 & 11: Verify schema_versions contains 1, 2, 3 in order
     const versionsV3 = dbV3.prepare("SELECT version, migration_id FROM schema_versions ORDER BY version").all();
@@ -187,6 +187,7 @@ describe("Real Schema v1 to v2 to v3 Upgrade Regression", () => {
       { version: 1, migration_id: "phase-c-foundation" },
       { version: 2, migration_id: "phase-c-mapping-budgets" },
       { version: 3, migration_id: "phase-c-deferred-and-retry-metadata" },
+      { version: 4, migration_id: "phase-c-deferred-candidate-completeness" },
     ]);
 
     // Step 12 & 13: Verify mapping_budget_deferred_candidates exists and has columns
@@ -229,7 +230,7 @@ describe("Real Schema v1 to v2 to v3 Upgrade Regression", () => {
     // Step 17: Reopen again and prove migration idempotency
     const dbIdempotent = new DatabaseSync(filename);
     expect(() => migrateDatabase(dbIdempotent, MIGRATIONS)).not.toThrow();
-    expect(dbIdempotent.prepare("SELECT MAX(version) AS version FROM schema_versions").get()).toEqual({ version: 3 });
+    expect(dbIdempotent.prepare("SELECT MAX(version) AS version FROM schema_versions").get()).toEqual({ version: 4 });
     dbIdempotent.close();
   });
 

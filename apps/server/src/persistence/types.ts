@@ -1,5 +1,6 @@
 import type { JsonValue } from "@crowdcircuit/contracts";
 import type { DurableBudgetRepository } from "@crowdcircuit/mapping-engine";
+import type { BudgetAdmissionResult, MappingCandidate } from "@crowdcircuit/mapping-engine";
 import type { SendAuthorization } from "./authorization.js";
 export type { SendAuthorization } from "./authorization.js";
 
@@ -92,6 +93,14 @@ export type DurableCreateResult =
       readonly reason: "already_authorized" | "already_consumed";
     };
 
+export type PendingCreateResult =
+  | { readonly created: true; readonly record: DurableActionRecord }
+  | {
+      readonly created: false;
+      readonly record: DurableActionRecord;
+      readonly reason: "already_exists";
+    };
+
 export interface ActionAttempt {
   readonly actionId: string;
   readonly attemptNumber: number;
@@ -115,8 +124,36 @@ export interface ActionTransition {
 export interface ReconciliationResult {
   readonly actionId: string;
   readonly previousStatus: NonterminalActionStatus;
-  readonly status: "delivery_unknown_restart" | "aborted_restart" | "expired";
+  readonly status: "pending" | "received" | "delivery_unknown_restart" | "expired";
 }
+
+export type DeferredCandidateStatus = "queued" | "promoted" | "expired";
+
+export interface DeferredCandidateRecord {
+  readonly candidate: MappingCandidate;
+  readonly deferredExpiresAt: number;
+  readonly createdAt: number;
+  readonly admissionSnapshot: BudgetAdmissionSnapshot;
+  readonly status: DeferredCandidateStatus;
+  readonly owningRuntimeId: string;
+  readonly promotedActionId: string | null;
+  readonly promotedAt: number | null;
+}
+
+export interface EnqueueDeferredCandidate {
+  readonly candidate: MappingCandidate;
+  readonly deferredExpiresAt: number;
+  readonly createdAt: number;
+  readonly admissionSnapshot: BudgetAdmissionSnapshot;
+  readonly runtimeId: string;
+}
+
+export type DeferredPromotionResult =
+  | { readonly status: "promoted"; readonly record: DurableActionRecord }
+  | { readonly status: "already_promoted"; readonly record: DurableActionRecord }
+  | { readonly status: "expired" }
+  | { readonly status: "not_found" }
+  | { readonly status: "not_admitted"; readonly reason: Exclude<BudgetAdmissionResult, { admitted: true }>["reason"] };
 
 export interface RetentionPolicy {
   readonly terminalBefore: number;
@@ -124,6 +161,13 @@ export interface RetentionPolicy {
 }
 
 export interface DurableActionRepository {
+  createPending(input: CreateDurableAction): PendingCreateResult;
+  authorizePending(
+    actionId: string,
+    expectedVersion: number,
+    runtimeId: string,
+    gameInstanceId: string | null,
+  ): SendAuthorization;
   createBeforeFirstSend(input: CreateDurableAction): DurableCreateResult;
   authorizeRetry(
     actionId: string,
@@ -148,6 +192,18 @@ export interface DurableActionRepository {
   ): ActionAttempt;
   listAttempts(actionId: string): readonly ActionAttempt[];
   listNonterminal(): readonly DurableActionRecord[];
+  enqueueDeferredCandidate(input: EnqueueDeferredCandidate): DeferredCandidateRecord;
+  findDeferredCandidate(idempotencySeed: string): DeferredCandidateRecord | null;
+  promoteDeferredCandidate(idempotencySeed: string, now: number): DeferredPromotionResult;
+  expireDue(now: number, sweepLimit: number): number;
+  listDeliverable(now: number, limit: number): readonly DurableActionRecord[];
+  scheduleNextAttempt(
+    actionId: string,
+    expectedVersion: number,
+    at: number,
+    nextAttemptAt: number,
+    failureCode: string,
+  ): DurableActionRecord;
   reconcilePreviousRuntime(runtimeId: string, now: number): readonly ReconciliationResult[];
   cleanup(policy: RetentionPolicy): number;
   close(): void;
@@ -204,6 +260,7 @@ export class PersistenceError extends Error {
     | "INVALID_AUTHORIZATION"
     | "RUNTIME_SUPERSEDED"
     | "ALREADY_AUTHORIZED"
+    | "DEFERRED_CAPACITY_EXHAUSTED"
     | "INVALID_MIGRATION_MANIFEST"
     | "MIGRATION_FAILED"
     | "SCHEMA_INCOMPATIBLE";

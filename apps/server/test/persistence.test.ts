@@ -344,11 +344,14 @@ class DeterministicFakeRepository implements DurableActionRepository {
         now >= record.expiresAt
           ? "expired"
           : record.status === "pending"
-            ? "aborted_restart"
-            : "delivery_unknown_restart";
+            ? "pending"
+            : record.status === "received"
+              ? "received"
+              : "delivery_unknown_restart";
       staged.push({
         ...record,
         status,
+        runtimeId,
         updatedAt: now,
         version: record.version + 1,
         reconciliationReason: "restart",
@@ -603,7 +606,7 @@ function repositoryBehavior(factory: () => DurableActionRepository): void {
     const results = repository.reconcilePreviousRuntime("new", 1_200);
     expect(results).toEqual([
       { actionId: inflight.record.actionId, previousStatus: "in_flight", status: "delivery_unknown_restart" },
-      { actionId: pending.record.actionId, previousStatus: "pending", status: "aborted_restart" },
+      { actionId: pending.record.actionId, previousStatus: "pending", status: "pending" },
     ]);
     expect(repository.reconcilePreviousRuntime("new", 1_300)).toEqual([]);
     repository.close();
