@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slices 1–2: APPROVED_AND_COMPLETE; Slice 3 commit `6617f9f`: REQUEST_CHANGES; remediation: READY_FOR_INDEPENDENT_RE_REVIEW; Slice 4+: blocked)
+**Implementation status:** IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 3 commit `6617f9f`: historical REQUEST_CHANGES; remediation `de0b589`: APPROVED; Slice 4: READY_TO_BEGIN)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -89,7 +89,9 @@ Implementation commit `6617f9f`: REQUEST_CHANGES.
 
 Client-routing correction architecture: APPROVED_FOR_REMEDIATION.
 
-Remediation implementation: READY_FOR_INDEPENDENT_RE_REVIEW.
+Remediation commit `de0b589`: APPROVED.
+
+Overall status: APPROVED_AND_COMPLETE.
 
 Owner: CODEX.
 
@@ -133,11 +135,19 @@ Deliver:
 Review gate: Claude verifies deterministic routing, resolve/send race
 coverage, and adapter isolation.
 
+Final review evidence:
+
+- `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-03-INDEPENDENT-REREVIEW-01.md`
+- `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-03-SELF-REVIEW.md`
+- `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-03.md`
+
 Recommended user commit checkpoint: reviewed delivery adapter slice.
 
 ## Slice 4 — Receipt/result integration
 
 Owner: CODEX.
+
+Status: READY_TO_BEGIN. Implementation has not begun.
 
 Exclusive files:
 

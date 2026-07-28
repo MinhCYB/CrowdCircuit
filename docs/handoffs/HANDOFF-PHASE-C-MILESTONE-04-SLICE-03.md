@@ -1,93 +1,60 @@
 # Phase C Milestone 4 Slice 3 — Handoff
 
-**Date:** 2026-07-28  
-**Baseline:** `a984b5ed3e6919a386e09ba54ca6b15269e30c3a`  
-**Branch:** `review/phase-c`  
-**Status:** READY_FOR_INDEPENDENT_RE_REVIEW
+**Date:** 2026-07-28
+**Branch:** `review/phase-c`
+**Status:** APPROVED_AND_COMPLETE
 
-## Client-routing remediation handoff
+## Final handoff state
 
-- Original implementation `6617f9f`: `REQUEST_CHANGES` for F1 and F2.
-- Remediation baseline: `b2ca5b7`.
-- Routing resolves game plus optional instance, discovers the selected
-  authenticated client, authorizes and records the concrete client/instance
-  binding, commits, then sends through the unchanged complete fence.
-- Pre-edit call-site inventory: 65 matches (62 primary test-file matches plus
-  3 declaration-consumer matches).
-- Distinct-ID evidence covers adapter and real Socket.IO delivery,
-  cross-owner deterministic selection, wrong-client fencing, and durable
-  authorization mismatch rejection.
-- Schema and migrations are unchanged.
-- No independent approval is claimed.
+- Original implementation `6617f9f`: independent `REQUEST_CHANGES`.
+- Corrective architecture amendment `b2ca5b7`: approved remediation model and
+  ownership.
+- Client-routing remediation `de0b589`: accepted.
+- Final independent re-review: `APPROVE`.
 
-## Independent-review correction state
+F1 (`clientId: envelope.gameId`) and F2 (`clientId: input.gameId`) are closed.
+There is no open Slice 3 blocker.
 
-Implementation commit `6617f9f` is `REQUEST_CHANGES` because delivery and
-authorization derive `clientId` from `gameId`. The correction architecture is
-`APPROVED_FOR_REMEDIATION`; remediation is `READY_TO_BEGIN`. No remediation
-implementation is claimed here.
+## Final interfaces and semantics
 
-## Delivered
+The durable target is `gameId` plus optional `gameInstanceId`; no `clientId`
+was added to `GameActionEnvelope`. `GameSessionDeliveryPort` owns
+`lookupDestination` and `sendIfCurrent`. Registry resolution selects an
+eligible session and supplies its authenticated client, concrete instance,
+session generation, and opaque final fence.
 
-- `SocketIoActionDeliveryAdapter`;
-- deterministic eligible-only registry destination selection;
-- opaque, socket-ID-independent complete destination fencing;
-- synchronous `sendIfCurrent` runtime/session/connection/replacement/auth and
-  closure fencing;
-- connected/writable checks and synchronous emit-exception redaction;
-- sanitized public transport failures;
-- successful real Socket.IO delivery and clean runtime closure;
-- real disconnected-handle evidence;
-- deterministic private writable-branch evidence;
-- deterministic private emit-failure redaction evidence;
-- transport-neutral declaration coverage.
+Explicit-instance routing is exact and has no fallback. Null-instance routing
+is deterministic by `gameInstanceId`, across eligible owners. Different-client
+occupied takeover remains rejected. Final send remains fenced to the exact
+selected client, game, instance, runtime, session, and connection generation.
 
-The existing action gateway continues to own persist-before-send ordering and
-retry scheduling. Slice 3 adds no fallback, queue, retry, receipt/result,
-persistence, SDK runtime, dependency, or later-slice behavior.
+Authorization and durable attempt recording use the resolved client/instance
+binding. The transaction commits before send. The adapter performs no retry;
+a later durable retry resolves afresh, while previous attempt history remains
+bound to its original client.
 
-## Audit correction
+## Preserved invariants
 
-The pre-correction audit history was:
+- persist-before-send;
+- exact client-aware generation fencing and no redirect on replacement;
+- immutable historical attempt binding;
+- no adapter retry and unchanged durable retry/history semantics;
+- unchanged `GameActionEnvelope`;
+- no schema, migration, contract, SDK, manifest, or lockfile change;
+- no Slice 4+, Milestone 5, or Phase D implementation.
 
-- server tests: 148/148 in 16 files;
-- repository tests: 446/446 in 32 files;
-- implementation defect: none found;
-- blocking evidence finding: missing real private-handle failure proofs.
+## Final verification and approval
 
-Three integration tests now close that finding:
+Implementation verification on Node v24.15.0 / pnpm 11.9.0 reported server
+152/152 tests across 16 files, contracts 185/185 across 7 files, and repository
+450/450 tests across 32 files. Repository lint passed with zero errors and two
+pre-existing warnings in untouched SDK declaration-consumer code.
 
-- actual disconnected Socket.IO handle returns bounded `disconnected`;
-- private writable branch returns bounded `backpressured` without emit;
-- private action emit throws sensitive sentinel text and returns bounded
-  `emit_failed`, while the adapter exposes only
-  `game_session_unavailable`.
+The independent reviewer used Node v22.22.2 / pnpm 11.9.0, passed server lint,
+typecheck, declarations, and build plus contracts 185/185, and observed eight
+worker-thread failures that reproduced identically on parent `b2ca5b7`. They
+were classified as a pre-existing Node 22 environment artifact, not a
+remediation regression. Final verdict: `APPROVE`.
 
-The internal `actionSendTestHooks` seam is action-specific and optional. Its
-production defaults still read the real transport writable state and call only
-`socket.emit("game.action", message)`. It exposes no raw socket and adds no
-dependency.
-
-## Fresh final evidence
-
-- Server: lint pass; typecheck pass; **151/151 tests in 16 files**;
-  declarations pass; build pass.
-- Contracts: lint pass; typecheck pass; **185/185 tests in 7 files**;
-  declarations pass; build pass.
-- Repository: lint pass with zero errors and two pre-existing SDK warnings;
-  typecheck pass; **449/449 tests in 32 files**; build pass.
-- Declaration scan: expected Socket.IO runtime/adapter names only; no raw
-  Socket/Namespace/socket-ID/provider-writability leakage through the
-  transport-neutral adapter declaration.
-- Disabled-test scan: none; matches are intentional passing negative
-  `@ts-expect-error` declaration assertions.
-- Scope scan: no receipt/result lifecycle mutation, persistence DDL, SDK
-  source, dependency, lockfile, machine-local path, or later-slice change.
-- `git diff --check HEAD --`: pass.
-- Staging area: empty.
-- Commit/push: not performed.
-
-This handoff records self-review readiness only and does not claim independent
-approval.
-
-**HISTORICAL_HANDOFF_SUPERSEDED_BY_REQUEST_CHANGES**
+Slice 3 is `APPROVED_AND_COMPLETE`. Do not reopen it unless a new regression is
+found.
