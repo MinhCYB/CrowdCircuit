@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3: READY_TO_START; Slice 4+: BLOCKED_BY_PREVIOUS_SLICE_REVIEW)
+**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_TO_BEGIN_WITH_APPROVED_AMENDMENT; Slice 4+: BLOCKED_BY_PREVIOUS_SLICE_REVIEW)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -85,14 +85,38 @@ Recommended user commit checkpoint: reviewed server transport slice.
 
 ## Slice 3 — Delivery adapter
 
-Status: READY_TO_START.
+Architecture gap status: RESOLVED.
+
+Implementation status: READY_TO_BEGIN_WITH_APPROVED_AMENDMENT.
 
 Owner: CODEX.
 
-Exclusive files:
+Authoritative amendment:
 
-- `apps/server/src/delivery/socket-io/**`;
-- adapter-focused tests not owned by another slice.
+- `docs/orchestration/plans/PHASE-C-MILESTONE-04-SLICE-03-DELIVERY-BRIDGE-AMENDMENT.md`
+- `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-03-GAP-ARCHITECTURE-REVIEW-01.md`
+
+Exact implementation ownership:
+
+- `apps/server/src/delivery/socket-io/**` for the adapter;
+- `apps/server/src/game/ports.ts` only for transport-neutral fence/result
+  interfaces required across internal modules; no Socket.IO imports,
+  auth/registration/heartbeat changes, or raw handle export;
+- `apps/server/src/game/registry/index.ts` only for eligible-only lookup,
+  exact-fence `sendIfCurrent`, closed/auth/current-generation/writability
+  checks, bounded result mapping, and the minimum shared eligibility
+  predicate; no registration/replacement/heartbeat/cleanup-policy changes;
+- `apps/server/src/game/socket-server.ts` only to extend the private
+  `GameConnectionHandle` with action-specific synchronous `sendAction`, wire
+  it to the private socket, check connected/writable/backpressure state, and
+  redact synchronous emit exceptions; no target selection, inbound
+  receipt/result behavior, or public Socket.IO export;
+- registry unit tests, adapter unit tests, real Socket.IO delivery integration
+  tests, and declaration tests.
+
+Frozen: authentication mapping, registration ownership, replacement policy,
+heartbeat/rate behavior, cleanup policy, inbound receipt/result, persistence,
+and SDK runtime. This allowlist is narrow and grants no broad co-ownership.
 
 Deliver:
 
