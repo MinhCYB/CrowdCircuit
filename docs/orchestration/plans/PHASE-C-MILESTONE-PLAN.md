@@ -13,7 +13,7 @@
 **Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
 **Final Architecture Fix Verification:** APPROVE
 **Milestone 4 architecture:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Milestone 4 implementation:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_TO_BEGIN_WITH_APPROVED_AMENDMENT; Slice 4+: BLOCKED_BY_PREVIOUS_SLICE_REVIEW)
+**Milestone 4 implementation:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_FOR_INDEPENDENT_REVIEW; Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW; Slices 5–6: blocked by the approved sequential flow)
 **Milestone 5:** BLOCKED_BY_PREVIOUS_MILESTONE
 **Phase D:** untouched
 
@@ -328,7 +328,7 @@ idempotency, retry/TTL, reconciliation, failure isolation, and artifacts.
 **Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
 **Final Architecture Fix Verification:** APPROVE
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_TO_BEGIN_WITH_APPROVED_AMENDMENT; Slice 4+: BLOCKED_BY_PREVIOUS_SLICE_REVIEW)
+**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_FOR_INDEPENDENT_REVIEW; Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW; Slices 5–6: blocked by the approved sequential flow)
 **Primary owner:** CODEX  
 **Roadmap:** `BE-07A`–`BE-07D`, `BE-08A`–`BE-08C`
 

@@ -2,15 +2,20 @@ import { randomBytes } from "node:crypto";
 import type {
   AuthenticatedClientIdentity,
   ConnectionGeneration,
+  GameConnectionSendResult,
   GameRegistrationInput,
   GameRegistrationOutcome,
+  GameSessionDeliveryPort,
   GameSessionIdentity,
   GameSessionRegistryReadPort,
+  GameSessionSendFence,
+  GameSessionSendResult,
   RegisteredGameSessionSnapshot,
   ServerRuntimeGeneration,
   SessionLookupQuery,
   SessionLookupResult,
 } from "../ports.js";
+import type { GameActionDeliveryMessage } from "@crowdcircuit/contracts";
 
 export const GAME_SESSION_LIMITS = {
   maxTotal: 256,
@@ -23,6 +28,7 @@ export const GAME_SESSION_LIMITS = {
 export interface GameConnectionHandle {
   readonly id: string;
   disconnect(reason: "SESSION_REPLACED" | "SESSION_STALE" | "SERVER_SHUTDOWN"): void;
+  sendAction(message: GameActionDeliveryMessage): GameConnectionSendResult;
 }
 
 interface RegistryEntry
@@ -53,7 +59,7 @@ function validPositiveSafe(value: number): boolean {
 }
 
 export class GameSessionRegistry
-  implements GameSessionRegistryReadPort
+  implements GameSessionRegistryReadPort, GameSessionDeliveryPort
 {
   readonly #entries = new Map<string, RegistryEntry>();
   readonly #clock: () => number;
@@ -119,9 +125,12 @@ export class GameSessionRegistry
   }
 
   lookupDestination(query: SessionLookupQuery): Promise<SessionLookupResult> {
+    if (this.#closed) return Promise.resolve({ status: "not_found" });
+    const now = this.#now();
     const candidates = [...this.#entries.values()]
       .filter(
         (entry) =>
+          now < entry.authExpiresAt &&
           entry.clientId === query.clientId &&
           entry.gameId === query.gameId &&
           (query.gameInstanceId === null ||
@@ -137,6 +146,52 @@ export class GameSessionRegistry
         ? { status: "not_found" }
         : { status: "found", session: this.#snapshot(entry) },
     );
+  }
+
+  sendIfCurrent(
+    message: GameActionDeliveryMessage,
+    destinationGeneration: string,
+  ): GameSessionSendResult {
+    const fence = this.#decodeFence(destinationGeneration);
+    if (fence === null) {
+      return { status: "stale", reason: "malformed_fence" };
+    }
+    if (this.#closed) {
+      return { status: "unavailable", reason: "registry_closed" };
+    }
+    if (fence.serverRuntimeGeneration !== this.#runtimeGeneration) {
+      return { status: "stale", reason: "runtime_generation_mismatch" };
+    }
+    const entry = this.#entries.get(
+      this.#key(fence.gameId, fence.gameInstanceId),
+    );
+    if (entry === undefined) {
+      return { status: "unavailable", reason: "entry_missing" };
+    }
+    if (
+      entry.clientId !== fence.clientId ||
+      entry.gameId !== fence.gameId ||
+      entry.gameInstanceId !== fence.gameInstanceId
+    ) {
+      return { status: "stale", reason: "entry_replaced" };
+    }
+    if (entry.connectionGeneration !== fence.sessionGeneration) {
+      return { status: "stale", reason: "session_generation_mismatch" };
+    }
+    if (entry.connectionGeneration !== fence.connectionGeneration) {
+      return { status: "stale", reason: "connection_generation_mismatch" };
+    }
+    if (
+      message.sessionGeneration !== fence.sessionGeneration ||
+      message.data.gameId !== fence.gameId ||
+      message.data.gameInstanceId !== fence.gameInstanceId
+    ) {
+      return { status: "invariant_violation" };
+    }
+    if (this.#now() >= entry.authExpiresAt) {
+      return { status: "stale", reason: "auth_expired" };
+    }
+    return entry.handle.sendAction(message);
   }
 
   getSession(clientId: string, gameId: string, gameInstanceId: string) {
@@ -252,6 +307,37 @@ export class GameSessionRegistry
       lastHeartbeatAt: entry.lastHeartbeatAt,
       sdkVersion: entry.sdkVersion,
     };
+  }
+
+  #decodeFence(value: string): GameSessionSendFence | null {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (
+        !Array.isArray(parsed) ||
+        parsed.length !== 7 ||
+        parsed[0] !== 1 ||
+        typeof parsed[1] !== "string" ||
+        typeof parsed[2] !== "string" ||
+        typeof parsed[3] !== "string" ||
+        typeof parsed[4] !== "string" ||
+        !Number.isSafeInteger(parsed[5]) ||
+        (parsed[5] as number) <= 0 ||
+        !Number.isSafeInteger(parsed[6]) ||
+        (parsed[6] as number) <= 0
+      ) {
+        return null;
+      }
+      return {
+        clientId: parsed[1],
+        gameId: parsed[2],
+        gameInstanceId: parsed[3],
+        serverRuntimeGeneration: parsed[4],
+        sessionGeneration: parsed[5] as number,
+        connectionGeneration: parsed[6] as number,
+      };
+    } catch {
+      return null;
+    }
   }
 
   #rejected(errorCode: Extract<GameRegistrationOutcome, { status: "rejected" }>["errorCode"]) {

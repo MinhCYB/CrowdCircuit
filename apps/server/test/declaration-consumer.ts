@@ -18,14 +18,18 @@ import {
   type DurableActionStatus,
   type GameRegistrationInput,
   type GameRegistrationOutcome,
+  type GameSessionDeliveryPort,
   type GameSessionIdentity,
   type GameSessionLifecyclePort,
   type GameSessionRegistryReadPort,
+  type GameSessionSendFence,
+  type GameSessionSendResult,
   type PreparedActionDelivery,
   type RegisteredGameSessionSnapshot,
   type SendAuthorization,
   type SessionLookupQuery,
   type SessionLookupResult,
+  SocketIoActionDeliveryAdapter,
 } from "@crowdcircuit/server";
 import type {
   BudgetAdmissionRequest,
@@ -266,6 +270,7 @@ const lookupRes: SessionLookupResult = {
 
 declare const registryReadPort: GameSessionRegistryReadPort;
 declare const registryLifecyclePort: GameSessionLifecyclePort;
+declare const registryDeliveryPort: GameSessionDeliveryPort;
 
 void registryReadPort.getSession("client-1", "zombie-survival", "inst-1");
 void registryReadPort.listSessionsForClient("client-1");
@@ -274,6 +279,21 @@ void registryReadPort.lookupDestination(lookupQuery);
 void registryLifecyclePort.registerSession(clientIdent, regInput);
 void registryLifecyclePort.recordHeartbeat(sessionIdent, 1);
 void registryLifecyclePort.removeIfCurrent(sessionIdent, 1, "test");
+
+const sendFence: GameSessionSendFence = {
+  clientId: "client-1",
+  gameId: "zombie-survival",
+  gameInstanceId: "inst-1",
+  serverRuntimeGeneration: "srv-gen-1",
+  sessionGeneration: 1,
+  connectionGeneration: 1,
+};
+const sessionSendResult: GameSessionSendResult = { status: "sent" };
+const socketIoAdapter: ActionDeliveryPort =
+  new SocketIoActionDeliveryAdapter(registryDeliveryPort);
+void sendFence;
+void sessionSendResult;
+void socketIoAdapter;
 
 // @ts-expect-error FakeActionDeliveryPort is not exported from production package surfaces
 import { FakeActionDeliveryPort } from "@crowdcircuit/server";

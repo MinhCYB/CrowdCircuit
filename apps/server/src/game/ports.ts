@@ -4,7 +4,10 @@
  * Zero Socket.IO runtime or persistence dependencies.
  */
 
-import type { GameProtocolErrorCode } from "@crowdcircuit/contracts";
+import type {
+  GameActionDeliveryMessage,
+  GameProtocolErrorCode,
+} from "@crowdcircuit/contracts";
 
 export type ServerRuntimeGeneration = string;
 export type ConnectionGeneration = number;
@@ -74,6 +77,51 @@ export interface SessionLookupQuery {
 }
 
 /**
+ * Complete transport-neutral fence for one resolved live game session.
+ */
+export interface GameSessionSendFence {
+  readonly clientId: string;
+  readonly gameId: string;
+  readonly gameInstanceId: string;
+  readonly serverRuntimeGeneration: ServerRuntimeGeneration;
+  readonly sessionGeneration: ConnectionGeneration;
+  readonly connectionGeneration: ConnectionGeneration;
+}
+
+export type GameConnectionSendResult =
+  | { readonly status: "sent" }
+  | {
+      readonly status: "unavailable";
+      readonly reason:
+        | "disconnected"
+        | "backpressured"
+        | "emit_failed";
+    };
+
+export type GameSessionSendResult =
+  | { readonly status: "sent" }
+  | {
+      readonly status: "stale";
+      readonly reason:
+        | "malformed_fence"
+        | "runtime_generation_mismatch"
+        | "session_generation_mismatch"
+        | "connection_generation_mismatch"
+        | "auth_expired"
+        | "entry_replaced";
+    }
+  | {
+      readonly status: "unavailable";
+      readonly reason:
+        | "registry_closed"
+        | "entry_missing"
+        | "disconnected"
+        | "backpressured"
+        | "emit_failed";
+    }
+  | { readonly status: "invariant_violation" };
+
+/**
  * Destination lookup outcome.
  */
 export type SessionLookupResult =
@@ -93,6 +141,17 @@ export interface GameSessionRegistryReadPort {
   getSession(clientId: string, gameId: string, gameInstanceId: string): RegisteredGameSessionSnapshot | null;
   listSessionsForClient(clientId: string): readonly RegisteredGameSessionSnapshot[];
   getActiveSessionCount(): number;
+}
+
+/**
+ * Narrow internal bridge used by outbound game action delivery.
+ */
+export interface GameSessionDeliveryPort {
+  lookupDestination(query: SessionLookupQuery): Promise<SessionLookupResult>;
+  sendIfCurrent(
+    message: GameActionDeliveryMessage,
+    destinationGeneration: string,
+  ): GameSessionSendResult;
 }
 
 /**

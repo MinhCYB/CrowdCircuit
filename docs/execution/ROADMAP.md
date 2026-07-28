@@ -84,7 +84,7 @@ Phase C work.
 | PHASE-C-MILESTONE-01 | Authentication and durable persistence prerequisites | DONE |
 | PHASE-C-MILESTONE-02 | Mapping and action-budget capability | APPROVED_AND_COMPLETE |
 | PHASE-C-MILESTONE-03 | Durable Action Gateway lifecycle | APPROVED_AND_COMPLETE |
-| PHASE-C-MILESTONE-04 | Authenticated game-session delivery and SDK vertical slice | IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_TO_BEGIN_WITH_APPROVED_AMENDMENT; Slice 4+: BLOCKED_BY_PREVIOUS_SLICE_REVIEW) |
+| PHASE-C-MILESTONE-04 | Authenticated game-session delivery and SDK vertical slice | IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_FOR_INDEPENDENT_REVIEW; Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW; Slices 5–6: blocked by the approved sequential flow) |
 | PHASE-C-MILESTONE-05 | Demo game, recovery, and Phase C acceptance | BLOCKED_BY_PREVIOUS_MILESTONE |
 
 | ID | Task | Status | Depends on |
@@ -96,7 +96,7 @@ Phase C work.
 | BE-05E | Mapping dry-run and integration tests | DONE | BE-05D |
 | BE-06A | Per-game global action budget | DONE | BE-05E |
 | BE-06B | Overflow and priority policies | DONE | BE-06A |
-| BE-07A | Game Socket.IO namespace and registration | IN_PROGRESS (Slice 2 APPROVED_AND_COMPLETE; Slice 3 architecture gap RESOLVED; Slice 3 implementation READY_TO_BEGIN_WITH_APPROVED_AMENDMENT) | FOUND-03D, FOUND-04D, BE-05E |
+| BE-07A | Game Socket.IO namespace and registration | IN_PROGRESS (Slice 2 APPROVED_AND_COMPLETE; Slice 3 architecture gap RESOLVED; Slice 3 implementation READY_FOR_INDEPENDENT_REVIEW) | FOUND-03D, FOUND-04D, BE-05E |
 | BE-07B | Action delivery and received ACK | TODO | BE-07A, FOUND-04D |
 | BE-07C | Completion result, retry and TTL | TODO | BE-07B, FOUND-04D |
 | BE-07D | Action Gateway integration tests | TODO | BE-07C, FOUND-03D, FOUND-04D |
@@ -229,7 +229,9 @@ Required:
 
 **Current orchestration unit:** `Phase C — Game Vertical Slice`
 
-**Current milestone:** `PHASE-C-MILESTONE-04 — IN_PROGRESS` (Architecture: APPROVED_AND_COMPLETE; Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_TO_BEGIN_WITH_APPROVED_AMENDMENT; Slice 4+: BLOCKED_BY_PREVIOUS_SLICE_REVIEW)
+**Current milestone:** `PHASE-C-MILESTONE-04 — IN_PROGRESS` (Architecture: APPROVED_AND_COMPLETE; Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_FOR_INDEPENDENT_REVIEW; Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW; Slices 5–6: blocked by the approved sequential flow)
+
+**Next action:** Independent review of Phase C Milestone 4 Slice 3 — Delivery adapter.
 
 **Plan:** `docs/orchestration/plans/PHASE-C-MILESTONE-PLAN.md`
 

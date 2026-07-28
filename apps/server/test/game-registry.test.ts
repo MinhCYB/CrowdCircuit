@@ -1,19 +1,25 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   GAME_SESSION_LIMITS,
   GameSessionRegistry,
   type GameConnectionHandle,
 } from "../src/game/registry/index.js";
+import type { GameActionDeliveryMessage } from "@crowdcircuit/contracts";
 
 function handle(id: string) {
   const reasons: string[] = [];
+  const messages: GameActionDeliveryMessage[] = [];
   const value: GameConnectionHandle = {
     id,
     disconnect(reason) {
       reasons.push(reason);
     },
+    sendAction(message) {
+      messages.push(message);
+      return { status: "sent" };
+    },
   };
-  return { value, reasons };
+  return { value, reasons, messages };
 }
 
 function register(
@@ -138,4 +144,210 @@ describe("GameSessionRegistry", () => {
       session: { serverRuntimeGeneration: "two" },
     });
   });
+
+  it("excludes auth-expired entries from destination resolution", async () => {
+    let now = 10;
+    const registry = new GameSessionRegistry({ clock: () => now });
+    const item = register(registry, "client", "game", "instance");
+    expect(item.outcome.status).toBe("registered");
+    now = Number.MAX_SAFE_INTEGER;
+    await expect(registry.lookupDestination({
+      clientId: "client",
+      gameId: "game",
+      gameInstanceId: null,
+    })).resolves.toEqual({ status: "not_found" });
+  });
+
+  it("selects the lowest instance independently of insertion order", async () => {
+    for (const instanceIds of [["z", "a"], ["a", "z"]] as const) {
+      const registry = new GameSessionRegistry();
+      for (const instanceId of instanceIds) {
+        register(registry, "client", "game", instanceId);
+      }
+      await expect(registry.lookupDestination({
+        clientId: "client",
+        gameId: "game",
+        gameInstanceId: null,
+      })).resolves.toMatchObject({
+        status: "found",
+        session: { gameInstanceId: "a" },
+      });
+    }
+  });
+
+  it("sends once only when the complete resolved fence is current", async () => {
+    const registry = new GameSessionRegistry({
+      clock: () => 10,
+      runtimeGeneration: "runtime",
+    });
+    const item = register(registry, "client", "game", "instance");
+    expect(item.outcome.status).toBe("registered");
+    if (item.outcome.status !== "registered") return;
+    const generation = item.outcome.sessionGeneration;
+    const message = actionMessage(generation);
+    const fence = encodeFence("client", "game", "instance", "runtime", generation, generation);
+    expect(registry.sendIfCurrent(message, fence)).toEqual({ status: "sent" });
+    expect(item.connection.messages).toStrictEqual([message]);
+  });
+
+  it("fails closed for malformed and independently mismatched fence components", () => {
+    const registry = new GameSessionRegistry({
+      clock: () => 10,
+      runtimeGeneration: "runtime",
+    });
+    const item = register(registry, "client", "game", "instance");
+    expect(item.outcome.status).toBe("registered");
+    if (item.outcome.status !== "registered") return;
+    const generation = item.outcome.sessionGeneration;
+    const message = actionMessage(generation);
+    expect(registry.sendIfCurrent(message, "not-json")).toMatchObject({
+      status: "stale",
+      reason: "malformed_fence",
+    });
+    expect(registry.sendIfCurrent(
+      message,
+      encodeFence("client", "game", "instance", "other", generation, generation),
+    )).toMatchObject({ reason: "runtime_generation_mismatch" });
+    expect(registry.sendIfCurrent(
+      message,
+      encodeFence("client", "game", "instance", "runtime", generation + 1, generation),
+    )).toMatchObject({ reason: "session_generation_mismatch" });
+    expect(registry.sendIfCurrent(
+      message,
+      encodeFence("client", "game", "instance", "runtime", generation, generation + 1),
+    )).toMatchObject({ reason: "connection_generation_mismatch" });
+    expect(item.connection.messages).toHaveLength(0);
+  });
+
+  it("does not redirect an old fence to a replacement, but a fresh fence sends", () => {
+    const registry = new GameSessionRegistry({
+      clock: () => 10,
+      runtimeGeneration: "runtime",
+    });
+    const old = register(registry, "client", "game", "instance");
+    const replacement = register(registry, "client", "game", "instance");
+    if (old.outcome.status !== "registered" || replacement.outcome.status !== "registered") return;
+    const oldFence = encodeFence(
+      "client", "game", "instance", "runtime",
+      old.outcome.sessionGeneration, old.outcome.sessionGeneration,
+    );
+    expect(registry.sendIfCurrent(
+      actionMessage(old.outcome.sessionGeneration),
+      oldFence,
+    )).toMatchObject({ status: "stale", reason: "session_generation_mismatch" });
+    expect(old.connection.messages).toHaveLength(0);
+    expect(replacement.connection.messages).toHaveLength(0);
+
+    const currentGeneration = replacement.outcome.sessionGeneration;
+    expect(registry.sendIfCurrent(
+      actionMessage(currentGeneration),
+      encodeFence("client", "game", "instance", "runtime", currentGeneration, currentGeneration),
+    )).toEqual({ status: "sent" });
+    expect(replacement.connection.messages).toHaveLength(1);
+  });
+
+  it("fails send after disappearance, auth expiry, or registry closure", () => {
+    let now = 10;
+    const registry = new GameSessionRegistry({
+      clock: () => now,
+      runtimeGeneration: "runtime",
+    });
+    const item = register(registry, "client", "game", "instance");
+    if (item.outcome.status !== "registered") return;
+    const generation = item.outcome.sessionGeneration;
+    const fence = encodeFence("client", "game", "instance", "runtime", generation, generation);
+    const message = actionMessage(generation);
+    now = Number.MAX_SAFE_INTEGER;
+    expect(registry.sendIfCurrent(message, fence)).toMatchObject({
+      status: "stale",
+      reason: "auth_expired",
+    });
+    now = 10;
+    registry.removeIfCurrent(item.outcome.session, generation, "test");
+    expect(registry.sendIfCurrent(message, fence)).toMatchObject({
+      status: "unavailable",
+      reason: "entry_missing",
+    });
+
+    const second = register(registry, "client", "game", "instance");
+    expect(second.outcome.status).toBe("registered");
+    registry.closeAll();
+    expect(registry.sendIfCurrent(message, fence)).toMatchObject({
+      status: "unavailable",
+      reason: "registry_closed",
+    });
+  });
+
+  it.each([
+    ["disconnected", "disconnected"],
+    ["backpressured", "backpressured"],
+    ["emit failure", "emit_failed"],
+  ] as const)("maps a bounded %s handle result without a second send", (_label, reason) => {
+    const registry = new GameSessionRegistry({
+      clock: () => 10,
+      runtimeGeneration: "runtime",
+    });
+    const sendAction = vi.fn(() => ({
+      status: "unavailable" as const,
+      reason,
+    }));
+    const connection = {
+      value: {
+        id: "non-authoritative",
+        disconnect() {},
+        sendAction,
+      } satisfies GameConnectionHandle,
+      reasons: [],
+      messages: [],
+    };
+    const item = register(registry, "client", "game", "instance", connection);
+    if (item.outcome.status !== "registered") return;
+    const generation = item.outcome.sessionGeneration;
+    expect(registry.sendIfCurrent(
+      actionMessage(generation),
+      encodeFence("client", "game", "instance", "runtime", generation, generation),
+    )).toEqual({ status: "unavailable", reason });
+    expect(sendAction).toHaveBeenCalledTimes(1);
+  });
 });
+
+function actionMessage(sessionGeneration: number): GameActionDeliveryMessage {
+  return {
+    type: "game.action",
+    specVersion: "0.1",
+    attemptNumber: 1,
+    sessionGeneration,
+    data: {
+      specVersion: "0.1",
+      actionId: "action",
+      actionType: "spawn",
+      gameId: "game",
+      gameInstanceId: "instance",
+      params: {},
+      actor: null,
+      trigger: { eventId: "event", eventType: "gift", mappingId: "mapping" },
+      priority: 0,
+      ttlMs: 1_000,
+      createdAt: "2026-07-28T00:00:00.000Z",
+    },
+  };
+}
+
+function encodeFence(
+  clientId: string,
+  gameId: string,
+  gameInstanceId: string,
+  runtimeGeneration: string,
+  sessionGeneration: number,
+  connectionGeneration: number,
+): string {
+  return JSON.stringify([
+    1,
+    clientId,
+    gameId,
+    gameInstanceId,
+    runtimeGeneration,
+    sessionGeneration,
+    connectionGeneration,
+  ]);
+}

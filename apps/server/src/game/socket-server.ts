@@ -4,6 +4,7 @@ import type { OriginPolicy, RoleSessionRegistry } from "@crowdcircuit/auth-core"
 import {
   GameHeartbeatMessageSchema,
   GameRegisterMessageSchema,
+  type GameActionDeliveryMessage,
   type GameProtocolErrorCode,
   type GameProtocolErrorMessage,
 } from "@crowdcircuit/contracts";
@@ -55,6 +56,11 @@ interface RegistrationDeadlineScheduler {
   clear(timer: { unref(): void }): void;
 }
 
+interface ActionSendTestHooks {
+  isWritable?(): boolean;
+  emitAction?(message: GameActionDeliveryMessage): void;
+}
+
 function protocolError(code: GameProtocolErrorCode): GameProtocolErrorMessage {
   return {
     type: "game.error",
@@ -81,6 +87,11 @@ export function attachGameSocketServer(options: {
   readonly registrationDeadlineScheduler?: RegistrationDeadlineScheduler;
   /** @internal — test seam only; production default: 10_000 */
   readonly invalidMessageWindowMs?: number;
+  /**
+   * @internal — action-specific test seam; production reads the real transport
+   * writable state and emits game.action through the private Socket.IO socket.
+   */
+  readonly actionSendTestHooks?: ActionSendTestHooks;
 }): GameSocketRuntime {
   const clock = options.clock ?? Date.now;
   const registrationDeadlineMs = options.registrationDeadlineMs ?? GAME_SOCKET_OPTIONS.registrationDeadlineMs;
@@ -208,6 +219,28 @@ export function attachGameSocketServer(options: {
             disconnect(reason) {
               if (reason !== "SERVER_SHUTDOWN") emitError(socket, reason);
               socket.disconnect(true);
+            },
+            sendAction(message: GameActionDeliveryMessage) {
+              if (!socket.connected) {
+                return { status: "unavailable", reason: "disconnected" };
+              }
+              const writable =
+                options.actionSendTestHooks?.isWritable?.() ??
+                socket.conn.transport.writable;
+              if (!writable) {
+                return { status: "unavailable", reason: "backpressured" };
+              }
+              try {
+                const emitAction =
+                  options.actionSendTestHooks?.emitAction ??
+                  ((action: GameActionDeliveryMessage) => {
+                    socket.emit("game.action", action);
+                  });
+                emitAction(message);
+                return { status: "sent" };
+              } catch {
+                return { status: "unavailable", reason: "emit_failed" };
+              }
             },
           },
         },

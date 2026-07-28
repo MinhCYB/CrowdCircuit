@@ -10,6 +10,7 @@ export * from "./persistence/index.js";
 export * from "./delivery/port.js";
 export * from "./delivery/action-id.js";
 export * from "./delivery/gateway.js";
+export * from "./delivery/socket-io/index.js";
 export * from "./game/index.js";
 export { createAuthRuntime, type AuthRuntime } from "./auth/index.js";
 

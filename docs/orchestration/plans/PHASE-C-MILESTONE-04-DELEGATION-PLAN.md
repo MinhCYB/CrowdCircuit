@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_TO_BEGIN_WITH_APPROVED_AMENDMENT; Slice 4+: BLOCKED_BY_PREVIOUS_SLICE_REVIEW)
+**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_FOR_INDEPENDENT_REVIEW; Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW; Slices 5–6: blocked by the approved sequential flow)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -87,7 +87,7 @@ Recommended user commit checkpoint: reviewed server transport slice.
 
 Architecture gap status: RESOLVED.
 
-Implementation status: READY_TO_BEGIN_WITH_APPROVED_AMENDMENT.
+Implementation status: READY_FOR_INDEPENDENT_REVIEW.
 
 Owner: CODEX.
 
