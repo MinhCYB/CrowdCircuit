@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: READY_TO_BEGIN)
+**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: READY_FOR_INDEPENDENT_REVIEW)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -47,7 +47,7 @@ Recommended user commit checkpoint: reviewed additive contract slice.
 
 Owner: CODEX.
 
-Status: READY_TO_BEGIN.
+Status: READY_FOR_INDEPENDENT_REVIEW.
 
 Exclusive files:
 

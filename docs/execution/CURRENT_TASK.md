@@ -2,14 +2,13 @@
 
 **Task ID:** PHASE-C-MILESTONE-04-SLICE-02
 **Parent Task:** Phase C — Game Vertical Slice (Milestone 4)
-**Status:** READY_TO_BEGIN
+**Status:** READY_FOR_INDEPENDENT_REVIEW
 **Primary owner:** CODEX
 **Priority:** P0
 
 ## Objective
 
-Begin Slice 2 (Server authentication and registry) for Phase C Milestone 4.
-Slice 1 is APPROVED_AND_COMPLETE.
+Independently review Slice 2 (Server authentication and registry).
 
 ## State
 
@@ -18,7 +17,7 @@ Slice 1 is APPROVED_AND_COMPLETE.
 - Milestone 4 architecture: APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
 - Milestone 4 implementation: IN_PROGRESS
 - Slice 1 (Shared contracts & additive scaffolding): APPROVED_AND_COMPLETE
-- Slice 2 (Server authentication and registry): READY_TO_BEGIN
+- Slice 2 (Server authentication and registry): READY_FOR_INDEPENDENT_REVIEW
 - Slice 3 through Slice 6: BLOCKED_BY_PREVIOUS_SLICE
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched

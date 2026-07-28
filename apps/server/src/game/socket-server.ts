@@ -1,0 +1,286 @@
+import { randomUUID } from "node:crypto";
+import type { Server as HttpServer } from "node:http";
+import type { OriginPolicy, RoleSessionRegistry } from "@crowdcircuit/auth-core";
+import {
+  GameHeartbeatMessageSchema,
+  GameRegisterMessageSchema,
+  type GameProtocolErrorCode,
+  type GameProtocolErrorMessage,
+} from "@crowdcircuit/contracts";
+import { Server } from "socket.io";
+import {
+  authenticateGameHandshake,
+  GameAuthenticationError,
+  gameErrorRetryable,
+} from "./auth/index.js";
+import {
+  GameSessionRegistry,
+} from "./registry/index.js";
+
+export const GAME_SOCKET_OPTIONS = {
+  path: "/socket.io",
+  pingInterval: 10_000,
+  pingTimeout: 20_000,
+  maxHttpBufferSize: 65_536,
+  registrationDeadlineMs: 5_000,
+  sweepIntervalMs: 5_000,
+  maxInvalidRegistrationAttempts: 4,
+} as const;
+
+interface SocketState {
+  readonly clientId: string;
+  readonly authenticatedAt: number;
+  readonly authExpiresAt: number;
+  readonly authFingerprint: string;
+  registered:
+    | {
+        readonly gameId: string;
+        readonly gameInstanceId: string;
+        readonly connectionGeneration: number;
+      }
+    | undefined;
+  invalidRegistrationAttempts: number;
+  heartbeatTokens: number;
+  heartbeatRefillAt: number;
+  invalidMessageTimes: number[];
+}
+
+export interface GameSocketRuntime {
+  readonly registry: GameSessionRegistry;
+  close(): Promise<void>;
+}
+
+function protocolError(code: GameProtocolErrorCode): GameProtocolErrorMessage {
+  return {
+    type: "game.error",
+    specVersion: "0.1",
+    code,
+    retryable: gameErrorRetryable(code),
+    correlationId: randomUUID(),
+  };
+}
+
+function emitError(socket: { emit(event: "game.error", value: GameProtocolErrorMessage): unknown }, code: GameProtocolErrorCode) {
+  socket.emit("game.error", protocolError(code));
+}
+
+export function attachGameSocketServer(options: {
+  readonly httpServer: HttpServer;
+  readonly sessions: RoleSessionRegistry;
+  readonly originPolicy: OriginPolicy;
+  readonly clock?: () => number;
+  readonly registry?: GameSessionRegistry;
+}): GameSocketRuntime {
+  const clock = options.clock ?? Date.now;
+  const registry = options.registry ?? new GameSessionRegistry({ clock });
+  const io = new Server(options.httpServer, {
+    pingInterval: GAME_SOCKET_OPTIONS.pingInterval,
+    pingTimeout: GAME_SOCKET_OPTIONS.pingTimeout,
+    maxHttpBufferSize: GAME_SOCKET_OPTIONS.maxHttpBufferSize,
+    serveClient: false,
+  });
+  const namespace = io.of("/game");
+
+  namespace.use((socket, next) => {
+    try {
+      const auth = authenticateGameHandshake({
+        handshake: {
+          auth: socket.handshake.auth,
+          query: socket.handshake.query,
+          headers: socket.handshake.headers,
+          address: socket.handshake.address,
+        },
+        sessions: options.sessions,
+        originPolicy: options.originPolicy,
+        now: clock,
+      });
+      socket.data["gameState"] = {
+        clientId: auth.clientId,
+        authenticatedAt: auth.authenticatedAt,
+        authExpiresAt: auth.expiresAt,
+        authFingerprint: auth.fingerprint,
+        registered: undefined,
+        invalidRegistrationAttempts: 0,
+        heartbeatTokens: 4,
+        heartbeatRefillAt: clock(),
+        invalidMessageTimes: [],
+      } satisfies SocketState;
+      next();
+    } catch (error) {
+      const authError =
+        error instanceof GameAuthenticationError
+          ? error
+          : new GameAuthenticationError("AUTH_INVALID", false);
+      const connectionError = new Error(authError.code);
+      Object.assign(connectionError, { data: protocolError(authError.code) });
+      next(connectionError);
+    }
+  });
+
+  namespace.on("connection", (socket) => {
+    const state = socket.data["gameState"] as SocketState;
+    const deadline = setTimeout(() => {
+      if (state.registered === undefined) {
+        emitError(socket, "REGISTRATION_TIMEOUT");
+        socket.disconnect(true);
+      }
+    }, GAME_SOCKET_OPTIONS.registrationDeadlineMs);
+    deadline.unref();
+
+    const invalidMessage = () => {
+      const now = clock();
+      state.invalidMessageTimes = state.invalidMessageTimes.filter(
+        (timestamp) => now - timestamp < 10_000,
+      );
+      state.invalidMessageTimes.push(now);
+      emitError(socket, "INVALID_MESSAGE");
+      if (state.invalidMessageTimes.length >= 5) socket.disconnect(true);
+    };
+    socket.onAny((event) => {
+      if (
+        event !== "game.register" &&
+        event !== "game.heartbeat" &&
+        event !== "game.action.received" &&
+        event !== "game.action.result"
+      ) {
+        invalidMessage();
+      }
+    });
+
+    socket.on("game.register", (payload: unknown) => {
+      if (state.registered !== undefined) {
+        emitError(socket, "ALREADY_REGISTERED");
+        return;
+      }
+      if (
+        typeof payload === "object" &&
+        payload !== null &&
+        Reflect.get(payload, "specVersion") !== undefined &&
+        Reflect.get(payload, "specVersion") !== "0.1"
+      ) {
+        emitError(socket, "UNSUPPORTED_PROTOCOL");
+        return;
+      }
+      const parsed = GameRegisterMessageSchema.safeParse(payload);
+      if (!parsed.success) {
+        state.invalidRegistrationAttempts += 1;
+        emitError(socket, "INVALID_REGISTRATION");
+        if (
+          state.invalidRegistrationAttempts >=
+          GAME_SOCKET_OPTIONS.maxInvalidRegistrationAttempts
+        ) {
+          socket.disconnect(true);
+        }
+        return;
+      }
+      const outcome = registry.registerLiveSession(
+        { clientId: state.clientId, authenticatedAt: state.authenticatedAt },
+        {
+          gameId: parsed.data.gameId,
+          instanceId: parsed.data.instanceId,
+          sdkVersion: parsed.data.sdkVersion,
+          specVersion: parsed.data.specVersion,
+          authExpiresAt: state.authExpiresAt,
+          authFingerprint: state.authFingerprint,
+          handle: {
+            id: socket.id,
+            disconnect(reason) {
+              if (reason !== "SERVER_SHUTDOWN") emitError(socket, reason);
+              socket.disconnect(true);
+            },
+          },
+        },
+      );
+      if (outcome.status === "rejected") {
+        emitError(socket, outcome.errorCode);
+        return;
+      }
+      state.registered = {
+        gameId: parsed.data.gameId,
+        gameInstanceId: parsed.data.instanceId,
+        connectionGeneration: outcome.sessionGeneration,
+      };
+      clearTimeout(deadline);
+      socket.emit("game.registered", {
+        type: "game.registered",
+        specVersion: "0.1",
+        clientId: state.clientId,
+        gameId: parsed.data.gameId,
+        gameInstanceId: parsed.data.instanceId,
+        sessionGeneration: outcome.sessionGeneration,
+        heartbeatIntervalMs: outcome.heartbeatIntervalMs,
+      });
+      outcome.replaced?.disconnect("SESSION_REPLACED");
+    });
+
+    socket.on("game.heartbeat", (payload: unknown) => {
+      if (state.registered === undefined) {
+        emitError(socket, "REGISTRATION_REQUIRED");
+        return;
+      }
+      const now = clock();
+      const elapsedSeconds = Math.floor((now - state.heartbeatRefillAt) / 1_000);
+      if (elapsedSeconds > 0) {
+        state.heartbeatTokens = Math.min(4, state.heartbeatTokens + elapsedSeconds * 2);
+        state.heartbeatRefillAt += elapsedSeconds * 1_000;
+      }
+      if (state.heartbeatTokens === 0) {
+        emitError(socket, "RATE_LIMITED");
+        return;
+      }
+      state.heartbeatTokens -= 1;
+      if (!GameHeartbeatMessageSchema.safeParse(payload).success) {
+        invalidMessage();
+        return;
+      }
+      const current = registry.recordHeartbeat(
+        {
+          clientId: state.clientId,
+          gameId: state.registered.gameId,
+          gameInstanceId: state.registered.gameInstanceId,
+        },
+        state.registered.connectionGeneration,
+      );
+      if (!current) emitError(socket, "SESSION_STALE");
+    });
+
+    socket.on("game.action.received", () => {
+      if (state.registered === undefined) emitError(socket, "REGISTRATION_REQUIRED");
+    });
+    socket.on("game.action.result", () => {
+      if (state.registered === undefined) emitError(socket, "REGISTRATION_REQUIRED");
+    });
+    socket.on("disconnect", () => {
+      clearTimeout(deadline);
+      if (state.registered === undefined) return;
+      registry.removeIfCurrent(
+        {
+          clientId: state.clientId,
+          gameId: state.registered.gameId,
+          gameInstanceId: state.registered.gameInstanceId,
+        },
+        state.registered.connectionGeneration,
+        "disconnect",
+      );
+    });
+  });
+
+  const sweepTimer = setInterval(
+    () => registry.sweepStale(),
+    GAME_SOCKET_OPTIONS.sweepIntervalMs,
+  );
+  sweepTimer.unref();
+  let closed = false;
+  return {
+    registry,
+    async close() {
+      if (closed) return;
+      closed = true;
+      clearInterval(sweepTimer);
+      registry.closeAll();
+      namespace.disconnectSockets(true);
+      io.engine.close();
+      io.removeAllListeners();
+    },
+  };
+}

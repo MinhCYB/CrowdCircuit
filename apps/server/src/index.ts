@@ -4,6 +4,7 @@ import type { Writable } from "node:stream";
 import { AuthError, type OriginPolicy } from "@crowdcircuit/auth-core";
 import { createAuthRuntime, type AuthRuntime } from "./auth/index.js";
 import { registerAuthRoutes } from "./auth/routes.js";
+import { attachGameSocketServer } from "./game/socket-server.js";
 
 export * from "./persistence/index.js";
 export * from "./delivery/port.js";
@@ -109,6 +110,14 @@ export async function buildApp(options: BuildAppOptions = {}) {
     allowNoOriginOnLoopback: true,
   };
   registerAuthRoutes(app, authRuntime, originPolicy);
+  const gameSocketRuntime = attachGameSocketServer({
+    httpServer: app.server,
+    sessions: authRuntime.sessions,
+    originPolicy,
+  });
+  app.addHook("preClose", async () => {
+    await gameSocketRuntime.close();
+  });
   if (ownsAuthRuntime) {
     app.addHook("onClose", async () => {
       authRuntime.dispose();
