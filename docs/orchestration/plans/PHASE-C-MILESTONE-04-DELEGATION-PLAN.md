@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: READY_FOR_INDEPENDENT_RE_REVIEW; Slice 3+: BLOCKED_BY_PREVIOUS_SLICE_REVIEW)
+**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3: READY_TO_START; Slice 4+: BLOCKED_BY_PREVIOUS_SLICE_REVIEW)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -47,8 +47,7 @@ Recommended user commit checkpoint: reviewed additive contract slice.
 
 Owner: CODEX.
 
-Status: READY_FOR_INDEPENDENT_RE_REVIEW after remediation of the first
-independent review's `REQUEST_CHANGES` verdict.
+Status: APPROVED_AND_COMPLETE (Node 24 final verification: APPROVE).
 
 Exclusive files:
 
@@ -67,6 +66,18 @@ Deliver:
 
 Do not edit SDK implementation files during this slice.
 
+Review evidence:
+
+- `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-02-SELF-REVIEW.md`
+- `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-02.md`
+- `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-02-INDEPENDENT-REVIEW-02.md`
+- `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-02-CLOSURE.md`
+
+All review findings (M-1, L-1, L-2, L-3) RESOLVED.
+Implementation commit: `b83cc6fa82f3e23b6869aa2041dbaa9b6b00edf3`.
+Remediation commit: `abd0f985fa3de66d7f2e507b5ace8416c712050d`.
+Final Node 24 verification: 433/433 repository tests; all gates pass.
+
 Review gate: Claude focuses on auth mapping, registry bounds, stale-session
 fencing, cleanup, and file ownership.
 
@@ -74,7 +85,7 @@ Recommended user commit checkpoint: reviewed server transport slice.
 
 ## Slice 3 — Delivery adapter
 
-Status: BLOCKED_BY_PREVIOUS_SLICE_REVIEW.
+Status: READY_TO_START.
 
 Owner: CODEX.
 

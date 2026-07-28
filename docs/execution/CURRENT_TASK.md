@@ -1,15 +1,15 @@
 # Current Task
 
-**Task ID:** PHASE-C-MILESTONE-04-SLICE-02
+**Task ID:** PHASE-C-MILESTONE-04-SLICE-03
 **Parent Task:** Phase C — Game Vertical Slice (Milestone 4)
-**Status:** READY_FOR_INDEPENDENT_RE_REVIEW
+**Status:** READY_TO_START
 **Primary owner:** CODEX
 **Priority:** P0
 
 ## Objective
 
-Independently re-review Slice 2 (Server authentication and registry) after
-remediation of the first independent review's `REQUEST_CHANGES` verdict.
+Begin Slice 3 — Delivery adapter from the approved delegation plan.
+Slice 2 (Server authentication and registry) is APPROVED_AND_COMPLETE.
 
 ## State
 
@@ -18,29 +18,31 @@ remediation of the first independent review's `REQUEST_CHANGES` verdict.
 - Milestone 4 architecture: APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
 - Milestone 4 implementation: IN_PROGRESS
 - Slice 1 (Shared contracts & additive scaffolding): APPROVED_AND_COMPLETE
-- Slice 2 (Server authentication and registry): READY_FOR_INDEPENDENT_RE_REVIEW
-- Slice 3 through Slice 6: BLOCKED_BY_PREVIOUS_SLICE_REVIEW
+- Slice 2 (Server authentication and registry): APPROVED_AND_COMPLETE
+- Slice 3 (Delivery adapter): READY_TO_START
+- Slice 4 through Slice 6: BLOCKED_BY_PREVIOUS_SLICE_REVIEW
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
 
 ## Required reading
 
 1. `docs/orchestration/plans/PHASE-C-MILESTONE-04-DELEGATION-PLAN.md`
-2. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-01-CLOSURE.md`
-3. `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-01-INDEPENDENT-REVIEW-02.md`
+2. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-02-CLOSURE.md`
+3. `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-02-INDEPENDENT-REVIEW-02.md`
 4. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-ARCHITECTURE-CLOSURE.md`
 5. `docs/execution/DECISIONS.md` (ADR-025 through ADR-030)
 
 ## Hard boundaries
 
-- Slice 2 scope: `apps/server/src/game/auth/**` and `apps/server/src/game/registry/**`; server composition and focused tests only.
-- Do not edit SDK implementation files during Slice 2.
-- Do not begin Slice 3, Slice 4, Slice 5, Slice 6, Milestone 5, or Phase D.
+- Slice 3 scope: `apps/server/src/delivery/socket-io/**` and adapter-focused tests not owned by another slice.
+- Do not edit SDK implementation files during Slice 3.
+- Do not begin Slice 4, Slice 5, Slice 6, Milestone 5, or Phase D.
 - Milestone 5 remains BLOCKED_BY_PREVIOUS_MILESTONE.
 
-## Slice 1 Closure Summary
+## Slice 2 Closure Summary
 
-Slice 1 (Shared contracts and additive scaffolding) is APPROVED_AND_COMPLETE.
-Final commit: `3809337e900b02ade7a47176b823b7d4868151e7`. All five review
-findings (M-1, L-1, L-2, L-3, L-4) are RESOLVED. Repository verification
-(Node 24): 394/394 tests passing.
+Slice 2 (Server authentication and registry) is APPROVED_AND_COMPLETE.
+Implementation commit: `b83cc6fa82f3e23b6869aa2041dbaa9b6b00edf3`.
+Remediation commit: `abd0f985fa3de66d7f2e507b5ace8416c712050d`.
+All four review findings (M-1, L-1, L-2, L-3) are RESOLVED. Final Node 24
+verification: 433/433 tests passing.
