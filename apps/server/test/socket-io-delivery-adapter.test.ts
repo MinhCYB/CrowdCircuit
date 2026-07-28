@@ -44,7 +44,6 @@ describe("SocketIoActionDeliveryAdapter", () => {
       gameInstanceId: "missing",
     })).resolves.toEqual({ status: "no_destination" });
     expect(registry.lookupDestination).toHaveBeenCalledWith({
-      clientId: "game",
       gameId: "game",
       gameInstanceId: "missing",
     });
@@ -55,7 +54,7 @@ describe("SocketIoActionDeliveryAdapter", () => {
     const { adapter, registry } = adapterWith({
       status: "found",
       session: {
-        clientId: "game",
+        clientId: "client-distinct",
         gameId: "game",
         gameInstanceId: "a",
         serverRuntimeGeneration: "runtime",
@@ -68,8 +67,14 @@ describe("SocketIoActionDeliveryAdapter", () => {
     const resolved = await adapter.resolveDestination(envelope);
     expect(resolved.status).toBe("available");
     if (resolved.status !== "available") return;
+    expect(resolved.destination).toMatchObject({
+      clientId: "client-distinct",
+      gameId: "game",
+      gameInstanceId: "a",
+      sessionGeneration: 7,
+    });
     expect(resolved.destination.destinationGeneration).toBe(
-      JSON.stringify([1, "game", "game", "a", "runtime", 7, 7]),
+      JSON.stringify([1, "client-distinct", "game", "a", "runtime", 7, 7]),
     );
     expect(resolved.destination.destinationGeneration).not.toContain("socket");
     await expect(adapter.send({
@@ -95,8 +100,10 @@ describe("SocketIoActionDeliveryAdapter", () => {
       envelope,
       attemptNumber: 1,
       destination: {
-        clientId: "game",
-        gameInstanceId: null,
+        clientId: "client-distinct",
+        gameId: "game",
+        gameInstanceId: "a",
+        sessionGeneration: 7,
         destinationGeneration: "{private provider failure}",
       },
     })).resolves.toEqual({

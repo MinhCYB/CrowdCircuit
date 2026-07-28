@@ -3,7 +3,29 @@
 **Date:** 2026-07-28  
 **Baseline:** `a984b5ed3e6919a386e09ba54ca6b15269e30c3a`  
 **Branch:** `review/phase-c`  
-**Status:** REQUEST_CHANGES
+**Status:** READY_FOR_INDEPENDENT_RE_REVIEW
+
+## Client-routing remediation
+
+Implementation `6617f9f` received `REQUEST_CHANGES` for F1
+(`clientId: envelope.gameId`) and F2 (`clientId: input.gameId`). The approved
+remediation was implemented from baseline `b2ca5b7`.
+
+Lookup is now game-scoped and discovers the authenticated client from the
+selected eligible registry entry. The concrete resolved destination supplies
+client, game, instance, session generation, and the opaque final fence.
+Pending/retry authorization and durable attempt recording use the same
+resolved binding before transport send.
+
+The authoritative pre-edit migration inventory was 65 matches: 62 in the
+three primary gateway/persistence test files and 3 in the declaration
+consumer. Distinct client/game regressions cover adapter, real Socket.IO,
+cross-owner null-instance ordering, exact lookup, final fencing, and durable
+binding mismatch behavior.
+
+No schema, migration, manifest, lockfile, shared envelope, SDK, receipt/result,
+retry/TTL, or Slice 4+ change was made. This status is ready for independent
+re-review and is not an independent approval.
 
 ## Independent-review correction state
 

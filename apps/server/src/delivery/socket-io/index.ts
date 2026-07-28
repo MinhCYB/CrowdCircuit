@@ -36,7 +36,6 @@ export class SocketIoActionDeliveryAdapter implements ActionDeliveryPort {
     envelope: GameActionEnvelope,
   ): Promise<DeliveryResolution> {
     const result = await this.registry.lookupDestination({
-      clientId: envelope.gameId,
       gameId: envelope.gameId,
       gameInstanceId: envelope.gameInstanceId,
     });
@@ -47,7 +46,9 @@ export class SocketIoActionDeliveryAdapter implements ActionDeliveryPort {
       status: "available",
       destination: {
         clientId: result.session.clientId,
+        gameId: result.session.gameId,
         gameInstanceId: result.session.gameInstanceId,
+        sessionGeneration: result.session.connectionGeneration,
         destinationGeneration: encodeDestinationGeneration(result.session),
       },
     };
@@ -60,9 +61,7 @@ export class SocketIoActionDeliveryAdapter implements ActionDeliveryPort {
       type: "game.action",
       specVersion: "0.1",
       attemptNumber: delivery.attemptNumber,
-      sessionGeneration: this.#sessionGeneration(
-        delivery.destination.destinationGeneration,
-      ),
+      sessionGeneration: delivery.destination.sessionGeneration,
       data: delivery.envelope,
     };
     const result = this.registry.sendIfCurrent(
@@ -72,22 +71,5 @@ export class SocketIoActionDeliveryAdapter implements ActionDeliveryPort {
     return result.status === "sent"
       ? { status: "sent" }
       : { status: "transport_error", error: SANITIZED_TRANSPORT_ERROR };
-  }
-
-  #sessionGeneration(destinationGeneration: string): number {
-    try {
-      const parsed: unknown = JSON.parse(destinationGeneration);
-      if (
-        Array.isArray(parsed) &&
-        parsed.length === 7 &&
-        Number.isSafeInteger(parsed[5]) &&
-        (parsed[5] as number) > 0
-      ) {
-        return parsed[5] as number;
-      }
-    } catch {
-      // The registry owns authoritative fence validation.
-    }
-    return 0;
   }
 }

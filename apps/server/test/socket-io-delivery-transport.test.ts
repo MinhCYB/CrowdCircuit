@@ -69,7 +69,7 @@ async function connectAndRegister(options: {
     throw new Error("Expected TCP server address");
   }
   const client = io(`http://127.0.0.1:${address.port}/game`, {
-    auth: { token: sessions.issue("game", "game").token },
+    auth: { token: sessions.issue("game", "client-distinct").token },
     transports: ["websocket"],
     reconnection: false,
   });
@@ -139,6 +139,12 @@ describe("Socket.IO action delivery transport", () => {
           actionId: "action",
           gameInstanceId: "instance",
         },
+      });
+      expect(resolution.destination).toMatchObject({
+        clientId: "client-distinct",
+        gameId: "game",
+        gameInstanceId: "instance",
+        sessionGeneration: registered.sessionGeneration,
       });
 
       await runtime.close();

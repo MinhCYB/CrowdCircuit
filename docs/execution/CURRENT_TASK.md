@@ -2,7 +2,7 @@
 
 **Task ID:** PHASE-C-MILESTONE-04-SLICE-03
 **Parent Task:** Phase C — Game Vertical Slice (Milestone 4)
-**Status:** READY_TO_BEGIN
+**Status:** READY_FOR_INDEPENDENT_RE_REVIEW
 **Primary owner:** CODEX
 **Priority:** P0
 
@@ -21,7 +21,7 @@ amendment.
 - Slice 2 (Server authentication and registry): APPROVED_AND_COMPLETE
 - Slice 3 implementation commit `6617f9f`: REQUEST_CHANGES
 - Slice 3 client-routing correction architecture: APPROVED_FOR_REMEDIATION
-- Slice 3 remediation implementation: READY_TO_BEGIN
+- Slice 3 remediation implementation: READY_FOR_INDEPENDENT_RE_REVIEW
 - Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW
 - Slice 5 through Slice 6: blocked by the approved sequential flow
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE

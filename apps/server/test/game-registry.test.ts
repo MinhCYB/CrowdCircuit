@@ -68,7 +68,7 @@ describe("GameSessionRegistry", () => {
     expect(first.session).not.toHaveProperty("authFingerprint");
     expect(first.session).not.toHaveProperty("handle");
     await expect(
-      registry.lookupDestination({ clientId: "client-a", gameId: "game", gameInstanceId: null }),
+      registry.lookupDestination({ gameId: "game", gameInstanceId: null }),
     ).resolves.toMatchObject({ status: "found", session: { gameInstanceId: "one" } });
   });
 
@@ -152,27 +152,42 @@ describe("GameSessionRegistry", () => {
     expect(item.outcome.status).toBe("registered");
     now = Number.MAX_SAFE_INTEGER;
     await expect(registry.lookupDestination({
-      clientId: "client",
       gameId: "game",
       gameInstanceId: null,
     })).resolves.toEqual({ status: "not_found" });
   });
 
-  it("selects the lowest instance independently of insertion order", async () => {
+  it("selects the lowest instance and its authenticated owner independently of insertion order", async () => {
     for (const instanceIds of [["z", "a"], ["a", "z"]] as const) {
       const registry = new GameSessionRegistry();
       for (const instanceId of instanceIds) {
-        register(registry, "client", "game", instanceId);
+        register(registry, instanceId === "a" ? "client-a" : "client-z", "game", instanceId);
       }
       await expect(registry.lookupDestination({
-        clientId: "client",
         gameId: "game",
         gameInstanceId: null,
       })).resolves.toMatchObject({
         status: "found",
-        session: { gameInstanceId: "a" },
+        session: { clientId: "client-a", gameInstanceId: "a" },
       });
     }
+  });
+
+  it("resolves an explicit instance exactly without owner input or fallback", async () => {
+    const registry = new GameSessionRegistry();
+    register(registry, "client-a", "game", "a");
+    register(registry, "client-z", "game", "z");
+    await expect(registry.lookupDestination({
+      gameId: "game",
+      gameInstanceId: "z",
+    })).resolves.toMatchObject({
+      status: "found",
+      session: { clientId: "client-z", gameId: "game", gameInstanceId: "z" },
+    });
+    await expect(registry.lookupDestination({
+      gameId: "game",
+      gameInstanceId: "missing",
+    })).resolves.toEqual({ status: "not_found" });
   });
 
   it("sends once only when the complete resolved fence is current", async () => {
@@ -208,6 +223,10 @@ describe("GameSessionRegistry", () => {
       message,
       encodeFence("client", "game", "instance", "other", generation, generation),
     )).toMatchObject({ reason: "runtime_generation_mismatch" });
+    expect(registry.sendIfCurrent(
+      message,
+      encodeFence("wrong-client", "game", "instance", "runtime", generation, generation),
+    )).toMatchObject({ status: "stale", reason: "entry_replaced" });
     expect(registry.sendIfCurrent(
       message,
       encodeFence("client", "game", "instance", "runtime", generation + 1, generation),

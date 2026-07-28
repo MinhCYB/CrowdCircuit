@@ -158,16 +158,20 @@ export class ActionGateway {
     destination: DeliveryDestination,
     now: number,
   ): Promise<DurableActionRecord> {
+    const binding = {
+      clientId: destination.clientId,
+      gameInstanceId: destination.gameInstanceId,
+    };
     const authorization = record.status === "pending"
       ? this.repository.authorizePending(
-          record.actionId, record.version, this.runtimeId, destination.gameInstanceId,
+          record.actionId, record.version, this.runtimeId, binding,
         )
       : this.repository.authorizeRetry(
-          record.actionId, record.version, this.runtimeId, destination.gameInstanceId,
+          record.actionId, record.version, this.runtimeId, binding,
         );
     const attempt = this.repository.recordAttempt(
       authorization,
-      { role: "game", clientId: destination.clientId, gameInstanceId: destination.gameInstanceId },
+      { role: "game", ...binding },
       now,
       "send_started",
     );

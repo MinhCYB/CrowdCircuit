@@ -195,9 +195,9 @@ class DeterministicFakeRepository implements DurableActionRepository {
     actionId: string,
     expectedVersion: number,
     runtimeId: string,
-    gameInstanceId: string | null,
+    binding: { readonly clientId: string; readonly gameInstanceId: string },
   ): SendAuthorization {
-    void gameInstanceId;
+    void binding;
     this.assertOwner(true);
     const record = this.records.get(actionId);
     if (
@@ -208,7 +208,7 @@ class DeterministicFakeRepository implements DurableActionRepository {
     ) {
       throw new PersistenceError("STALE_TRANSITION", "Retry authorization is stale");
     }
-    const details = this.authorizationDetails(record, record.retryCount + 1);
+    const details = this.authorizationDetails(record, record.retryCount + 1, binding);
     const key = `${record.actionId}:${details.attemptNumber}`;
     if (this.authorizations.has(key)) {
       throw new PersistenceError("ALREADY_AUTHORIZED", "Retry is already authorized");
@@ -402,6 +402,7 @@ class DeterministicFakeRepository implements DurableActionRepository {
   private authorizationDetails(
     record: CreateDurableAction | DurableActionRecord,
     attemptNumber: number,
+    binding?: { readonly clientId: string; readonly gameInstanceId: string },
   ): AuthorizationDetails {
     this.sequence += 1;
     return {
@@ -411,10 +412,11 @@ class DeterministicFakeRepository implements DurableActionRepository {
       attemptNumber,
       runtimeId: record.runtimeId,
       role: "game",
-      clientId: record.gameId,
+      clientId: binding?.clientId ?? record.gameId,
       expiresAt: record.expiresAt,
       runtimeOwnerId: this.runtimeOwnerId,
       repositoryOwner: this.repositoryOwner,
+      gameInstanceId: binding?.gameInstanceId ?? record.gameInstanceId,
     };
   }
 }
@@ -552,11 +554,11 @@ function repositoryBehavior(factory: () => DurableActionRepository): void {
       "action-1",
       afterFirst?.version ?? 0,
       "runtime-1",
-      null,
+      { clientId: "client-1", gameInstanceId: "instance-1" },
     );
     const retry = repository.recordAttempt(
       retryAuthorization,
-      { role: "game", clientId: "game-1" },
+      { role: "game", clientId: "client-1", gameInstanceId: "instance-1" },
       1_150,
       "send_failed",
       "timeout",
@@ -706,7 +708,9 @@ describe("SQLite durable action repository parity", () => {
         at: 1_100,
       }),
     );
-    expectSuperseded(() => first.authorizeRetry("old", 1, "runtime-a", null));
+    expectSuperseded(() => first.authorizeRetry("old", 1, "runtime-a", {
+      clientId: "client-a", gameInstanceId: "instance-a",
+    }));
     expectSuperseded(() => first.reconcilePreviousRuntime("runtime-a", 1_100));
     expectSuperseded(() =>
       first.cleanup({ terminalBefore: 2_000, maximumTerminalRecords: 0 }),
@@ -1141,7 +1145,9 @@ describe("SQLite migration, recovery, and failure boundaries", () => {
           }),
         );
       }
-      expectSuperseded(() => first.authorizeRetry("flight", 2, "runtime-a", null));
+      expectSuperseded(() => first.authorizeRetry("flight", 2, "runtime-a", {
+        clientId: "client-a", gameInstanceId: "instance-a",
+      }));
       expectSuperseded(() =>
         first.reconcilePreviousRuntime("runtime-a", 1_200 + repeat),
       );

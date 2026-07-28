@@ -3,7 +3,22 @@
 **Date:** 2026-07-28  
 **Baseline:** `a984b5ed3e6919a386e09ba54ca6b15269e30c3a`  
 **Branch:** `review/phase-c`  
-**Status:** REQUEST_CHANGES
+**Status:** READY_FOR_INDEPENDENT_RE_REVIEW
+
+## Client-routing remediation handoff
+
+- Original implementation `6617f9f`: `REQUEST_CHANGES` for F1 and F2.
+- Remediation baseline: `b2ca5b7`.
+- Routing resolves game plus optional instance, discovers the selected
+  authenticated client, authorizes and records the concrete client/instance
+  binding, commits, then sends through the unchanged complete fence.
+- Pre-edit call-site inventory: 65 matches (62 primary test-file matches plus
+  3 declaration-consumer matches).
+- Distinct-ID evidence covers adapter and real Socket.IO delivery,
+  cross-owner deterministic selection, wrong-client fencing, and durable
+  authorization mismatch rejection.
+- Schema and migrations are unchanged.
+- No independent approval is claimed.
 
 ## Independent-review correction state
 

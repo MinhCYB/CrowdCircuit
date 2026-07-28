@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slices 1–2: APPROVED_AND_COMPLETE; Slice 3 commit `6617f9f`: REQUEST_CHANGES; correction architecture: APPROVED_FOR_REMEDIATION; remediation: READY_TO_BEGIN; Slice 4+: blocked)
+**Implementation status:** IN_PROGRESS (Slices 1–2: APPROVED_AND_COMPLETE; Slice 3 commit `6617f9f`: REQUEST_CHANGES; remediation: READY_FOR_INDEPENDENT_RE_REVIEW; Slice 4+: blocked)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -89,7 +89,7 @@ Implementation commit `6617f9f`: REQUEST_CHANGES.
 
 Client-routing correction architecture: APPROVED_FOR_REMEDIATION.
 
-Remediation implementation: READY_TO_BEGIN.
+Remediation implementation: READY_FOR_INDEPENDENT_RE_REVIEW.
 
 Owner: CODEX.
 

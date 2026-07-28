@@ -26,6 +26,7 @@ import {
   type DurableActionRecord,
   type DurableActionRepository,
   type DurableCreateResult,
+  type DeliveryAttemptBinding,
   type PendingCreateResult,
   type DeferredCandidateRecord,
   type DeferredPromotionResult,
@@ -499,13 +500,13 @@ export class SqliteDurableActionRepository
     actionId: string,
     expectedVersion: number,
     runtimeId: string,
-    gameInstanceId: string | null,
+    binding: DeliveryAttemptBinding,
   ): SendAuthorization {
     try {
       this.#database.exec("BEGIN IMMEDIATE");
       this.#requireActiveOwner(true);
-      if (gameInstanceId === undefined) {
-        throw new PersistenceError("INVALID_INPUT", "Game instance ID is required for retry authorization");
+      if (binding === undefined) {
+        throw new PersistenceError("INVALID_INPUT", "Delivery attempt binding is required for retry authorization");
       }
       const current = this.require(actionId);
       if (
@@ -515,11 +516,10 @@ export class SqliteDurableActionRepository
       ) {
         throw new PersistenceError("STALE_TRANSITION", "Retry authorization is stale");
       }
-      const targetGameInstanceId = normalizeGameInstanceId(gameInstanceId);
       const details = this.#newAuthorizationDetails(
         current,
         current.retryCount + 1,
-        targetGameInstanceId,
+        binding,
       );
       this.#insertAuthorization(details);
       this.#commitTransaction("attempt");
@@ -539,7 +539,7 @@ export class SqliteDurableActionRepository
     actionId: string,
     expectedVersion: number,
     runtimeId: string,
-    gameInstanceId: string | null,
+    binding: DeliveryAttemptBinding,
   ): SendAuthorization {
     try {
       this.#database.exec("BEGIN IMMEDIATE");
@@ -555,7 +555,7 @@ export class SqliteDurableActionRepository
       const details = this.#newAuthorizationDetails(
         current,
         1,
-        normalizeGameInstanceId(gameInstanceId),
+        binding,
       );
       this.#insertAuthorization(details);
       this.#commitTransaction("attempt");
@@ -840,7 +840,7 @@ export class SqliteDurableActionRepository
     binding: {
       readonly role: "game";
       readonly clientId: string;
-      readonly gameInstanceId?: string | null;
+      readonly gameInstanceId: string;
     },
     attemptedAt: number,
     outcome: ActionAttempt["outcome"],
@@ -854,11 +854,9 @@ export class SqliteDurableActionRepository
     if (binding.role !== details.role || binding.clientId !== details.clientId) {
       throw new PersistenceError("INVALID_AUTHORIZATION", "Send authorization is invalid");
     }
-    if (binding.gameInstanceId !== undefined) {
-      const normalizedBindingInstance = normalizeGameInstanceId(binding.gameInstanceId);
-      if (normalizedBindingInstance !== details.gameInstanceId) {
-        throw new PersistenceError("INVALID_AUTHORIZATION", "Send authorization is invalid");
-      }
+    const normalizedBindingInstance = normalizeGameInstanceId(binding.gameInstanceId);
+    if (normalizedBindingInstance !== details.gameInstanceId) {
+      throw new PersistenceError("INVALID_AUTHORIZATION", "Send authorization is invalid");
     }
     try {
       this.#database.exec("BEGIN IMMEDIATE");
@@ -1472,16 +1470,18 @@ export class SqliteDurableActionRepository
   #newAuthorizationDetails(
     input: CreateDurableAction | DurableActionRecord,
     attemptNumber: number,
-    gameInstanceIdOverride?: string | null,
+    binding?: DeliveryAttemptBinding,
   ): AuthorizationDetails {
     const random = this.#authorizationRandom(32);
     if (!(random instanceof Uint8Array) || random.byteLength !== 32) {
       throw new PersistenceError("DATABASE_UNAVAILABLE", "Authorization generation failed");
     }
-    const gameInstanceId =
-      gameInstanceIdOverride !== undefined
-        ? normalizeGameInstanceId(gameInstanceIdOverride)
-        : normalizeGameInstanceId(input.gameInstanceId);
+    if (binding !== undefined) {
+      nonempty(binding.clientId, "Client ID");
+    }
+    const gameInstanceId = normalizeGameInstanceId(
+      binding?.gameInstanceId ?? input.gameInstanceId,
+    );
     return {
       authorizationId: createHash("sha256").update(random).digest("hex"),
       actionId: input.actionId,
@@ -1489,7 +1489,7 @@ export class SqliteDurableActionRepository
       attemptNumber,
       runtimeId: input.runtimeId,
       role: "game",
-      clientId: input.gameId,
+      clientId: binding?.clientId ?? input.gameId,
       expiresAt: input.expiresAt,
       runtimeOwnerId: this.#runtimeOwnerId,
       repositoryOwner: this.#repositoryOwner,

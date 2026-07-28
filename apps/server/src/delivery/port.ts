@@ -4,7 +4,9 @@ export type DestinationGeneration = string;
 
 export interface DeliveryDestination {
   readonly clientId: string;
-  readonly gameInstanceId: string | null;
+  readonly gameId: string;
+  readonly gameInstanceId: string;
+  readonly sessionGeneration: number;
   readonly destinationGeneration: DestinationGeneration;
 }
 

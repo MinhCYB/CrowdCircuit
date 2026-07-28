@@ -27,7 +27,7 @@ import {
   type PreparedActionDelivery,
   type RegisteredGameSessionSnapshot,
   type SendAuthorization,
-  type SessionLookupQuery,
+  type GameDestinationQuery,
   type SessionLookupResult,
   SocketIoActionDeliveryAdapter,
 } from "@crowdcircuit/server";
@@ -117,8 +117,13 @@ const invalidParams: CreateDurableAction = { ...input, params: new Date() };
 // @ts-expect-error send authorizations cannot be constructed from public fields
 const forgedAuthorization: SendAuthorization = { actionId: "a" };
 
-// @ts-expect-error authorizeRetry requires explicit gameInstanceId fourth argument
+// @ts-expect-error authorizeRetry requires an explicit binding fourth argument
 repository.authorizeRetry("a", 1, "runtime");
+const deliveryAttemptBinding = {
+  clientId: "client-1",
+  gameInstanceId: "inst-1",
+};
+repository.authorizeRetry("a", 1, "runtime", deliveryAttemptBinding);
 
 // Snapshot declaration assertions
 const validSnapshot: BudgetAdmissionSnapshot = {
@@ -173,8 +178,10 @@ const nonJsonSnapshot: BudgetAdmissionSnapshot = {
 declare const envelope: GameActionEnvelope;
 const genFence: DestinationGeneration = "gen-1";
 const validDestination: DeliveryDestination = {
-  clientId: "g",
+  clientId: "client-1",
+  gameId: "g",
   gameInstanceId: "inst-1",
+  sessionGeneration: 1,
   destinationGeneration: genFence,
 };
 
@@ -257,8 +264,7 @@ const sessionSnap: RegisteredGameSessionSnapshot = {
   sdkVersion: "0.1.0",
 };
 
-const lookupQuery: SessionLookupQuery = {
-  clientId: "client-1",
+const lookupQuery: GameDestinationQuery = {
   gameId: "zombie-survival",
   gameInstanceId: "inst-1",
 };
@@ -275,7 +281,7 @@ declare const registryDeliveryPort: GameSessionDeliveryPort;
 void registryReadPort.getSession("client-1", "zombie-survival", "inst-1");
 void registryReadPort.listSessionsForClient("client-1");
 void registryReadPort.getActiveSessionCount();
-void registryReadPort.lookupDestination(lookupQuery);
+void registryDeliveryPort.lookupDestination(lookupQuery);
 void registryLifecyclePort.registerSession(clientIdent, regInput);
 void registryLifecyclePort.recordHeartbeat(sessionIdent, 1);
 void registryLifecyclePort.removeIfCurrent(sessionIdent, 1, "test");

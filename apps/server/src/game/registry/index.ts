@@ -12,7 +12,7 @@ import type {
   GameSessionSendResult,
   RegisteredGameSessionSnapshot,
   ServerRuntimeGeneration,
-  SessionLookupQuery,
+  GameDestinationQuery,
   SessionLookupResult,
 } from "../ports.js";
 import type { GameActionDeliveryMessage } from "@crowdcircuit/contracts";
@@ -124,21 +124,19 @@ export class GameSessionRegistry
     };
   }
 
-  lookupDestination(query: SessionLookupQuery): Promise<SessionLookupResult> {
+  lookupDestination(query: GameDestinationQuery): Promise<SessionLookupResult> {
     if (this.#closed) return Promise.resolve({ status: "not_found" });
     const now = this.#now();
     const candidates = [...this.#entries.values()]
       .filter(
         (entry) =>
           now < entry.authExpiresAt &&
-          entry.clientId === query.clientId &&
           entry.gameId === query.gameId &&
           (query.gameInstanceId === null ||
             entry.gameInstanceId === query.gameInstanceId),
       )
       .sort((left, right) =>
-        left.gameInstanceId.localeCompare(right.gameInstanceId) ||
-        right.connectionGeneration - left.connectionGeneration,
+        left.gameInstanceId.localeCompare(right.gameInstanceId),
       );
     const entry = candidates[0];
     return Promise.resolve(

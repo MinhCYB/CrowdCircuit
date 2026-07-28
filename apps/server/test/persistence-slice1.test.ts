@@ -159,7 +159,7 @@ describe("Milestone 3 Slice 1 Mechanical Persistence Extensions", () => {
       ).toThrowError(PersistenceError);
     });
 
-    it("requires explicit gameInstanceId during authorizeRetry and fails closed on omitted/undefined", () => {
+    it("requires a concrete delivery binding during authorizeRetry and fails closed on invalid input", () => {
       const input: CreateDurableAction = {
         ...baseInput,
         gameInstanceId: "inst_original",
@@ -186,25 +186,32 @@ describe("Milestone 3 Slice 1 Mechanical Persistence Extensions", () => {
           record.actionId,
           record.version,
           record.runtimeId,
-          undefined as unknown as string,
+          undefined as unknown as { clientId: string; gameInstanceId: string },
         ),
       ).toThrowError(PersistenceError);
 
-      // 3: Explicit null succeeds and persists null (does NOT inherit inst_original)
+      // 3: A new concrete binding succeeds and does not inherit inst_original
       const retryAuthNull = repository.authorizeRetry(
         record.actionId,
         record.version,
         record.runtimeId,
-        null,
+        { clientId: "client_distinct", gameInstanceId: "inst_resolved" },
       );
+
+      expect(() => repository.recordAttempt(
+        retryAuthNull,
+        { role: "game", clientId: "game_1", gameInstanceId: "inst_resolved" },
+        1200,
+        "send_started",
+      )).toThrowError(PersistenceError);
 
       const retryAttemptNull = repository.recordAttempt(
         retryAuthNull,
-        { role: "game", clientId: "game_1", gameInstanceId: null },
+        { role: "game", clientId: "client_distinct", gameInstanceId: "inst_resolved" },
         1200,
         "send_started",
       );
-      expect(retryAttemptNull.gameInstanceId).toBeNull();
+      expect(retryAttemptNull.gameInstanceId).toBe("inst_resolved");
 
       const record2 = repository.findById(baseInput.actionId);
       expect(record2).not.toBeNull();
@@ -215,7 +222,7 @@ describe("Milestone 3 Slice 1 Mechanical Persistence Extensions", () => {
         record2.actionId,
         record2.version,
         record2.runtimeId,
-        "inst_new_destination",
+        { clientId: "game_1", gameInstanceId: "inst_new_destination" },
       );
 
       const retryAttemptNew = repository.recordAttempt(
@@ -235,7 +242,7 @@ describe("Milestone 3 Slice 1 Mechanical Persistence Extensions", () => {
         record3.actionId,
         record3.version,
         record3.runtimeId,
-        "inst_auth_bound",
+        { clientId: "game_1", gameInstanceId: "inst_auth_bound" },
       );
 
       expect(() =>

@@ -40,7 +40,7 @@ describe("ActionDeliveryPort and FakeActionDeliveryPort", () => {
     const delivery: PreparedActionDelivery = {
       envelope: sampleEnvelope,
       attemptNumber: 1,
-      destination: { clientId: "game_demo", gameInstanceId: "inst_1", destinationGeneration: "gen_1" },
+      destination: { clientId: "client_demo", gameId: "game_demo", gameInstanceId: "inst_1", sessionGeneration: 1, destinationGeneration: "gen_1" },
     };
 
     const outcome = await fake.send(delivery);
@@ -53,7 +53,7 @@ describe("ActionDeliveryPort and FakeActionDeliveryPort", () => {
 
     fake.queueResolution({
       status: "available",
-      destination: { clientId: "game_demo", gameInstanceId: "inst_1", destinationGeneration: "gen_1" },
+      destination: { clientId: "client_demo", gameId: "game_demo", gameInstanceId: "inst_1", sessionGeneration: 1, destinationGeneration: "gen_1" },
     });
     fake.queueOutcome({
       status: "transport_error",
@@ -63,13 +63,13 @@ describe("ActionDeliveryPort and FakeActionDeliveryPort", () => {
     const res1 = await fake.resolveDestination(sampleEnvelope);
     expect(res1).toEqual<DeliveryResolution>({
       status: "available",
-      destination: { clientId: "game_demo", gameInstanceId: "inst_1", destinationGeneration: "gen_1" },
+      destination: { clientId: "client_demo", gameId: "game_demo", gameInstanceId: "inst_1", sessionGeneration: 1, destinationGeneration: "gen_1" },
     });
 
     const delivery: PreparedActionDelivery = {
       envelope: sampleEnvelope,
       attemptNumber: 1,
-      destination: { clientId: "game_demo", gameInstanceId: "inst_1", destinationGeneration: "gen_1" },
+      destination: { clientId: "client_demo", gameId: "game_demo", gameInstanceId: "inst_1", sessionGeneration: 1, destinationGeneration: "gen_1" },
     };
 
     const outcome1 = await fake.send(delivery);

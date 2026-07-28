@@ -70,8 +70,7 @@ export interface RegisteredGameSessionSnapshot {
 /**
  * Destination lookup query parameter.
  */
-export interface SessionLookupQuery {
-  readonly clientId: string;
+export interface GameDestinationQuery {
   readonly gameId: string;
   readonly gameInstanceId: string | null;
 }
@@ -137,7 +136,6 @@ export type SessionLookupResult =
  * Abstract port for game session registry read operations.
  */
 export interface GameSessionRegistryReadPort {
-  lookupDestination(query: SessionLookupQuery): Promise<SessionLookupResult>;
   getSession(clientId: string, gameId: string, gameInstanceId: string): RegisteredGameSessionSnapshot | null;
   listSessionsForClient(clientId: string): readonly RegisteredGameSessionSnapshot[];
   getActiveSessionCount(): number;
@@ -147,7 +145,7 @@ export interface GameSessionRegistryReadPort {
  * Narrow internal bridge used by outbound game action delivery.
  */
 export interface GameSessionDeliveryPort {
-  lookupDestination(query: SessionLookupQuery): Promise<SessionLookupResult>;
+  lookupDestination(query: GameDestinationQuery): Promise<SessionLookupResult>;
   sendIfCurrent(
     message: GameActionDeliveryMessage,
     destinationGeneration: string,

@@ -113,7 +113,10 @@ describe("Phase C Milestone 3 core", () => {
     const port = new FakeActionDeliveryPort();
     port.queueResolution({
       status: "available",
-      destination: { clientId: "game", gameInstanceId: "instance" },
+      destination: {
+        clientId: "client-distinct", gameId: "game",
+        gameInstanceId: "instance", sessionGeneration: 1, destinationGeneration: "gen-1",
+      },
     });
     port.queueOutcome({ status: "transport_error", error: "offline" });
     const gateway = new ActionGateway(store, port, { now: () => 1_000 }, "runtime");
@@ -140,7 +143,10 @@ describe("Phase C Milestone 3 core", () => {
     for (const instance of ["one", "two", "three"]) {
       port.queueResolution({
         status: "available",
-        destination: { clientId: "game", gameInstanceId: instance },
+        destination: {
+          clientId: `client-${instance}`, gameId: "game",
+          gameInstanceId: instance, sessionGeneration: 1, destinationGeneration: `gen-${instance}`,
+        },
       });
       port.queueOutcome({ status: "transport_error", error: "offline" });
     }
@@ -166,7 +172,10 @@ describe("Phase C Milestone 3 core", () => {
     };
     port.queueResolution({
       status: "available",
-      destination: { clientId: "game", gameInstanceId: "received" },
+      destination: {
+        clientId: "client-received", gameId: "game",
+        gameInstanceId: "received", sessionGeneration: 1, destinationGeneration: "gen-received",
+      },
     });
     port.queueOutcome({ status: "sent" });
     const second = gateway.ingest({ status: "accepted", candidate: secondCandidate });
@@ -211,18 +220,22 @@ describe("Phase C Milestone 3 core", () => {
     const gateway = new ActionGateway(store, new FakeActionDeliveryPort(), { now: () => 1_000 }, "runtime");
     const ingested = gateway.ingest({ status: "accepted", candidate });
     if (ingested.status !== "action") throw new Error("action expected");
-    const auth = store.authorizePending(ingested.record.actionId, 1, "runtime", null);
-    store.recordAttempt(auth, { role: "game", clientId: "game", gameInstanceId: null }, 1_000, "send_started");
+    const binding = { clientId: "client-routing", gameInstanceId: "instance-routing" };
+    const auth = store.authorizePending(ingested.record.actionId, 1, "runtime", binding);
+    store.recordAttempt(auth, { role: "game", ...binding }, 1_000, "send_started");
     const current = store.findById(ingested.record.actionId);
     if (current === null) throw new Error("action expected");
 
-    expect(() => store.authorizeRetry(current.actionId, current.version, "runtime", "x".repeat(257)))
+    expect(() => store.authorizeRetry(current.actionId, current.version, "runtime", {
+      clientId: "client-routing",
+      gameInstanceId: "x".repeat(257),
+    }))
       .toThrowError(PersistenceError);
     expect(() => Reflect.apply(store.authorizeRetry, store, [
       current.actionId,
       current.version,
       "runtime",
-      42,
+      { clientId: "client-routing", gameInstanceId: 42 },
     ])).toThrowError(PersistenceError);
     expect(current.retryCount).toBeLessThan(MAX_SEND_ATTEMPTS);
     store.close();
@@ -403,7 +416,10 @@ describe("Phase C Milestone 3 core", () => {
       const port = new FakeActionDeliveryPort();
       port.queueResolution({
         status: "available",
-        destination: { clientId: "game", gameInstanceId: "instance" },
+        destination: {
+          clientId: "client-distinct", gameId: "game",
+          gameInstanceId: "instance", sessionGeneration: 1, destinationGeneration: "gen-1",
+        },
       });
       const gateway = new ActionGateway(store, port, { now: () => 2000 }, "runtime");
 
@@ -582,7 +598,10 @@ describe("Phase C Milestone 3 core", () => {
         runtimeId: "old_runtime",
       });
 
-      const auth = store.authorizePending(created.record.actionId, 1, "old_runtime", "inst");
+      const auth = store.authorizePending(created.record.actionId, 1, "old_runtime", {
+        clientId: "game",
+        gameInstanceId: "inst",
+      });
       store.recordAttempt(auth, { role: "game", clientId: "game", gameInstanceId: "inst" }, 1100, "send_started");
       const inflight = store.findById(created.record.actionId);
       store.transition({
@@ -680,7 +699,10 @@ describe("Phase C Milestone 3 core", () => {
         expiresAt: 11000,
         runtimeId: "old_runtime",
       });
-      const authFlight = store.authorizePending("act_flight", 1, "old_runtime", "inst");
+      const authFlight = store.authorizePending("act_flight", 1, "old_runtime", {
+        clientId: "game",
+        gameInstanceId: "inst",
+      });
       store.recordAttempt(authFlight, { role: "game", clientId: "game", gameInstanceId: "inst" }, 1100, "send_started");
 
       // 3. Received action
@@ -698,7 +720,10 @@ describe("Phase C Milestone 3 core", () => {
         expiresAt: 11000,
         runtimeId: "old_runtime",
       });
-      const authReceived = store.authorizePending("act_received", 1, "old_runtime", "inst");
+      const authReceived = store.authorizePending("act_received", 1, "old_runtime", {
+        clientId: "game",
+        gameInstanceId: "inst",
+      });
       store.recordAttempt(authReceived, { role: "game", clientId: "game", gameInstanceId: "inst" }, 1100, "send_started");
       const recordReceived = store.findById("act_received");
       store.transition({

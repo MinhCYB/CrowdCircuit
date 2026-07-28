@@ -160,20 +160,25 @@ export interface RetentionPolicy {
   readonly maximumTerminalRecords: number;
 }
 
+export interface DeliveryAttemptBinding {
+  readonly clientId: string;
+  readonly gameInstanceId: string;
+}
+
 export interface DurableActionRepository {
   createPending(input: CreateDurableAction): PendingCreateResult;
   authorizePending(
     actionId: string,
     expectedVersion: number,
     runtimeId: string,
-    gameInstanceId: string | null,
+    binding: DeliveryAttemptBinding,
   ): SendAuthorization;
   createBeforeFirstSend(input: CreateDurableAction): DurableCreateResult;
   authorizeRetry(
     actionId: string,
     expectedVersion: number,
     runtimeId: string,
-    gameInstanceId: string | null,
+    binding: DeliveryAttemptBinding,
   ): SendAuthorization;
   revokeSendAuthorization(actionId: string, attemptNumber: number, at: number): boolean;
   findById(actionId: string): DurableActionRecord | null;
@@ -184,7 +189,7 @@ export interface DurableActionRepository {
     binding: {
       readonly role: "game";
       readonly clientId: string;
-      readonly gameInstanceId?: string | null;
+      readonly gameInstanceId: string;
     },
     attemptedAt: number,
     outcome: ActionAttempt["outcome"],
