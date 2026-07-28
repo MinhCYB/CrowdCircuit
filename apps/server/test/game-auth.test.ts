@@ -48,6 +48,10 @@ describe("game handshake authentication", () => {
   it.each([
     [undefined, "AUTH_REQUIRED"],
     ["", "AUTH_REQUIRED"],
+    [123, "AUTH_REQUIRED"],
+    [{ nested: true }, "AUTH_REQUIRED"],
+    [true, "AUTH_REQUIRED"],
+    [["a", "b"], "AUTH_REQUIRED"],
     ["wrong", "AUTH_INVALID"],
   ] as const)("maps %p to %s without raw auth detail", (token, expected) => {
     const sessions = new RoleSessionRegistry();

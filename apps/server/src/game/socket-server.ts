@@ -50,6 +50,11 @@ export interface GameSocketRuntime {
   close(): Promise<void>;
 }
 
+interface RegistrationDeadlineScheduler {
+  set(callback: () => void, delayMs: number): { unref(): void };
+  clear(timer: { unref(): void }): void;
+}
+
 function protocolError(code: GameProtocolErrorCode): GameProtocolErrorMessage {
   return {
     type: "game.error",
@@ -70,8 +75,24 @@ export function attachGameSocketServer(options: {
   readonly originPolicy: OriginPolicy;
   readonly clock?: () => number;
   readonly registry?: GameSessionRegistry;
+  /** @internal — test seam only; production default: GAME_SOCKET_OPTIONS.registrationDeadlineMs */
+  readonly registrationDeadlineMs?: number;
+  /** @internal — test seam only; production default: Node.js timeout scheduler */
+  readonly registrationDeadlineScheduler?: RegistrationDeadlineScheduler;
+  /** @internal — test seam only; production default: 10_000 */
+  readonly invalidMessageWindowMs?: number;
 }): GameSocketRuntime {
   const clock = options.clock ?? Date.now;
+  const registrationDeadlineMs = options.registrationDeadlineMs ?? GAME_SOCKET_OPTIONS.registrationDeadlineMs;
+  const registrationDeadlineScheduler = options.registrationDeadlineScheduler ?? {
+    set(callback: () => void, delayMs: number) {
+      return setTimeout(callback, delayMs);
+    },
+    clear(timer: { unref(): void }) {
+      clearTimeout(timer as NodeJS.Timeout);
+    },
+  };
+  const invalidMessageWindowMs = options.invalidMessageWindowMs ?? 10_000;
   const registry = options.registry ?? new GameSessionRegistry({ clock });
   const io = new Server(options.httpServer, {
     pingInterval: GAME_SOCKET_OPTIONS.pingInterval,
@@ -119,18 +140,18 @@ export function attachGameSocketServer(options: {
 
   namespace.on("connection", (socket) => {
     const state = socket.data["gameState"] as SocketState;
-    const deadline = setTimeout(() => {
+    const deadline = registrationDeadlineScheduler.set(() => {
       if (state.registered === undefined) {
         emitError(socket, "REGISTRATION_TIMEOUT");
         socket.disconnect(true);
       }
-    }, GAME_SOCKET_OPTIONS.registrationDeadlineMs);
+    }, registrationDeadlineMs);
     deadline.unref();
 
     const invalidMessage = () => {
       const now = clock();
       state.invalidMessageTimes = state.invalidMessageTimes.filter(
-        (timestamp) => now - timestamp < 10_000,
+        (timestamp) => now - timestamp < invalidMessageWindowMs,
       );
       state.invalidMessageTimes.push(now);
       emitError(socket, "INVALID_MESSAGE");
@@ -200,7 +221,7 @@ export function attachGameSocketServer(options: {
         gameInstanceId: parsed.data.instanceId,
         connectionGeneration: outcome.sessionGeneration,
       };
-      clearTimeout(deadline);
+      registrationDeadlineScheduler.clear(deadline);
       socket.emit("game.registered", {
         type: "game.registered",
         specVersion: "0.1",
@@ -251,7 +272,7 @@ export function attachGameSocketServer(options: {
       if (state.registered === undefined) emitError(socket, "REGISTRATION_REQUIRED");
     });
     socket.on("disconnect", () => {
-      clearTimeout(deadline);
+      registrationDeadlineScheduler.clear(deadline);
       if (state.registered === undefined) return;
       registry.removeIfCurrent(
         {

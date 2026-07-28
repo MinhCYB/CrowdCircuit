@@ -1,28 +1,34 @@
 # Handoff: Phase C Milestone 4 Slice 2
 
-**Status:** READY_FOR_INDEPENDENT_REVIEW  
-**Baseline:** `fab8e1007cbcc89ddf9b99fcd4a25b98296a970c` (`fab8e10`)
+**Status:** READY_FOR_INDEPENDENT_RE_REVIEW
+**Remediation baseline:** `b83cc6fa82f3e23b6869aa2041dbaa9b6b00edf3` (`b83cc6f`)
 
-Slice 2 delivers handshake authentication, `/game` registration, a
-process-local generation-fenced live-session registry, heartbeat and abuse
-bounds, bounded stale cleanup, and shutdown disposal.
+The first independent review returned `REQUEST_CHANGES`. The implementation
+architecture was accepted, but focused transport-layer coverage was missing.
+M-1 and L-1 through L-3 are now remediated without adding Slice 3 behavior.
 
-Same-owner replacement publishes a fresh connection generation before the old
-connection receives `SESSION_REPLACED`. Another owner receives
-`INSTANCE_OWNED_BY_OTHER_CLIENT`. Stale heartbeat and disconnect callbacks
-cannot mutate the replacement. Capacity failure is atomic and never evicts a
-healthy session.
+Focused real-Socket.IO tests cover registration timeout and timer disposal;
+heartbeat burst exhaustion and deterministic refill; bounded invalid messages;
+unsupported protocol; same-owner replacement and stale disconnect fencing;
+different-owner conflict; pre-registration guards; and idempotent shutdown of
+registry, namespace sockets, deadline timers, and the Socket.IO engine.
 
-Dependencies: `socket.io` runtime and `socket.io-client` test-only at `^4.8.3`;
-lockfile updated. Fresh results: server 117/117, contracts 185/185, repository
-415/415; all lint, typecheck, declaration, and build gates pass (repository
-lint retains two pre-existing SDK declaration warnings).
+The narrow internal test seam injects the registration-deadline scheduler and
+clock/window values. Production defaults and public wire behavior are unchanged.
+No runtime dependency or lockfile changed.
 
-Deferred to Slice 3+: delivery send/resolve, durable receipt/result
-controllers, SDK runtime, and final integration/restart/exhaustion coverage.
-Catalog-backed `GAME_NOT_FOUND` and version-policy `UNSUPPORTED_SDK` remain
-unimplemented because the current approved composition defines neither source.
+Local credential-channel mapping is explicit:
 
-Detailed review:
+- `Authorization` header credential → `AUTH_FORBIDDEN`
+- `Cookie` header credential → `AUTH_FORBIDDEN`
+
+Non-string `auth.token` values are rejected as `AUTH_REQUIRED` without
+coercion. Receipt/result handlers remain pre-registration guards only; no
+receipt/result lifecycle, delivery adapter, SDK runtime, persistence, or
+migration behavior was added.
+
+Fresh verification results and the exact remediation inventory are recorded in
 `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-02-SELF-REVIEW.md`.
-No staging, commit, or push occurred.
+
+Slice 3 and later remain `BLOCKED_BY_PREVIOUS_SLICE_REVIEW`. Milestone 5 remains
+`BLOCKED_BY_PREVIOUS_MILESTONE`. No staging, commit, or push occurred.

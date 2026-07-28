@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: READY_FOR_INDEPENDENT_REVIEW)
+**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: READY_FOR_INDEPENDENT_RE_REVIEW; Slice 3+: BLOCKED_BY_PREVIOUS_SLICE_REVIEW)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -47,7 +47,8 @@ Recommended user commit checkpoint: reviewed additive contract slice.
 
 Owner: CODEX.
 
-Status: READY_FOR_INDEPENDENT_REVIEW.
+Status: READY_FOR_INDEPENDENT_RE_REVIEW after remediation of the first
+independent review's `REQUEST_CHANGES` verdict.
 
 Exclusive files:
 
@@ -72,6 +73,8 @@ fencing, cleanup, and file ownership.
 Recommended user commit checkpoint: reviewed server transport slice.
 
 ## Slice 3 — Delivery adapter
+
+Status: BLOCKED_BY_PREVIOUS_SLICE_REVIEW.
 
 Owner: CODEX.
 
