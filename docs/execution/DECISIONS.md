@@ -744,6 +744,28 @@ The Milestone 3 `ActionGateway` relies on `ActionDeliveryPort` to resolve a live
 
 - Delivery resolution is generation-fenced across connection races without leaking Socket.IO types into persistence layers.
 
+### Normative amendment — 2026-07-28 (client-routing correction)
+
+This amendment corrects and supersedes only ADR-027's null-instance sentence.
+When `gameInstanceId` is null, resolution considers every eligible current live
+instance for the requested game, regardless of authenticated owner. The
+registry selects deterministically by `gameInstanceId` ascending. The
+authenticated `clientId` is discovered from the selected registry entry and
+becomes part of the resolved destination, durable attempt binding, and final
+generation fence.
+
+- Explicit-instance resolution uses exact `(gameId, gameInstanceId)`.
+- Occupied different-client takeover remains prohibited by ADR-026.
+- No caller supplies or fabricates client ownership.
+- Final `sendIfCurrent` still validates the exact selected `clientId`.
+- No fallback or redirect occurs during send.
+- A later retry may choose a different owner only through fresh resolution and
+  a new durable attempt.
+- Existing attempt history remains bound to the original resolved client.
+
+This is a normative clarification and correction to routing semantics, not a
+change to ADR-026 ownership conflict or the final destination identity tuple.
+
 ### Affected Packages
 
 - `apps/server`

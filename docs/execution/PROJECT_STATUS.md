@@ -5,16 +5,17 @@
 **Phase B commit:** `86f1a32` (`feat: complete Phase B event pipeline`)
 **Current phase:** Phase C — Game Vertical Slice
 **Phase C status:** IN_PROGRESS
-**Current milestone:** PHASE-C-MILESTONE-04 — IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_FOR_INDEPENDENT_REVIEW; Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW; Slices 5–6: blocked by the approved sequential flow)
+**Current milestone:** PHASE-C-MILESTONE-04 — IN_PROGRESS (Slices 1–2: APPROVED_AND_COMPLETE; Slice 3 commit `6617f9f`: REQUEST_CHANGES; correction architecture: APPROVED_FOR_REMEDIATION; remediation: READY_TO_BEGIN; Slice 4+: blocked)
 **Milestone 3 architecture status:** RESOLVED (ADR-019 through ADR-024 accepted)
-**Milestone 3 status:** APPROVED_AND_COMPLETE
+**Milestone 3 status:** APPROVED_AND_COMPLETE; authorization input narrowly reopened for this corrective binding change
 **Milestone 4 architecture status:** RESOLVED (ADR-025 through ADR-030 accepted)
 **Milestone 4 architecture:** APPROVED_AND_COMPLETE
 **Milestone 4 implementation:** IN_PROGRESS
 **Milestone 4 Slice 1 (Shared contracts & scaffolding):** APPROVED_AND_COMPLETE (final commit: `3809337e900b02ade7a47176b823b7d4868151e7`)
 **Milestone 4 Slice 2 (Server authentication and registry):** APPROVED_AND_COMPLETE (implementation: `b83cc6fa82f3e23b6869aa2041dbaa9b6b00edf3`; remediation: `abd0f985fa3de66d7f2e507b5ace8416c712050d`)
-**Milestone 4 Slice 3 architecture gap:** RESOLVED
-**Milestone 4 Slice 3 implementation (Delivery adapter):** READY_FOR_INDEPENDENT_REVIEW
+**Milestone 4 Slice 3 implementation commit `6617f9f`:** REQUEST_CHANGES
+**Milestone 4 Slice 3 client-routing correction architecture:** APPROVED_FOR_REMEDIATION
+**Milestone 4 Slice 3 remediation implementation:** READY_TO_BEGIN
 **Milestone 4 Slice 4:** BLOCKED_BY_PREVIOUS_SLICE_REVIEW
 **Milestone 4 Slice 5 through Slice 6:** blocked by the approved sequential flow
 **Architecture-amendment baseline:** HEAD `514813687aec465e91b42ee8fc8310408b3b1a21` (`docs: close Phase C milestone 4 slice 2`)
@@ -32,7 +33,7 @@
 1. Authentication and durable persistence prerequisites — DONE
 2. Mapping and action-budget capability — APPROVED_AND_COMPLETE
 3. Durable Action Gateway lifecycle — APPROVED_AND_COMPLETE
-4. Authenticated game-session delivery and SDK vertical slice — IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_FOR_INDEPENDENT_REVIEW; Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW; Slices 5–6: blocked by the approved sequential flow)
+4. Authenticated game-session delivery and SDK vertical slice — IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slices 1–2: APPROVED_AND_COMPLETE; Slice 3 commit `6617f9f`: REQUEST_CHANGES; correction architecture: APPROVED_FOR_REMEDIATION; remediation: READY_TO_BEGIN; Slice 4+: blocked)
 5. Demo game, recovery, and Phase C acceptance — BLOCKED_BY_PREVIOUS_MILESTONE
 
 ## Phase C scope

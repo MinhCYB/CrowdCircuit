@@ -7,13 +7,13 @@
 **Milestone 2:** APPROVED_AND_COMPLETE
 **Milestone 2 remediation:** COMPLETE
 **Milestone 3 architecture:** RESOLVED
-**Milestone 3 implementation:** APPROVED_AND_COMPLETE
+**Milestone 3 implementation:** APPROVED_AND_COMPLETE; authorization input narrowly reopened for the Slice 3 corrective binding change
 **Claude Architecture Review 01:** REQUEST_CHANGES (historical)
 **Architecture remediation 01:** COMPLETE
 **Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
 **Final Architecture Fix Verification:** APPROVE
 **Milestone 4 architecture:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Milestone 4 implementation:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_FOR_INDEPENDENT_REVIEW; Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW; Slices 5–6: blocked by the approved sequential flow)
+**Milestone 4 implementation:** IN_PROGRESS (Slices 1–2: APPROVED_AND_COMPLETE; Slice 3 commit `6617f9f`: REQUEST_CHANGES; correction architecture: APPROVED_FOR_REMEDIATION; remediation: READY_TO_BEGIN; Slice 4+: blocked)
 **Milestone 5:** BLOCKED_BY_PREVIOUS_MILESTONE
 **Phase D:** untouched
 
@@ -328,7 +328,7 @@ idempotency, retry/TTL, reconciliation, failure isolation, and artifacts.
 **Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
 **Final Architecture Fix Verification:** APPROVE
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_FOR_INDEPENDENT_REVIEW; Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW; Slices 5–6: blocked by the approved sequential flow)
+**Implementation status:** IN_PROGRESS (Slices 1–2: APPROVED_AND_COMPLETE; Slice 3 commit `6617f9f`: REQUEST_CHANGES; correction architecture: APPROVED_FOR_REMEDIATION; remediation: READY_TO_BEGIN; Slice 4+: blocked)
 **Primary owner:** CODEX  
 **Roadmap:** `BE-07A`–`BE-07D`, `BE-08A`–`BE-08C`
 

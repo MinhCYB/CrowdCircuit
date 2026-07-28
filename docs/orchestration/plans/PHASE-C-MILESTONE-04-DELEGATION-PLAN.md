@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slice 1: APPROVED_AND_COMPLETE; Slice 2: APPROVED_AND_COMPLETE; Slice 3 architecture gap: RESOLVED; Slice 3 implementation: READY_FOR_INDEPENDENT_REVIEW; Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW; Slices 5–6: blocked by the approved sequential flow)
+**Implementation status:** IN_PROGRESS (Slices 1–2: APPROVED_AND_COMPLETE; Slice 3 commit `6617f9f`: REQUEST_CHANGES; correction architecture: APPROVED_FOR_REMEDIATION; remediation: READY_TO_BEGIN; Slice 4+: blocked)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -85,14 +85,17 @@ Recommended user commit checkpoint: reviewed server transport slice.
 
 ## Slice 3 — Delivery adapter
 
-Architecture gap status: RESOLVED.
+Implementation commit `6617f9f`: REQUEST_CHANGES.
 
-Implementation status: READY_FOR_INDEPENDENT_REVIEW.
+Client-routing correction architecture: APPROVED_FOR_REMEDIATION.
+
+Remediation implementation: READY_TO_BEGIN.
 
 Owner: CODEX.
 
 Authoritative amendment:
 
+- `docs/orchestration/plans/PHASE-C-MILESTONE-04-SLICE-03-CLIENT-ROUTING-AMENDMENT.md`
 - `docs/orchestration/plans/PHASE-C-MILESTONE-04-SLICE-03-DELIVERY-BRIDGE-AMENDMENT.md`
 - `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-03-GAP-ARCHITECTURE-REVIEW-01.md`
 
@@ -114,9 +117,10 @@ Exact implementation ownership:
 - registry unit tests, adapter unit tests, real Socket.IO delivery integration
   tests, and declaration tests.
 
-Frozen: authentication mapping, registration ownership, replacement policy,
-heartbeat/rate behavior, cleanup policy, inbound receipt/result, persistence,
-and SDK runtime. This allowlist is narrow and grants no broad co-ownership.
+Corrective ownership additionally permits only the exact delivery gateway,
+persistence type/repository, and test migrations listed in the client-routing
+amendment. No broad persistence co-ownership is granted. Everything else,
+including schema/migrations, remains frozen.
 
 Deliver:
 

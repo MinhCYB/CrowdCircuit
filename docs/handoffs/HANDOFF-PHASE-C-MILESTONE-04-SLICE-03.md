@@ -3,7 +3,14 @@
 **Date:** 2026-07-28  
 **Baseline:** `a984b5ed3e6919a386e09ba54ca6b15269e30c3a`  
 **Branch:** `review/phase-c`  
-**Status:** READY_FOR_INDEPENDENT_REVIEW
+**Status:** REQUEST_CHANGES
+
+## Independent-review correction state
+
+Implementation commit `6617f9f` is `REQUEST_CHANGES` because delivery and
+authorization derive `clientId` from `gameId`. The correction architecture is
+`APPROVED_FOR_REMEDIATION`; remediation is `READY_TO_BEGIN`. No remediation
+implementation is claimed here.
 
 ## Delivered
 
@@ -68,4 +75,4 @@ dependency.
 This handoff records self-review readiness only and does not claim independent
 approval.
 
-**READY_FOR_INDEPENDENT_REVIEW**
+**HISTORICAL_HANDOFF_SUPERSEDED_BY_REQUEST_CHANGES**

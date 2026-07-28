@@ -3,7 +3,14 @@
 **Date:** 2026-07-28  
 **Baseline:** `a984b5ed3e6919a386e09ba54ca6b15269e30c3a`  
 **Branch:** `review/phase-c`  
-**Status:** READY_FOR_INDEPENDENT_REVIEW
+**Status:** REQUEST_CHANGES
+
+## Independent-review correction state
+
+Independent review of implementation commit `6617f9f` confirmed
+`clientId: envelope.gameId` and `clientId: input.gameId`. The corrective
+architecture is `APPROVED_FOR_REMEDIATION`; implementation is
+`READY_TO_BEGIN`. This historical self-review does not approve implementation.
 
 ## Scope
 
@@ -104,4 +111,4 @@ manifests and `pnpm-lock.yaml` are unchanged.
 
 The P1 evidence gap is corrected and all fresh gates pass.
 
-**READY_FOR_INDEPENDENT_REVIEW**
+**HISTORICAL_SELF_REVIEW_SUPERSEDED_BY_REQUEST_CHANGES**

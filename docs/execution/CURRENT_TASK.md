@@ -2,26 +2,26 @@
 
 **Task ID:** PHASE-C-MILESTONE-04-SLICE-03
 **Parent Task:** Phase C — Game Vertical Slice (Milestone 4)
-**Status:** READY_FOR_INDEPENDENT_REVIEW
+**Status:** READY_TO_BEGIN
 **Primary owner:** CODEX
 **Priority:** P0
 
 ## Objective
 
-Independent review of Phase C Milestone 4 Slice 3 — Delivery adapter.
-The implementation, self-review, handoff, and final verification evidence are
-complete; Slice 3 is not independently approved until that review passes.
+Implement Slice 3 client-routing remediation under the approved corrective
+amendment.
 
 ## State
 
 - Phase C: IN_PROGRESS
-- Milestone 3: APPROVED_AND_COMPLETE
+- Milestone 3: APPROVED_AND_COMPLETE; authorization input narrowly reopened
 - Milestone 4 architecture: APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
 - Milestone 4 implementation: IN_PROGRESS
 - Slice 1 (Shared contracts & additive scaffolding): APPROVED_AND_COMPLETE
 - Slice 2 (Server authentication and registry): APPROVED_AND_COMPLETE
-- Slice 3 architecture gap: RESOLVED
-- Slice 3 implementation (Delivery adapter): READY_FOR_INDEPENDENT_REVIEW
+- Slice 3 implementation commit `6617f9f`: REQUEST_CHANGES
+- Slice 3 client-routing correction architecture: APPROVED_FOR_REMEDIATION
+- Slice 3 remediation implementation: READY_TO_BEGIN
 - Slice 4: BLOCKED_BY_PREVIOUS_SLICE_REVIEW
 - Slice 5 through Slice 6: blocked by the approved sequential flow
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE
