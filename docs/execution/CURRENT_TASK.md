@@ -1,70 +1,55 @@
 # Current Task
 
-**Task ID:** PHASE-C-MILESTONE-04-SLICE-04
+**Task ID:** PHASE-C-MILESTONE-04-SLICE-05
 **Parent Task:** Phase C — Game Vertical Slice (Milestone 4)
-**Status:** READY_FOR_INDEPENDENT_REVIEW
+**Status:** READY_TO_BEGIN
 **Primary owner:** CODEX
 **Priority:** P0
 
 ## Objective
 
-Implement Phase C Milestone 4 Slice 4 inbound receipt/result lifecycle under
-the approved focused amendment.
+Implement the JavaScript SDK slice defined by the approved Milestone 4
+delegation plan. This closure task does not begin that implementation.
 
 ## State
 
 - Phase C: IN_PROGRESS
 - Milestone 3: APPROVED_AND_COMPLETE
-- Milestone 4 architecture: APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
+- Milestone 4 architecture: APPROVED_AND_COMPLETE
 - Milestone 4 implementation: IN_PROGRESS
-- Slice 1 (Shared contracts & additive scaffolding): APPROVED_AND_COMPLETE
-- Slice 2 (Server authentication and registry): APPROVED_AND_COMPLETE
-- Slice 3 implementation commit `6617f9f`: REQUEST_CHANGES
-- Slice 3 client-routing correction architecture: APPROVED_FOR_REMEDIATION
-- Slice 3 remediation commit `de0b589`: APPROVED
-- Slice 3 overall: APPROVED_AND_COMPLETE
-- Slice 4 initial implementation attempt: ARCHITECTURE_GAP
-- Slice 4 architecture review: REQUEST_CHANGES
-- Slice 4 focused amendment: APPROVED_FOR_IMPLEMENTATION
-- Slice 4 implementation: READY_FOR_INDEPENDENT_REVIEW
-- Slice 4 implementation commit `0dde422`: independent review REQUEST_CHANGES
-  (database-path fallback, partial-construction cleanup, Composition B tests);
-  remediation READY_FOR_INDEPENDENT_REVIEW
-- Slice 5 through Slice 6: blocked by the approved sequential flow
+- Slices 1–4: APPROVED_AND_COMPLETE
+- Slice 4 implementation baseline:
+  `59c7d3d7450ca426fb1038e736e4a64794768604`
+- Slice 4 implementation commit:
+  `0dde4223e82ff87ec656c197adeb028309bfc64c`
+- Slice 4 remediation commit:
+  `fe31045389015b301d37e94bf75be91f1412d92d`
+- Slice 4 independent re-review: APPROVE
+- Slice 5: READY_TO_BEGIN
+- Slice 6: BLOCKED_BY_PREVIOUS_SLICE_REVIEW
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
 
 ## Required reading
 
 1. `docs/orchestration/plans/PHASE-C-MILESTONE-04-DELEGATION-PLAN.md`
-2. `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-03-INDEPENDENT-REREVIEW-01.md`
-3. `docs/handoffs/HANDOFF-PHASE-C-MILESTONE-04-SLICE-03.md`
-4. `docs/execution/DECISIONS.md` (especially ADR-028)
+2. `docs/orchestration/closures/PHASE-C-MILESTONE-04-SLICE-04-CLOSURE.md`
+3. `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-04-COMPOSITION-REVIEW-02.md`
+4. `docs/execution/DECISIONS.md` (ADR-025 through ADR-030)
 
 ## Hard boundaries
 
-- Slice 4 is limited to the exact production/test allowlist in the approved
-  focused amendment.
-- Preserve Milestone 3 durable lifecycle authority and ADR-028 authorization,
-  idempotency, conflict, retry, TTL, and restart semantics.
-- Stop with `ARCHITECTURE_GAP` if current durable attempts cannot authorize
-  cross-client messages without a persistence/schema change.
-- Do not begin Slice 5, Slice 6, Milestone 5, or Phase D.
-- Milestone 5 remains BLOCKED_BY_PREVIOUS_MILESTONE.
+- Slice 5 owns the JavaScript SDK behavior, including resend/cached-result
+  behavior; do not move that behavior into the server.
+- Preserve the approved Slice 1–4 transport, routing, fencing, durable
+  lifecycle, and receipt/result invariants.
+- Do not begin Slice 6, Milestone 5, or Phase D.
 
-## Current remediation pointer
+## Closed Slice 4 verification
 
-Composition B remediation removes environment-sniffed in-memory storage,
-closes partial-construction resources exactly once, and adds 13 focused
-composition tests. Verification passes: server 172/172, contracts 185/185,
-repository 470/470. No protocol/schema/contracts/SDK change occurred.
+Focused Composition B passed 13/13 tests in 1 file; server passed 172/172 in
+17 files; contracts passed 185/185 in 7 files; repository passed 470/470 in
+33 files. Server lint had 0 errors and 0 warnings; root lint had 0 errors and
+2 pre-existing SDK warnings. Typecheck, declarations, and builds passed.
 
-**Next action:** Independently re-review the Slice 4 Composition B remediation.
-
-## Slice 2 Closure Summary
-
-Slice 2 (Server authentication and registry) is APPROVED_AND_COMPLETE.
-Implementation commit: `b83cc6fa82f3e23b6869aa2041dbaa9b6b00edf3`.
-Remediation commit: `abd0f985fa3de66d7f2e507b5ace8416c712050d`.
-All four review findings (M-1, L-1, L-2, L-3) are RESOLVED. Final Node 24
-verification: 433/433 tests passing.
+**Next action:** Begin Slice 5 — JavaScript SDK only under its approved scope.

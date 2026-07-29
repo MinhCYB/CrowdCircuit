@@ -84,7 +84,7 @@ Phase C work.
 | PHASE-C-MILESTONE-01 | Authentication and durable persistence prerequisites | DONE |
 | PHASE-C-MILESTONE-02 | Mapping and action-budget capability | APPROVED_AND_COMPLETE |
 | PHASE-C-MILESTONE-03 | Durable Action Gateway lifecycle | APPROVED_AND_COMPLETE |
-| PHASE-C-MILESTONE-04 | Authenticated game-session delivery and SDK vertical slice | IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slices 1–3: APPROVED_AND_COMPLETE; Slice 4: READY_FOR_INDEPENDENT_REVIEW) |
+| PHASE-C-MILESTONE-04 | Authenticated game-session delivery and SDK vertical slice | IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slices 1–4: APPROVED_AND_COMPLETE; Slice 5: READY_TO_BEGIN) |
 | PHASE-C-MILESTONE-05 | Demo game, recovery, and Phase C acceptance | BLOCKED_BY_PREVIOUS_MILESTONE |
 
 | ID | Task | Status | Depends on |
@@ -97,8 +97,8 @@ Phase C work.
 | BE-06A | Per-game global action budget | DONE | BE-05E |
 | BE-06B | Overflow and priority policies | DONE | BE-06A |
 | BE-07A | Game Socket.IO namespace and registration | DONE (Slices 2–3 APPROVED_AND_COMPLETE; `6617f9f` historical REQUEST_CHANGES; remediation `de0b589` APPROVED) | FOUND-03D, FOUND-04D, BE-05E |
-| BE-07B | Action delivery and received ACK | READY_FOR_INDEPENDENT_REVIEW (Slice 4 Composition B remediation) | BE-07A, FOUND-04D |
-| BE-07C | Completion result, retry and TTL | TODO | BE-07B, FOUND-04D |
+| BE-07B | Action delivery and received ACK | DONE (Slice 4 APPROVED_AND_COMPLETE) | BE-07A, FOUND-04D |
+| BE-07C | Completion result, retry and TTL | DONE (Slice 4 APPROVED_AND_COMPLETE; inherited retry/TTL preserved) | BE-07B, FOUND-04D |
 | BE-07D | Action Gateway integration tests | TODO | BE-07C, FOUND-03D, FOUND-04D |
 | BE-08A | JavaScript SDK connection and registration | TODO | BE-07D, FOUND-03D |
 | BE-08B | Action handlers and automatic receipt ACK | TODO | BE-08A |
@@ -229,7 +229,7 @@ Required:
 
 **Current orchestration unit:** `Phase C — Game Vertical Slice`
 
-**Current milestone:** `PHASE-C-MILESTONE-04 — IN_PROGRESS` (Architecture: APPROVED_AND_COMPLETE; Slices 1–3: APPROVED_AND_COMPLETE; Slice 4: READY_FOR_INDEPENDENT_REVIEW)
+**Current milestone:** `PHASE-C-MILESTONE-04 — IN_PROGRESS` (Architecture: APPROVED_AND_COMPLETE; Slices 1–4: APPROVED_AND_COMPLETE; Slice 5: READY_TO_BEGIN)
 
 **Next action:** Independently re-review the Slice 4 Composition B remediation;
 Slice 5 remains blocked.

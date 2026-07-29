@@ -5,7 +5,7 @@
 **Phase B commit:** `86f1a32` (`feat: complete Phase B event pipeline`)
 **Current phase:** Phase C — Game Vertical Slice
 **Phase C status:** IN_PROGRESS
-**Current milestone:** PHASE-C-MILESTONE-04 — IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 4: READY_FOR_INDEPENDENT_REVIEW)
+**Current milestone:** PHASE-C-MILESTONE-04 — IN_PROGRESS (Slices 1–4: APPROVED_AND_COMPLETE; Slice 5: READY_TO_BEGIN)
 **Milestone 3 architecture status:** RESOLVED (ADR-019 through ADR-024 accepted)
 **Milestone 3 status:** APPROVED_AND_COMPLETE
 **Milestone 4 architecture status:** RESOLVED (ADR-025 through ADR-030 accepted)
@@ -20,18 +20,22 @@
 **Milestone 4 Slice 4 initial implementation attempt:** ARCHITECTURE_GAP
 **Milestone 4 Slice 4 architecture review:** REQUEST_CHANGES
 **Milestone 4 Slice 4 focused amendment:** APPROVED_FOR_IMPLEMENTATION
-**Milestone 4 Slice 4 implementation:** READY_FOR_INDEPENDENT_REVIEW
+**Milestone 4 Slice 4 implementation:** APPROVED_AND_COMPLETE
 **Milestone 4 Slice 4 implementation commit `0dde422`:** REQUEST_CHANGES
-**Milestone 4 Slice 4 Composition B remediation:** READY_FOR_INDEPENDENT_REVIEW
-**Milestone 4 Slice 5 through Slice 6:** blocked by the approved sequential flow
+**Milestone 4 Slice 4 Composition B remediation commit `fe31045`:** APPROVE
+**Milestone 4 Slice 4 overall:** APPROVED_AND_COMPLETE
+**Milestone 4 Slice 5:** READY_TO_BEGIN
+**Milestone 4 Slice 6:** blocked by the approved sequential flow
 **Slice 4 implementation baseline:** HEAD `59c7d3d7450ca426fb1038e736e4a64794768604`
 
 The Composition B remediation addresses exactly the independent review's
 database-path fallback, partial-construction cleanup, and missing composition
 tests. Verification passes with server 172/172, contracts 185/185, and
 repository 470/470 tests. No protocol, schema, contracts, or SDK change was
-made. Next action: independently re-review the Slice 4 Composition B
-remediation. Slice 5 and Milestone 5 remain blocked; Phase D is untouched.
+made. Independent re-review returned APPROVE and Slice 4 is
+APPROVED_AND_COMPLETE. Next action: begin Slice 5 — JavaScript SDK. Milestone 4
+remains IN_PROGRESS because Slices 5–6 belong to it. Milestone 5 remains
+blocked; Phase D is untouched.
 
 ## Runtime baseline
 
@@ -46,7 +50,7 @@ remediation. Slice 5 and Milestone 5 remain blocked; Phase D is untouched.
 1. Authentication and durable persistence prerequisites — DONE
 2. Mapping and action-budget capability — APPROVED_AND_COMPLETE
 3. Durable Action Gateway lifecycle — APPROVED_AND_COMPLETE
-4. Authenticated game-session delivery and SDK vertical slice — IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slices 1–3: APPROVED_AND_COMPLETE; Slice 4: READY_FOR_INDEPENDENT_REVIEW)
+4. Authenticated game-session delivery and SDK vertical slice — IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slices 1–4: APPROVED_AND_COMPLETE; Slice 5: READY_TO_BEGIN)
 5. Demo game, recovery, and Phase C acceptance — BLOCKED_BY_PREVIOUS_MILESTONE
 
 ## Phase C scope

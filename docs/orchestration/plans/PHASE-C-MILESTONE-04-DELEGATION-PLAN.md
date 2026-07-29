@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 4: READY_FOR_INDEPENDENT_REVIEW)
+**Implementation status:** IN_PROGRESS (Slices 1–4: APPROVED_AND_COMPLETE; Slice 5: READY_TO_BEGIN)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -147,9 +147,12 @@ Recommended user commit checkpoint: reviewed delivery adapter slice.
 
 Owner: CODEX.
 
-Status: READY_FOR_INDEPENDENT_REVIEW. The initial attempt stopped at
+Status: APPROVED_AND_COMPLETE. The initial attempt stopped at
 `ARCHITECTURE_GAP`; Architecture Review 01 returned `REQUEST_CHANGES`; the
-approved amendment and Composition B now govern the completed implementation.
+approved amendment and Composition B governed the implementation. Independent
+review of `0dde4223e82ff87ec656c197adeb028309bfc64c` returned `REQUEST_CHANGES`;
+the remediation at `fe31045389015b301d37e94bf75be91f1412d92d` received
+independent re-review verdict `APPROVE`.
 
 Architecture review: `REQUEST_CHANGES`.
 
@@ -182,6 +185,8 @@ Recommended user commit checkpoint: reviewed inbound lifecycle slice.
 Owner: CODEX. Gemini may add frozen fixtures and declaration-negative tests
 only after the core SDK implementation is complete.
 
+Status: READY_TO_BEGIN.
+
 Exclusive files:
 
 - `packages/game-sdk-js/**`;
@@ -204,6 +209,8 @@ Recommended user commit checkpoint: reviewed SDK slice.
 ## Slice 6 — Milestone integration and closure
 
 Owner: CODEX.
+
+Status: BLOCKED_BY_PREVIOUS_SLICE_REVIEW.
 
 Deliver:
 
