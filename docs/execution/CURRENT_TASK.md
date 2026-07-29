@@ -8,8 +8,8 @@
 
 ## Objective
 
-Prepare and begin Phase C Milestone 4 Slice 4 under the approved delegation
-plan.
+Implement Phase C Milestone 4 Slice 4 inbound receipt/result lifecycle under
+the approved focused amendment.
 
 ## State
 
@@ -23,7 +23,10 @@ plan.
 - Slice 3 client-routing correction architecture: APPROVED_FOR_REMEDIATION
 - Slice 3 remediation commit `de0b589`: APPROVED
 - Slice 3 overall: APPROVED_AND_COMPLETE
-- Slice 4: READY_TO_BEGIN; implementation has not begun
+- Slice 4 initial implementation attempt: ARCHITECTURE_GAP
+- Slice 4 architecture review: REQUEST_CHANGES
+- Slice 4 focused amendment: APPROVED_FOR_IMPLEMENTATION
+- Slice 4 implementation: READY_TO_BEGIN; implementation has not begun
 - Slice 5 through Slice 6: blocked by the approved sequential flow
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
@@ -37,8 +40,8 @@ plan.
 
 ## Hard boundaries
 
-- Slice 4 is limited to server game inbound controllers, narrowly required
-  `ActionGateway` public methods, and server integration tests.
+- Slice 4 is limited to the exact production/test allowlist in the approved
+  focused amendment.
 - Preserve Milestone 3 durable lifecycle authority and ADR-028 authorization,
   idempotency, conflict, retry, TTL, and restart semantics.
 - Stop with `ARCHITECTURE_GAP` if current durable attempts cannot authorize

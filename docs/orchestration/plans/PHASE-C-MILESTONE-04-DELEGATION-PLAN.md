@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 3 commit `6617f9f`: historical REQUEST_CHANGES; remediation `de0b589`: APPROVED; Slice 4: READY_TO_BEGIN)
+**Implementation status:** IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 4 initial attempt: ARCHITECTURE_GAP; review: REQUEST_CHANGES; amendment: APPROVED_FOR_IMPLEMENTATION; implementation: READY_TO_BEGIN)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -147,13 +147,18 @@ Recommended user commit checkpoint: reviewed delivery adapter slice.
 
 Owner: CODEX.
 
-Status: READY_TO_BEGIN. Implementation has not begun.
+Status: READY_TO_BEGIN. The initial attempt stopped at `ARCHITECTURE_GAP`;
+implementation has not begun.
 
-Exclusive files:
+Architecture review: `REQUEST_CHANGES`.
 
-- server game inbound controllers;
-- narrowly required `ActionGateway` public methods;
-- server integration tests.
+Authoritative focused amendment and review:
+
+- `docs/orchestration/plans/PHASE-C-MILESTONE-04-SLICE-04-INBOUND-LIFECYCLE-AMENDMENT.md`
+- `docs/orchestration/reviews/PHASE-C-MILESTONE-04-SLICE-04-ARCHITECTURE-REVIEW-01.md`
+
+Exclusive production and test files are the exact ownership allowlist in the
+focused amendment; it supersedes the earlier broad Slice 4 wording.
 
 Deliver:
 
