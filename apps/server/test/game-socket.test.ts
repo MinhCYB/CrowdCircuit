@@ -11,7 +11,10 @@ afterEach(() => {
 
 async function setup() {
   const authRuntime = createAuthRuntime();
-  const app = await buildApp({ authRuntime });
+  const app = await buildApp({
+    authRuntime,
+    durableDatabasePath: ":memory:",
+  });
   await app.listen({ host: "127.0.0.1", port: 0 });
   const address = app.server.address();
   if (address === null || typeof address === "string") throw new Error("Missing address");

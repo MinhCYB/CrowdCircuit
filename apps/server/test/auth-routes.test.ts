@@ -19,7 +19,11 @@ describe("authentication HTTP boundary", () => {
       clock: () => 1_000,
       random: (size) => new Uint8Array(size).fill(value++),
     });
-    const app = await buildApp({ authRuntime: runtime, originPolicy });
+    const app = await buildApp({
+      authRuntime: runtime,
+      originPolicy,
+      durableDatabasePath: ":memory:",
+    });
     apps.push(app);
     const bootstrap = await app.inject({
       method: "POST",
@@ -69,7 +73,7 @@ describe("authentication HTTP boundary", () => {
   });
 
   it("rejects unlisted origins, missing admin sessions, and extra request fields", async () => {
-    const app = await buildApp({ originPolicy });
+    const app = await buildApp({ originPolicy, durableDatabasePath: ":memory:" });
     apps.push(app);
     const denied = await app.inject({
       method: "POST",
@@ -103,7 +107,11 @@ describe("authentication HTTP boundary", () => {
       clock: () => 1_000,
       random: (size) => new Uint8Array(size).fill(value++),
     });
-    const app = await buildApp({ authRuntime: runtime, originPolicy });
+    const app = await buildApp({
+      authRuntime: runtime,
+      originPolicy,
+      durableDatabasePath: ":memory:",
+    });
     apps.push(app);
     const request = {
       method: "POST" as const,
@@ -134,6 +142,7 @@ describe("authentication HTTP boundary", () => {
       authRuntime: runtime,
       originPolicy,
       loggerStream: stream,
+      durableDatabasePath: ":memory:",
     });
     apps.push(app);
     const secretToken = "query-secret-must-not-log";
@@ -168,7 +177,11 @@ describe("authentication HTTP boundary", () => {
       clock: () => 1_000,
       random: (size) => new Uint8Array(size).fill(value++),
     });
-    const app = await buildApp({ authRuntime: runtime, originPolicy });
+    const app = await buildApp({
+      authRuntime: runtime,
+      originPolicy,
+      durableDatabasePath: ":memory:",
+    });
     apps.push(app);
     const code = runtime.pairingCodes.create({
       role: "game",
@@ -214,7 +227,11 @@ describe("authentication HTTP boundary", () => {
       clock: () => 1_000,
       random: (size) => new Uint8Array(size).fill(value++),
     });
-    const app = await buildApp({ authRuntime: runtime, originPolicy });
+    const app = await buildApp({
+      authRuntime: runtime,
+      originPolicy,
+      durableDatabasePath: ":memory:",
+    });
     apps.push(app);
     const code = runtime.pairingCodes.create({
       role: "game",
@@ -232,7 +249,7 @@ describe("authentication HTTP boundary", () => {
   });
 
   it("does not trust forwarded headers for loopback identity", async () => {
-    const app = await buildApp({ originPolicy });
+    const app = await buildApp({ originPolicy, durableDatabasePath: ":memory:" });
     apps.push(app);
     const response = await app.inject({
       method: "POST",

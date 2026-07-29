@@ -97,7 +97,7 @@ Phase C work.
 | BE-06A | Per-game global action budget | DONE | BE-05E |
 | BE-06B | Overflow and priority policies | DONE | BE-06A |
 | BE-07A | Game Socket.IO namespace and registration | DONE (Slices 2–3 APPROVED_AND_COMPLETE; `6617f9f` historical REQUEST_CHANGES; remediation `de0b589` APPROVED) | FOUND-03D, FOUND-04D, BE-05E |
-| BE-07B | Action delivery and received ACK | READY_FOR_INDEPENDENT_REVIEW (Slice 4) | BE-07A, FOUND-04D |
+| BE-07B | Action delivery and received ACK | READY_FOR_INDEPENDENT_REVIEW (Slice 4 Composition B remediation) | BE-07A, FOUND-04D |
 | BE-07C | Completion result, retry and TTL | TODO | BE-07B, FOUND-04D |
 | BE-07D | Action Gateway integration tests | TODO | BE-07C, FOUND-03D, FOUND-04D |
 | BE-08A | JavaScript SDK connection and registration | TODO | BE-07D, FOUND-03D |
@@ -231,7 +231,8 @@ Required:
 
 **Current milestone:** `PHASE-C-MILESTONE-04 — IN_PROGRESS` (Architecture: APPROVED_AND_COMPLETE; Slices 1–3: APPROVED_AND_COMPLETE; Slice 4: READY_FOR_INDEPENDENT_REVIEW)
 
-**Next action:** Independently review Phase C Milestone 4 Slice 4; Slice 5 remains blocked.
+**Next action:** Independently re-review the Slice 4 Composition B remediation;
+Slice 5 remains blocked.
 
 **Plan:** `docs/orchestration/plans/PHASE-C-MILESTONE-PLAN.md`
 

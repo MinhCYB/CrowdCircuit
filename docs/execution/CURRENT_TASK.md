@@ -27,6 +27,9 @@ the approved focused amendment.
 - Slice 4 architecture review: REQUEST_CHANGES
 - Slice 4 focused amendment: APPROVED_FOR_IMPLEMENTATION
 - Slice 4 implementation: READY_FOR_INDEPENDENT_REVIEW
+- Slice 4 implementation commit `0dde422`: independent review REQUEST_CHANGES
+  (database-path fallback, partial-construction cleanup, Composition B tests);
+  remediation READY_FOR_INDEPENDENT_REVIEW
 - Slice 5 through Slice 6: blocked by the approved sequential flow
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched
@@ -48,6 +51,15 @@ the approved focused amendment.
   cross-client messages without a persistence/schema change.
 - Do not begin Slice 5, Slice 6, Milestone 5, or Phase D.
 - Milestone 5 remains BLOCKED_BY_PREVIOUS_MILESTONE.
+
+## Current remediation pointer
+
+Composition B remediation removes environment-sniffed in-memory storage,
+closes partial-construction resources exactly once, and adds 13 focused
+composition tests. Verification passes: server 172/172, contracts 185/185,
+repository 470/470. No protocol/schema/contracts/SDK change occurred.
+
+**Next action:** Independently re-review the Slice 4 Composition B remediation.
 
 ## Slice 2 Closure Summary
 

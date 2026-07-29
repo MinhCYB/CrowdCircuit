@@ -21,8 +21,17 @@
 **Milestone 4 Slice 4 architecture review:** REQUEST_CHANGES
 **Milestone 4 Slice 4 focused amendment:** APPROVED_FOR_IMPLEMENTATION
 **Milestone 4 Slice 4 implementation:** READY_FOR_INDEPENDENT_REVIEW
+**Milestone 4 Slice 4 implementation commit `0dde422`:** REQUEST_CHANGES
+**Milestone 4 Slice 4 Composition B remediation:** READY_FOR_INDEPENDENT_REVIEW
 **Milestone 4 Slice 5 through Slice 6:** blocked by the approved sequential flow
 **Slice 4 implementation baseline:** HEAD `59c7d3d7450ca426fb1038e736e4a64794768604`
+
+The Composition B remediation addresses exactly the independent review's
+database-path fallback, partial-construction cleanup, and missing composition
+tests. Verification passes with server 172/172, contracts 185/185, and
+repository 470/470 tests. No protocol, schema, contracts, or SDK change was
+made. Next action: independently re-review the Slice 4 Composition B
+remediation. Slice 5 and Milestone 5 remain blocked; Phase D is untouched.
 
 ## Runtime baseline
 

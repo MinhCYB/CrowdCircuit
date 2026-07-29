@@ -51,96 +51,114 @@ export interface BuildAppOptions {
 }
 
 export async function buildApp(options: BuildAppOptions = {}) {
-  const authRuntime = options.authRuntime ?? createAuthRuntime();
   const ownsAuthRuntime = options.authRuntime === undefined;
   const clock = options.clock ?? { now: Date.now };
   const runtimeId = options.runtimeId ?? randomUUID();
-  const databasePath =
+  const durableDatabasePath =
     options.durableDatabasePath ??
     process.env["DATABASE_PATH"] ??
-    (process.env["NODE_ENV"] === "test" || process.env["VITEST"] === "true"
-      ? ":memory:"
-      : "crowdcircuit.sqlite");
-  const repository = options.actionRepositoryFactory?.(databasePath) ??
-    SqliteDurableActionRepository.open({ filename: databasePath });
+    "crowdcircuit.sqlite";
+  let authRuntime: AuthRuntime | undefined;
+  let repository: SqliteDurableActionRepository | undefined;
+  let gameSocketRuntime: ReturnType<typeof attachGameSocketServer> | undefined;
+  let authRuntimeDisposed = false;
   let repositoryClosed = false;
   const closeRepository = () => {
-    if (repositoryClosed) return;
+    if (repository === undefined || repositoryClosed) return;
     repositoryClosed = true;
     repository.close();
   };
-  const app = Fastify({
-    logger: {
-      level: process.env["LOG_LEVEL"] ?? "info",
-      ...(options.loggerStream === undefined
-        ? {}
-        : { stream: options.loggerStream }),
-      redact: {
-        paths: [
-          "req.headers.authorization",
-          "req.headers.cookie",
-          "request.headers.authorization",
-          "request.headers.cookie",
-          "body.pairingCode",
-          "body.token",
-        ],
-        censor: "[REDACTED]",
-      },
-      serializers: {
-        req: sanitizedRequestLog,
-      },
-    },
-  });
-  app.addHook("onRequest", async (request) => {
-    if (!request.raw.url?.startsWith("/api/v1/auth/")) return;
-    let parsed: URL;
-    try {
-      parsed = new URL(request.raw.url, "http://127.0.0.1");
-    } catch {
-      throw new AuthError("QUERY_TOKEN_FORBIDDEN", "Authentication URL is invalid");
-    }
-    if ([...parsed.searchParams.keys()].length > 0) {
-      throw new AuthError(
-        "QUERY_TOKEN_FORBIDDEN",
-        "Authentication query parameters are forbidden",
-      );
-    }
-  });
-  app.setErrorHandler((error, _request, reply) => {
-    if (error instanceof AuthError) {
-      const statusCode =
-        error.code === "FORBIDDEN" || error.code === "QUERY_TOKEN_FORBIDDEN"
-          ? 403
-          : error.code === "CREDENTIAL_EXPIRED" ||
-              error.code === "CREDENTIAL_REVOKED"
-            ? 410
-            : error.code === "INVALID_CONFIGURATION" ||
-                error.code === "CREDENTIAL_COLLISION" ||
-                error.code === "CAPACITY_EXCEEDED"
-              ? 503
-              : 401;
-      return reply.code(statusCode).send({ code: error.code });
-    }
-    app.log.error(
-      { errorName: error instanceof Error ? error.name : "UnknownError" },
-      "Request failed",
-    );
-    return reply.code(500).send({ code: "INTERNAL_ERROR" });
-  });
-
-  const originPolicy = options.originPolicy ?? {
-    allowedOrigins: new Set([
-      "http://127.0.0.1:3100",
-      "http://localhost:3100",
-      "http://127.0.0.1:5173",
-      "http://localhost:5173",
-    ]),
-    allowNoOriginOnLoopback: true,
+  const disposeOwnedAuthRuntime = () => {
+    if (!ownsAuthRuntime || authRuntime === undefined || authRuntimeDisposed) return;
+    authRuntimeDisposed = true;
+    authRuntime.dispose();
   };
-  registerAuthRoutes(app, authRuntime, originPolicy);
-  const registry = new GameSessionRegistry({ clock: () => clock.now() });
-  let gameSocketRuntime;
+  const cleanupOwnedResources = async () => {
+    try {
+      await gameSocketRuntime?.close();
+    } finally {
+      try {
+        closeRepository();
+      } finally {
+        disposeOwnedAuthRuntime();
+      }
+    }
+  };
+
   try {
+    authRuntime = options.authRuntime ?? createAuthRuntime();
+    repository = options.actionRepositoryFactory?.(durableDatabasePath) ??
+      SqliteDurableActionRepository.open({ filename: durableDatabasePath });
+    const app = Fastify({
+      logger: {
+        level: process.env["LOG_LEVEL"] ?? "info",
+        ...(options.loggerStream === undefined
+          ? {}
+          : { stream: options.loggerStream }),
+        redact: {
+          paths: [
+            "req.headers.authorization",
+            "req.headers.cookie",
+            "request.headers.authorization",
+            "request.headers.cookie",
+            "body.pairingCode",
+            "body.token",
+          ],
+          censor: "[REDACTED]",
+        },
+        serializers: {
+          req: sanitizedRequestLog,
+        },
+      },
+    });
+    app.addHook("onRequest", async (request) => {
+      if (!request.raw.url?.startsWith("/api/v1/auth/")) return;
+      let parsed: URL;
+      try {
+        parsed = new URL(request.raw.url, "http://127.0.0.1");
+      } catch {
+        throw new AuthError("QUERY_TOKEN_FORBIDDEN", "Authentication URL is invalid");
+      }
+      if ([...parsed.searchParams.keys()].length > 0) {
+        throw new AuthError(
+          "QUERY_TOKEN_FORBIDDEN",
+          "Authentication query parameters are forbidden",
+        );
+      }
+    });
+    app.setErrorHandler((error, _request, reply) => {
+      if (error instanceof AuthError) {
+        const statusCode =
+          error.code === "FORBIDDEN" || error.code === "QUERY_TOKEN_FORBIDDEN"
+            ? 403
+            : error.code === "CREDENTIAL_EXPIRED" ||
+                error.code === "CREDENTIAL_REVOKED"
+              ? 410
+              : error.code === "INVALID_CONFIGURATION" ||
+                  error.code === "CREDENTIAL_COLLISION" ||
+                  error.code === "CAPACITY_EXCEEDED"
+                ? 503
+                : 401;
+        return reply.code(statusCode).send({ code: error.code });
+      }
+      app.log.error(
+        { errorName: error instanceof Error ? error.name : "UnknownError" },
+        "Request failed",
+      );
+      return reply.code(500).send({ code: "INTERNAL_ERROR" });
+    });
+
+    const originPolicy = options.originPolicy ?? {
+      allowedOrigins: new Set([
+        "http://127.0.0.1:3100",
+        "http://localhost:3100",
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+      ]),
+      allowNoOriginOnLoopback: true,
+    };
+    registerAuthRoutes(app, authRuntime, originPolicy);
+    const registry = new GameSessionRegistry({ clock: () => clock.now() });
     repository.reconcilePreviousRuntime(runtimeId, clock.now());
     const gateway = new ActionGateway(
       repository,
@@ -155,29 +173,35 @@ export async function buildApp(options: BuildAppOptions = {}) {
       registry,
       inboundActionLifecycle: gateway,
     });
+    app.addHook("preClose", async () => {
+      await gameSocketRuntime?.close();
+    });
+    app.addHook("onClose", async () => {
+      try {
+        closeRepository();
+      } finally {
+        disposeOwnedAuthRuntime();
+      }
+    });
+
+    app.get("/api/v1/health", async (_request, _reply) => {
+      return {
+        status: "ok",
+        product: "CrowdCircuit",
+        version: "0.1.0",
+        timestamp: new Date().toISOString(),
+      };
+    });
+
+    return app;
   } catch (error) {
-    closeRepository();
-    if (ownsAuthRuntime) authRuntime.dispose();
+    try {
+      await cleanupOwnedResources();
+    } catch {
+      // Startup cleanup must not replace the original construction failure.
+    }
     throw error;
   }
-  app.addHook("preClose", async () => {
-    await gameSocketRuntime.close();
-  });
-  app.addHook("onClose", async () => {
-    closeRepository();
-    if (ownsAuthRuntime) authRuntime.dispose();
-  });
-
-  app.get("/api/v1/health", async (_request, _reply) => {
-    return {
-      status: "ok",
-      product: "CrowdCircuit",
-      version: "0.1.0",
-      timestamp: new Date().toISOString(),
-    };
-  });
-
-  return app;
 }
 
 async function main() {
