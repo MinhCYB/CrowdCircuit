@@ -181,11 +181,39 @@ describe("Phase C Milestone 3 core", () => {
     const second = gateway.ingest({ status: "accepted", candidate: secondCandidate });
     if (second.status !== "action") throw new Error("action expected");
     const sent = await gateway.deliver(second.record, second.candidate);
-    const received = gateway.markReceived(sent.actionId, now + 1);
-    expect(gateway.markReceived(sent.actionId, now + 2)).toEqual(received);
-    const completed = gateway.markResult(sent.actionId, "completed", now + 3);
-    expect(gateway.markResult(sent.actionId, "completed", now + 4)).toEqual(completed);
-    expect(completed.status).toBe("completed");
+    now += 1;
+    const inboundSession = {
+      clientId: "client-received",
+      gameId: "game",
+      gameInstanceId: "received",
+      sessionGeneration: 1,
+    };
+    const receipt = {
+      type: "game.action.received" as const,
+      specVersion: "0.1" as const,
+      actionId: sent.actionId,
+      attemptNumber: 1,
+      sessionGeneration: 1,
+      receivedAt: new Date(0).toISOString(),
+    };
+    const received = gateway.handleReceipt(inboundSession, receipt);
+    expect(received.status).toBe("accepted");
+    expect(gateway.handleReceipt(inboundSession, receipt).status).toBe("idempotent");
+    const result = {
+      type: "game.action.result" as const,
+      specVersion: "0.1" as const,
+      actionId: sent.actionId,
+      attemptNumber: 1,
+      sessionGeneration: 1,
+      status: "completed" as const,
+      durationMs: 12,
+      details: null,
+    };
+    const completed = gateway.handleResult(inboundSession, result);
+    expect(completed.status).toBe("accepted");
+    expect(gateway.handleResult(inboundSession, result).status).toBe("idempotent");
+    if (completed.status !== "accepted") throw new Error("accepted result expected");
+    expect(completed.record.status).toBe("completed");
     store.close();
   });
 

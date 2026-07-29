@@ -6,6 +6,7 @@ import {
   GameProtocolErrorMessageSchema,
   type GameProtocolErrorMessage,
 } from "@crowdcircuit/contracts";
+import type { InboundActionLifecyclePort } from "../src/game/ports.js";
 import { attachGameSocketServer } from "../src/game/socket-server.js";
 import { GameSessionRegistry } from "../src/game/registry/index.js";
 
@@ -48,6 +49,7 @@ interface SetupOptions {
   registry?: GameSessionRegistry;
   registrationDeadlineScheduler?: ManualDeadlineScheduler;
   invalidMessageWindowMs?: number;
+  inboundActionLifecycle?: InboundActionLifecyclePort;
 }
 
 async function setup(options: SetupOptions = {}) {
@@ -61,6 +63,10 @@ async function setup(options: SetupOptions = {}) {
     registry: options.registry,
     registrationDeadlineScheduler: options.registrationDeadlineScheduler,
     invalidMessageWindowMs: options.invalidMessageWindowMs,
+    inboundActionLifecycle: options.inboundActionLifecycle ?? {
+      handleReceipt: () => ({ status: "rejected", code: "ACTION_NOT_FOUND" }),
+      handleResult: () => ({ status: "rejected", code: "ACTION_NOT_FOUND" }),
+    },
   });
   await new Promise<void>((resolve, reject) => {
     httpServer.once("error", reject);
@@ -390,6 +396,98 @@ describe("pre-registration guards", () => {
       const disconnected = once<string>(client, "disconnect");
       client.emit("unknown.guard.4");
       await disconnected;
+    } finally {
+      await teardown();
+    }
+  });
+});
+
+describe("inbound action lifecycle transport", () => {
+  it("strictly parses, proves the current replacement, stays silent on success, and bounds rejections", async () => {
+    const calls: string[] = [];
+    const lifecycle: InboundActionLifecyclePort = {
+      handleReceipt(session, message) {
+        calls.push(`${session.clientId}:${session.sessionGeneration}:${message.actionId}`);
+        return { status: "accepted", record: {} as never };
+      },
+      handleResult() {
+        return { status: "rejected", code: "RESULT_CONFLICT" };
+      },
+    };
+    const { sessions, url, teardown } = await setup({ inboundActionLifecycle: lifecycle });
+    try {
+      const first = await register(url, sessions, "client-distinct", "game-1", "instance-1");
+      const replacement = await register(
+        url, sessions, "client-distinct", "game-1", "instance-1",
+      );
+      const errors: GameProtocolErrorMessage[] = [];
+      replacement.client.on("game.error", (error: GameProtocolErrorMessage) => errors.push(error));
+      replacement.client.emit("game.action.received", {
+        type: "game.action.received",
+        specVersion: "0.1",
+        actionId: "historical-action",
+        attemptNumber: 1,
+        sessionGeneration: replacement.registered.sessionGeneration,
+        receivedAt: new Date(0).toISOString(),
+      });
+      await vi.waitFor(() => expect(calls).toEqual([
+        `client-distinct:${replacement.registered.sessionGeneration}:historical-action`,
+      ]));
+      expect(errors).toHaveLength(0);
+
+      replacement.client.emit("game.action.result", {
+        type: "game.action.result",
+        specVersion: "0.1",
+        actionId: "historical-action",
+        attemptNumber: 1,
+        sessionGeneration: replacement.registered.sessionGeneration,
+        status: "completed",
+        durationMs: 1,
+      });
+      await vi.waitFor(() => expect(errors).toHaveLength(1));
+      expectStrictError(errors[0], "RESULT_CONFLICT");
+      expect(first.registered.sessionGeneration)
+        .toBeLessThan(replacement.registered.sessionGeneration);
+    } finally {
+      await teardown();
+    }
+  });
+
+  it("maps malformed, stale-generation, and unexpected failures without invoking success behavior", async () => {
+    let throwFailure = false;
+    const lifecycle: InboundActionLifecyclePort = {
+      handleReceipt() {
+        if (throwFailure) throw new Error("database detail must not escape");
+        return { status: "accepted", record: {} as never };
+      },
+      handleResult: () => ({ status: "accepted", record: {} as never }),
+    };
+    const { sessions, url, teardown } = await setup({ inboundActionLifecycle: lifecycle });
+    try {
+      const registered = await register(url, sessions, "client-distinct");
+      const errors: GameProtocolErrorMessage[] = [];
+      registered.client.on("game.error", (error: GameProtocolErrorMessage) => errors.push(error));
+      registered.client.emit("game.action.received", {});
+      registered.client.emit("game.action.received", {
+        type: "game.action.received",
+        specVersion: "0.1",
+        actionId: "action",
+        attemptNumber: 1,
+        sessionGeneration: registered.registered.sessionGeneration + 1,
+        receivedAt: new Date(0).toISOString(),
+      });
+      throwFailure = true;
+      registered.client.emit("game.action.received", {
+        type: "game.action.received",
+        specVersion: "0.1",
+        actionId: "action",
+        attemptNumber: 1,
+        sessionGeneration: registered.registered.sessionGeneration,
+        receivedAt: new Date(0).toISOString(),
+      });
+      await vi.waitFor(() => expect(errors).toHaveLength(3));
+      expect(errors.map((error) => error.code))
+        .toEqual(["INVALID_MESSAGE", "SESSION_STALE", "INTERNAL_ERROR"]);
     } finally {
       await teardown();
     }

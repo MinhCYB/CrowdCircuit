@@ -25,6 +25,7 @@ import {
   type CreateDurableAction,
   type DurableActionRecord,
   type DurableActionRepository,
+  type DurableAttemptBinding,
   type DurableCreateResult,
   type DeliveryAttemptBinding,
   type PendingCreateResult,
@@ -763,6 +764,29 @@ export class SqliteDurableActionRepository
       .prepare("SELECT * FROM action_logs WHERE idempotency_key = ?")
       .get(idempotencyKey);
     return row === undefined ? null : parseRecord(row);
+  }
+
+  findAttemptBinding(
+    actionId: string,
+    attemptNumber: number,
+  ): DurableAttemptBinding | null {
+    nonempty(actionId, "Action ID");
+    if (!Number.isSafeInteger(attemptNumber) || attemptNumber <= 0) {
+      throw new PersistenceError("INVALID_INPUT", "Attempt number is invalid");
+    }
+    const row = this.#database.prepare(
+      `SELECT action_id, attempt_number, client_id, game_instance_id
+       FROM action_send_authorizations
+       WHERE action_id = ? AND attempt_number = ?
+         AND consumed_at IS NOT NULL AND revoked_at IS NULL`,
+    ).get(actionId, attemptNumber);
+    if (row === undefined) return null;
+    return {
+      actionId: String(Reflect.get(row, "action_id")),
+      attemptNumber: Number(Reflect.get(row, "attempt_number")),
+      clientId: String(Reflect.get(row, "client_id")),
+      gameInstanceId: String(Reflect.get(row, "game_instance_id")),
+    };
   }
 
   transition(input: ActionTransition): DurableActionRecord {

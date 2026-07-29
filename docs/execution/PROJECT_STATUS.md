@@ -5,7 +5,7 @@
 **Phase B commit:** `86f1a32` (`feat: complete Phase B event pipeline`)
 **Current phase:** Phase C — Game Vertical Slice
 **Phase C status:** IN_PROGRESS
-**Current milestone:** PHASE-C-MILESTONE-04 — IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 4 initial attempt: ARCHITECTURE_GAP; review: REQUEST_CHANGES; amendment: APPROVED_FOR_IMPLEMENTATION; implementation: READY_TO_BEGIN)
+**Current milestone:** PHASE-C-MILESTONE-04 — IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 4: READY_FOR_INDEPENDENT_REVIEW)
 **Milestone 3 architecture status:** RESOLVED (ADR-019 through ADR-024 accepted)
 **Milestone 3 status:** APPROVED_AND_COMPLETE
 **Milestone 4 architecture status:** RESOLVED (ADR-025 through ADR-030 accepted)
@@ -20,9 +20,9 @@
 **Milestone 4 Slice 4 initial implementation attempt:** ARCHITECTURE_GAP
 **Milestone 4 Slice 4 architecture review:** REQUEST_CHANGES
 **Milestone 4 Slice 4 focused amendment:** APPROVED_FOR_IMPLEMENTATION
-**Milestone 4 Slice 4 implementation:** READY_TO_BEGIN; implementation has not begun
+**Milestone 4 Slice 4 implementation:** READY_FOR_INDEPENDENT_REVIEW
 **Milestone 4 Slice 5 through Slice 6:** blocked by the approved sequential flow
-**Slice 4 focused-amendment baseline:** HEAD `37be23c4f345bee5f7be1ca2a640125514e3f09c` (`docs: close Phase C milestone 4 slice 3`)
+**Slice 4 implementation baseline:** HEAD `59c7d3d7450ca426fb1038e736e4a64794768604`
 
 ## Runtime baseline
 
@@ -37,7 +37,7 @@
 1. Authentication and durable persistence prerequisites — DONE
 2. Mapping and action-budget capability — APPROVED_AND_COMPLETE
 3. Durable Action Gateway lifecycle — APPROVED_AND_COMPLETE
-4. Authenticated game-session delivery and SDK vertical slice — IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slices 1–3: APPROVED_AND_COMPLETE; Slice 4 amendment: APPROVED_FOR_IMPLEMENTATION; implementation: READY_TO_BEGIN)
+4. Authenticated game-session delivery and SDK vertical slice — IN_PROGRESS (Architecture: APPROVED_AND_COMPLETE; Slices 1–3: APPROVED_AND_COMPLETE; Slice 4: READY_FOR_INDEPENDENT_REVIEW)
 5. Demo game, recovery, and Phase C acceptance — BLOCKED_BY_PREVIOUS_MILESTONE
 
 ## Phase C scope

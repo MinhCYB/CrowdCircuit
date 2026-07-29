@@ -5,12 +5,47 @@
  */
 
 import type {
+  GameActionReceivedMessage,
+  GameActionResultMessage,
   GameActionDeliveryMessage,
   GameProtocolErrorCode,
 } from "@crowdcircuit/contracts";
+import type { DurableActionRecord } from "../persistence/types.js";
 
 export type ServerRuntimeGeneration = string;
 export type ConnectionGeneration = number;
+
+export interface InboundGameSession {
+  readonly clientId: string;
+  readonly gameId: string;
+  readonly gameInstanceId: string;
+  readonly sessionGeneration: ConnectionGeneration;
+}
+
+export type InboundLifecycleResult =
+  | { readonly status: "accepted"; readonly record: DurableActionRecord }
+  | { readonly status: "idempotent"; readonly record: DurableActionRecord }
+  | {
+      readonly status: "rejected";
+      readonly code:
+        | "ACTION_NOT_FOUND"
+        | "ACTION_BINDING_MISMATCH"
+        | "ATTEMPT_NOT_FOUND"
+        | "ACTION_NOT_ACCEPTING_RECEIPT"
+        | "ACTION_NOT_ACCEPTING_RESULT"
+        | "RESULT_CONFLICT";
+    };
+
+export interface InboundActionLifecyclePort {
+  handleReceipt(
+    session: InboundGameSession,
+    message: GameActionReceivedMessage,
+  ): InboundLifecycleResult;
+  handleResult(
+    session: InboundGameSession,
+    message: GameActionResultMessage,
+  ): InboundLifecycleResult;
+}
 
 /**
  * Authenticated client identity bound during handshake authentication.

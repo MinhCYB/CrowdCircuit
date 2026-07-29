@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 4 initial attempt: ARCHITECTURE_GAP; review: REQUEST_CHANGES; amendment: APPROVED_FOR_IMPLEMENTATION; implementation: READY_TO_BEGIN)
+**Implementation status:** IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 4: READY_FOR_INDEPENDENT_REVIEW)
 **Primary implementation owner:** CODEX
 
 ## Strategy
@@ -147,8 +147,9 @@ Recommended user commit checkpoint: reviewed delivery adapter slice.
 
 Owner: CODEX.
 
-Status: READY_TO_BEGIN. The initial attempt stopped at `ARCHITECTURE_GAP`;
-implementation has not begun.
+Status: READY_FOR_INDEPENDENT_REVIEW. The initial attempt stopped at
+`ARCHITECTURE_GAP`; Architecture Review 01 returned `REQUEST_CHANGES`; the
+approved amendment and Composition B now govern the completed implementation.
 
 Architecture review: `REQUEST_CHANGES`.
 

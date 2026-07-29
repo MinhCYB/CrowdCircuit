@@ -5,6 +5,7 @@ export {
   type ActionTransition,
   type CreateDurableAction,
   type DurableActionRecord,
+  type DurableAttemptBinding,
   type DurableActionRepository,
   type DurableActionStatus,
   type DurableCreateResult,

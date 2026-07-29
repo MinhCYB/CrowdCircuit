@@ -165,6 +165,13 @@ export interface DeliveryAttemptBinding {
   readonly gameInstanceId: string;
 }
 
+export interface DurableAttemptBinding {
+  readonly actionId: string;
+  readonly attemptNumber: number;
+  readonly clientId: string;
+  readonly gameInstanceId: string;
+}
+
 export interface DurableActionRepository {
   createPending(input: CreateDurableAction): PendingCreateResult;
   authorizePending(
@@ -182,6 +189,10 @@ export interface DurableActionRepository {
   ): SendAuthorization;
   revokeSendAuthorization(actionId: string, attemptNumber: number, at: number): boolean;
   findById(actionId: string): DurableActionRecord | null;
+  findAttemptBinding(
+    actionId: string,
+    attemptNumber: number,
+  ): DurableAttemptBinding | null;
   findByIdempotencyKey(idempotencyKey: string): DurableActionRecord | null;
   transition(input: ActionTransition): DurableActionRecord;
   recordAttempt(

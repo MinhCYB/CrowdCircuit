@@ -2,7 +2,7 @@
 
 **Task ID:** PHASE-C-MILESTONE-04-SLICE-04
 **Parent Task:** Phase C — Game Vertical Slice (Milestone 4)
-**Status:** READY_TO_BEGIN
+**Status:** READY_FOR_INDEPENDENT_REVIEW
 **Primary owner:** CODEX
 **Priority:** P0
 
@@ -26,7 +26,7 @@ the approved focused amendment.
 - Slice 4 initial implementation attempt: ARCHITECTURE_GAP
 - Slice 4 architecture review: REQUEST_CHANGES
 - Slice 4 focused amendment: APPROVED_FOR_IMPLEMENTATION
-- Slice 4 implementation: READY_TO_BEGIN; implementation has not begun
+- Slice 4 implementation: READY_FOR_INDEPENDENT_REVIEW
 - Slice 5 through Slice 6: blocked by the approved sequential flow
 - Milestone 5: BLOCKED_BY_PREVIOUS_MILESTONE
 - Phase D: untouched

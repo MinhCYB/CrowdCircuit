@@ -1,10 +1,20 @@
-import type { GameActionEnvelope } from "@crowdcircuit/contracts";
+import type {
+  GameActionEnvelope,
+  GameActionReceivedMessage,
+  GameActionResultMessage,
+  JsonValue,
+} from "@crowdcircuit/contracts";
 import type { MappingCandidate, MappingResult } from "@crowdcircuit/mapping-engine";
 import type {
   BudgetAdmissionSnapshot,
   DurableActionRecord,
   DurableActionRepository,
 } from "../persistence/types.js";
+import { PersistenceError } from "../persistence/types.js";
+import type {
+  InboundGameSession,
+  InboundLifecycleResult,
+} from "../game/ports.js";
 import type { ActionDeliveryPort, DeliveryDestination } from "./port.js";
 import { computeActionId } from "./action-id.js";
 
@@ -44,6 +54,52 @@ function toEnvelope(record: DurableActionRecord, candidate: MappingCandidate): G
     ttlMs: record.ttlMs,
     createdAt: new Date(record.createdAt).toISOString(),
   };
+}
+
+function durableResult(message: GameActionResultMessage): {
+  readonly failureCode: string | null;
+  readonly resultDetails: JsonValue;
+} {
+  return message.status === "completed"
+    ? {
+        failureCode: null,
+        resultDetails: {
+          durationMs: message.durationMs,
+          details: message.details ?? null,
+        },
+      }
+    : {
+        failureCode: message.error.code,
+        resultDetails: {
+          message: message.error.message,
+          retryable: message.error.retryable,
+        },
+      };
+}
+
+function canonicalJson(value: JsonValue): string {
+  const normalize = (input: JsonValue): JsonValue => {
+    if (Array.isArray(input)) return input.map(normalize);
+    if (input !== null && typeof input === "object") {
+      return Object.fromEntries(
+        Object.keys(input).sort().map((key) => [key, normalize(input[key] ?? null)]),
+      );
+    }
+    return input;
+  };
+  return JSON.stringify(normalize(value));
+}
+
+function sameDurableResult(
+  record: DurableActionRecord,
+  message: GameActionResultMessage,
+): boolean {
+  if (record.status !== message.status || record.resultDetails === null) return false;
+  const expected = durableResult(message);
+  return (
+    record.failureCode === expected.failureCode &&
+    canonicalJson(record.resultDetails) === canonicalJson(expected.resultDetails)
+  );
 }
 
 export class ActionGateway {
@@ -114,42 +170,119 @@ export class ActionGateway {
     return this.#sendResolved(record, envelope, resolution.destination, now);
   }
 
-  markReceived(actionId: string, at = this.clock.now()): DurableActionRecord {
-    const current = this.repository.findById(actionId);
-    if (current === null) throw new Error("Action does not exist");
-    if (
-      current.status === "received" ||
-      current.status === "completed" ||
-      current.status === "failed"
-    ) {
-      return current;
+  handleReceipt(
+    session: InboundGameSession,
+    message: GameActionReceivedMessage,
+  ): InboundLifecycleResult {
+    const current = this.#authorizeInbound(session, message.actionId, message.attemptNumber);
+    if ("status" in current) return current;
+    const classified = this.#classifyReceipt(current.record);
+    if (classified !== null) return classified;
+    try {
+      return {
+        status: "accepted",
+        record: this.repository.transition({
+          actionId: message.actionId,
+          expectedVersion: current.record.version,
+          expectedStatuses: ["in_flight"],
+          nextStatus: "received",
+          at: this.clock.now(),
+        }),
+      };
+    } catch (error) {
+      if (!(error instanceof PersistenceError) || error.code !== "STALE_TRANSITION") throw error;
+      const reread = this.repository.findById(message.actionId);
+      return reread === null
+        ? { status: "rejected", code: "ACTION_NOT_FOUND" }
+        : this.#classifyReceipt(reread) ??
+            { status: "rejected", code: "ACTION_NOT_ACCEPTING_RECEIPT" };
     }
-    return this.repository.transition({
-      actionId,
-      expectedVersion: current.version,
-      expectedStatuses: ["in_flight"],
-      nextStatus: "received",
-      at,
-    });
   }
 
-  markResult(
-    actionId: string,
-    status: "completed" | "failed",
-    at = this.clock.now(),
-  ): DurableActionRecord {
-    const current = this.repository.findById(actionId);
-    if (current === null) throw new Error("Action does not exist");
-    if (current.status === "completed" || current.status === "failed") {
-      return current;
+  handleResult(
+    session: InboundGameSession,
+    message: GameActionResultMessage,
+  ): InboundLifecycleResult {
+    const current = this.#authorizeInbound(session, message.actionId, message.attemptNumber);
+    if ("status" in current) return current;
+    const classified = this.#classifyResult(current.record, message);
+    if (classified !== null) return classified;
+    const durable = durableResult(message);
+    try {
+      return {
+        status: "accepted",
+        record: this.repository.transition({
+          actionId: message.actionId,
+          expectedVersion: current.record.version,
+          expectedStatuses: ["received"],
+          nextStatus: message.status,
+          at: this.clock.now(),
+          failureCode: durable.failureCode,
+          resultDetails: durable.resultDetails,
+        }),
+      };
+    } catch (error) {
+      if (!(error instanceof PersistenceError) || error.code !== "STALE_TRANSITION") throw error;
+      const reread = this.repository.findById(message.actionId);
+      return reread === null
+        ? { status: "rejected", code: "ACTION_NOT_FOUND" }
+        : this.#classifyResult(reread, message) ??
+            { status: "rejected", code: "ACTION_NOT_ACCEPTING_RESULT" };
     }
-    return this.repository.transition({
-      actionId,
-      expectedVersion: current.version,
-      expectedStatuses: ["received"],
-      nextStatus: status,
-      at,
-    });
+  }
+
+  #authorizeInbound(
+    session: InboundGameSession,
+    actionId: string,
+    attemptNumber: number,
+  ):
+    | { readonly record: DurableActionRecord }
+    | Extract<InboundLifecycleResult, { status: "rejected" }> {
+    const record = this.repository.findById(actionId);
+    if (record === null) return { status: "rejected", code: "ACTION_NOT_FOUND" };
+    const binding = this.repository.findAttemptBinding(actionId, attemptNumber);
+    if (binding === null) return { status: "rejected", code: "ATTEMPT_NOT_FOUND" };
+    if (
+      record.gameId !== session.gameId ||
+      binding.clientId !== session.clientId ||
+      binding.gameInstanceId !== session.gameInstanceId
+    ) {
+      return { status: "rejected", code: "ACTION_BINDING_MISMATCH" };
+    }
+    return { record };
+  }
+
+  #classifyReceipt(record: DurableActionRecord): InboundLifecycleResult | null {
+    if (record.status === "in_flight") return null;
+    if (
+      record.status === "received" ||
+      record.status === "completed" ||
+      record.status === "failed"
+    ) return { status: "idempotent", record };
+    return {
+      status: "rejected",
+      code: record.status === "pending"
+        ? "ATTEMPT_NOT_FOUND"
+        : "ACTION_NOT_ACCEPTING_RECEIPT",
+    };
+  }
+
+  #classifyResult(
+    record: DurableActionRecord,
+    message: GameActionResultMessage,
+  ): InboundLifecycleResult | null {
+    if (record.status === "received") return null;
+    if (record.status === "completed" || record.status === "failed") {
+      return sameDurableResult(record, message)
+        ? { status: "idempotent", record }
+        : { status: "rejected", code: "RESULT_CONFLICT" };
+    }
+    return {
+      status: "rejected",
+      code: record.status === "pending"
+        ? "ATTEMPT_NOT_FOUND"
+        : "ACTION_NOT_ACCEPTING_RESULT",
+    };
   }
 
   async #sendResolved(

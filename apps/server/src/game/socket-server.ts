@@ -4,6 +4,8 @@ import type { OriginPolicy, RoleSessionRegistry } from "@crowdcircuit/auth-core"
 import {
   GameHeartbeatMessageSchema,
   GameRegisterMessageSchema,
+  GameActionReceivedMessageSchema,
+  GameActionResultMessageSchema,
   type GameActionDeliveryMessage,
   type GameProtocolErrorCode,
   type GameProtocolErrorMessage,
@@ -17,6 +19,7 @@ import {
 import {
   GameSessionRegistry,
 } from "./registry/index.js";
+import type { InboundActionLifecyclePort, InboundGameSession } from "./ports.js";
 
 export const GAME_SOCKET_OPTIONS = {
   path: "/socket.io",
@@ -79,6 +82,7 @@ export function attachGameSocketServer(options: {
   readonly httpServer: HttpServer;
   readonly sessions: RoleSessionRegistry;
   readonly originPolicy: OriginPolicy;
+  readonly inboundActionLifecycle: InboundActionLifecyclePort;
   readonly clock?: () => number;
   readonly registry?: GameSessionRegistry;
   /** @internal — test seam only; production default: GAME_SOCKET_OPTIONS.registrationDeadlineMs */
@@ -298,11 +302,71 @@ export function attachGameSocketServer(options: {
       if (!current) emitError(socket, "SESSION_STALE");
     });
 
-    socket.on("game.action.received", () => {
-      if (state.registered === undefined) emitError(socket, "REGISTRATION_REQUIRED");
+    const proveCurrentSession = (
+      sessionGeneration: number,
+    ): InboundGameSession | null => {
+      const registered = state.registered;
+      if (registered === undefined) return null;
+      const current = registry.getSession(
+        state.clientId,
+        registered.gameId,
+        registered.gameInstanceId,
+      );
+      if (
+        current === null ||
+        current.clientId !== state.clientId ||
+        current.gameId !== registered.gameId ||
+        current.gameInstanceId !== registered.gameInstanceId ||
+        current.connectionGeneration !== registered.connectionGeneration ||
+        sessionGeneration !== registered.connectionGeneration
+      ) return null;
+      return {
+        clientId: state.clientId,
+        gameId: registered.gameId,
+        gameInstanceId: registered.gameInstanceId,
+        sessionGeneration: registered.connectionGeneration,
+      };
+    };
+    const handleInbound = (
+      payload: unknown,
+      kind: "receipt" | "result",
+    ) => {
+      if (state.registered === undefined) {
+        emitError(socket, "REGISTRATION_REQUIRED");
+        return;
+      }
+      const parsed = kind === "receipt"
+        ? GameActionReceivedMessageSchema.safeParse(payload)
+        : GameActionResultMessageSchema.safeParse(payload);
+      if (!parsed.success) {
+        invalidMessage();
+        return;
+      }
+      const session = proveCurrentSession(parsed.data.sessionGeneration);
+      if (session === null) {
+        emitError(socket, "SESSION_STALE");
+        return;
+      }
+      try {
+        const result = kind === "receipt"
+          ? options.inboundActionLifecycle.handleReceipt(
+              session,
+              GameActionReceivedMessageSchema.parse(parsed.data),
+            )
+          : options.inboundActionLifecycle.handleResult(
+              session,
+              GameActionResultMessageSchema.parse(parsed.data),
+            );
+        if (result.status === "rejected") emitError(socket, result.code);
+      } catch {
+        emitError(socket, "INTERNAL_ERROR");
+      }
+    };
+    socket.on("game.action.received", (payload: unknown) => {
+      handleInbound(payload, "receipt");
     });
-    socket.on("game.action.result", () => {
-      if (state.registered === undefined) emitError(socket, "REGISTRATION_REQUIRED");
+    socket.on("game.action.result", (payload: unknown) => {
+      handleInbound(payload, "result");
     });
     socket.on("disconnect", () => {
       registrationDeadlineScheduler.clear(deadline);

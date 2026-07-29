@@ -13,7 +13,7 @@
 **Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
 **Final Architecture Fix Verification:** APPROVE
 **Milestone 4 architecture:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Milestone 4 implementation:** IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 4 initial attempt: ARCHITECTURE_GAP; review: REQUEST_CHANGES; amendment: APPROVED_FOR_IMPLEMENTATION; implementation: READY_TO_BEGIN)
+**Milestone 4 implementation:** IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 4: READY_FOR_INDEPENDENT_REVIEW)
 **Milestone 5:** BLOCKED_BY_PREVIOUS_MILESTONE
 **Phase D:** untouched
 
@@ -328,7 +328,7 @@ idempotency, retry/TTL, reconciliation, failure isolation, and artifacts.
 **Claude Architecture Re-Review 02:** APPROVE_WITH_SMALL_FIX (historical)
 **Final Architecture Fix Verification:** APPROVE
 **Architecture status:** APPROVED_AND_COMPLETE (ADR-025 through ADR-030 ACCEPTED)
-**Implementation status:** IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 4 initial attempt: ARCHITECTURE_GAP; review: REQUEST_CHANGES; amendment: APPROVED_FOR_IMPLEMENTATION; implementation: READY_TO_BEGIN)
+**Implementation status:** IN_PROGRESS (Slices 1–3: APPROVED_AND_COMPLETE; Slice 4: READY_FOR_INDEPENDENT_REVIEW)
 **Primary owner:** CODEX  
 **Roadmap:** `BE-07A`–`BE-07D`, `BE-08A`–`BE-08C`
 

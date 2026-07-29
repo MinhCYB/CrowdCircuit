@@ -1,10 +1,15 @@
 import Fastify from "fastify";
+import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import type { Writable } from "node:stream";
 import { AuthError, type OriginPolicy } from "@crowdcircuit/auth-core";
 import { createAuthRuntime, type AuthRuntime } from "./auth/index.js";
 import { registerAuthRoutes } from "./auth/routes.js";
 import { attachGameSocketServer } from "./game/socket-server.js";
+import { GameSessionRegistry } from "./game/registry/index.js";
+import { SocketIoActionDeliveryAdapter } from "./delivery/socket-io/index.js";
+import { ActionGateway, type ActionGatewayClock } from "./delivery/gateway.js";
+import { SqliteDurableActionRepository } from "./persistence/repository.js";
 
 export * from "./persistence/index.js";
 export * from "./delivery/port.js";
@@ -37,11 +42,33 @@ export interface BuildAppOptions {
   readonly authRuntime?: AuthRuntime;
   readonly originPolicy?: OriginPolicy;
   readonly loggerStream?: Writable;
+  readonly durableDatabasePath?: string;
+  readonly runtimeId?: string;
+  readonly clock?: ActionGatewayClock;
+  readonly actionRepositoryFactory?: (
+    databasePath: string,
+  ) => SqliteDurableActionRepository;
 }
 
 export async function buildApp(options: BuildAppOptions = {}) {
   const authRuntime = options.authRuntime ?? createAuthRuntime();
   const ownsAuthRuntime = options.authRuntime === undefined;
+  const clock = options.clock ?? { now: Date.now };
+  const runtimeId = options.runtimeId ?? randomUUID();
+  const databasePath =
+    options.durableDatabasePath ??
+    process.env["DATABASE_PATH"] ??
+    (process.env["NODE_ENV"] === "test" || process.env["VITEST"] === "true"
+      ? ":memory:"
+      : "crowdcircuit.sqlite");
+  const repository = options.actionRepositoryFactory?.(databasePath) ??
+    SqliteDurableActionRepository.open({ filename: databasePath });
+  let repositoryClosed = false;
+  const closeRepository = () => {
+    if (repositoryClosed) return;
+    repositoryClosed = true;
+    repository.close();
+  };
   const app = Fastify({
     logger: {
       level: process.env["LOG_LEVEL"] ?? "info",
@@ -111,19 +138,35 @@ export async function buildApp(options: BuildAppOptions = {}) {
     allowNoOriginOnLoopback: true,
   };
   registerAuthRoutes(app, authRuntime, originPolicy);
-  const gameSocketRuntime = attachGameSocketServer({
-    httpServer: app.server,
-    sessions: authRuntime.sessions,
-    originPolicy,
-  });
+  const registry = new GameSessionRegistry({ clock: () => clock.now() });
+  let gameSocketRuntime;
+  try {
+    repository.reconcilePreviousRuntime(runtimeId, clock.now());
+    const gateway = new ActionGateway(
+      repository,
+      new SocketIoActionDeliveryAdapter(registry),
+      clock,
+      runtimeId,
+    );
+    gameSocketRuntime = attachGameSocketServer({
+      httpServer: app.server,
+      sessions: authRuntime.sessions,
+      originPolicy,
+      registry,
+      inboundActionLifecycle: gateway,
+    });
+  } catch (error) {
+    closeRepository();
+    if (ownsAuthRuntime) authRuntime.dispose();
+    throw error;
+  }
   app.addHook("preClose", async () => {
     await gameSocketRuntime.close();
   });
-  if (ownsAuthRuntime) {
-    app.addHook("onClose", async () => {
-      authRuntime.dispose();
-    });
-  }
+  app.addHook("onClose", async () => {
+    closeRepository();
+    if (ownsAuthRuntime) authRuntime.dispose();
+  });
 
   app.get("/api/v1/health", async (_request, _reply) => {
     return {

@@ -1,4 +1,9 @@
-import type { GameActionEnvelope, JsonValue } from "@crowdcircuit/contracts";
+import type {
+  GameActionEnvelope,
+  GameActionReceivedMessage,
+  GameActionResultMessage,
+  JsonValue,
+} from "@crowdcircuit/contracts";
 import {
   ActionGateway,
   ActionLifecycleWorker,
@@ -14,6 +19,7 @@ import {
   type DeliveryResolution,
   type DestinationGeneration,
   type DurableActionRecord,
+  type DurableAttemptBinding,
   type DurableActionRepository,
   type DurableActionStatus,
   type GameRegistrationInput,
@@ -24,6 +30,8 @@ import {
   type GameSessionRegistryReadPort,
   type GameSessionSendFence,
   type GameSessionSendResult,
+  type InboundActionLifecyclePort,
+  type InboundGameSession,
   type PreparedActionDelivery,
   type RegisteredGameSessionSnapshot,
   type SendAuthorization,
@@ -70,6 +78,20 @@ const repository: DurableActionRepository = SqliteDurableActionRepository.open({
 });
 declare const deliveryPort: ActionDeliveryPort;
 const gateway = new ActionGateway(repository, deliveryPort, { now: () => 0 }, "runtime");
+const inboundPort: InboundActionLifecyclePort = gateway;
+const inboundSession: InboundGameSession = {
+  clientId: "client",
+  gameId: "g",
+  gameInstanceId: "inst-1",
+  sessionGeneration: 1,
+};
+declare const receiptMessage: GameActionReceivedMessage;
+declare const resultMessage: GameActionResultMessage;
+void inboundPort.handleReceipt(inboundSession, receiptMessage);
+void inboundPort.handleResult(inboundSession, resultMessage);
+const attemptBinding: DurableAttemptBinding | null =
+  repository.findAttemptBinding("a", 1);
+void attemptBinding;
 const lifecycleWorker = new ActionLifecycleWorker(repository, { now: () => 0 });
 void gateway;
 void lifecycleWorker;
